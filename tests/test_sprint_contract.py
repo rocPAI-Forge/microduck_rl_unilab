@@ -54,7 +54,7 @@ def test_sprint_owner_specializes_velocity_contract() -> None:
     cfg, env_cfg = _materialize_owner()
     assert cfg.training.task_name == "MicroduckSprintFlat"
     assert cfg.training.sim_backend == "mujoco"
-    assert cfg.algo.max_iterations == 7500
+    assert cfg.algo.max_iterations == 11750
     assert cfg.algo.algorithm.entropy_coef == pytest.approx(0.02)
 
     assert env_cfg.max_episode_seconds == pytest.approx(12.0)
@@ -77,12 +77,12 @@ def test_sprint_owner_specializes_velocity_contract() -> None:
         assert env_cfg.curriculum[name] is None
     stages = env_cfg.curriculum["running_speed_range"].params["speed_stages"]
     assert stages[0] == {"step": 0, "min_speed": 0.2, "max_speed": 0.45}
-    assert stages[-1] == {"step": 144000, "min_speed": 0.9, "max_speed": 1.2}
+    assert stages[-1] == {"step": 264000, "min_speed": 1.65, "max_speed": 2.2}
 
     rewards = env_cfg.rewards
     assert rewards["forward_progress"].func is running_forward_progress
     assert rewards["forward_progress"].weight == pytest.approx(5.0)
-    assert rewards["forward_progress"].params["speed_cap"] == pytest.approx(1.4)
+    assert rewards["forward_progress"].params["speed_cap"] == pytest.approx(2.4)
     assert rewards["planar_drift"].func is running_planar_drift_cost
     assert rewards["heading_hold"].func is heading_hold
     assert rewards["heading_hold"].weight == pytest.approx(1.5)
