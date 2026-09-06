@@ -22,6 +22,8 @@ owner 配置和机器人 XML 资产。
 | task | ppo | sac |
 |------|-----|-----|
 | `microduck_velocity_flat` | mujoco, mjwarp | mujoco, mjwarp |
+| `microduck_sprint_flat` | mujoco | — |
+| `microduck_sprint_robust_flat` | mujoco | — |
 | `microduck_velstand_flat` | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
 | `microduck_ground_pick_flat` | mjwarp | — |
@@ -52,6 +54,7 @@ uv sync
 
 ```bash
 uv run microduck-train --algo ppo --task microduck_velocity_flat --sim mujoco
+uv run microduck-train --algo ppo --task microduck_sprint_flat --sim mujoco
 uv run microduck-train --algo ppo --task microduck_velocity_flat --sim mjwarp
 uv run microduck-train --algo ppo --task microduck_standup_flat --sim mujoco
 uv run microduck-train --algo sac --task microduck_velocity_flat --sim mujoco
@@ -71,6 +74,20 @@ uv run microduck-train --algo ppo --task microduck_velocity_flat --sim mujoco \
 
 ```bash
 uv run microduck-eval --algo ppo --task microduck_velocity_flat --sim mujoco --load-run -1
+```
+
+Sprint 评估口径为 2.20 m/s 前向命令、1 秒预热、10 秒测量：
+
+```bash
+uv run --no-sync scripts/eval_sprint_speed.py \
+  logs/rsl_rl_ppo/MicroduckSprintFlat/<run>/model_<iteration>.pt
+```
+
+从已训好的速度策略做三段 robustify（钉住 1.65–2.20 m/s 命令带，逐步加 push / CoM / 倾角）：
+
+```bash
+uv run --no-sync scripts/train_sprint_robust.py \
+  --load-run <sprint-run> --checkpoint 11749
 ```
 
 ## 测试
@@ -101,13 +118,14 @@ src/microduck_rl_unilab/
 ├── cli.py                          # microduck-train / microduck-eval：env var + --config-dir 注入
 ├── conf_searchpath.py              # Hydra SearchPathPlugin（测试/脚本的程序化 compose 用）
 ├── conf/
-│   ├── ppo/task/microduck_{velocity_flat,velstand_flat,standup_flat,ground_pick_flat,sitstand_flat}/
+│   ├── ppo/task/microduck_{velocity_flat,sprint_flat,sprint_robust_flat,velstand_flat,standup_flat,ground_pick_flat,sitstand_flat}/
 │   └── sac/task/microduck_velocity_flat/
 └── tasks/
     ├── __init__.py                 # __unilab_registry_modules__
     └── microduck/
-        ├── __init__.py             # 5 个任务的 registry.register_env
+        ├── __init__.py             # 任务 registry.register_env
         ├── manager_terms.py        # velocity command / 奖励 terms
+        ├── sprint_terms.py         # sprint 速度/航向奖励与速度课程
         ├── recovery_terms.py       # velstand 跌倒恢复 terms
         ├── standup_terms.py        # standup / ground_pick / sitstand terms
         ├── bam_action.py           # BAM 电压驱动 action term

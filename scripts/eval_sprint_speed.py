@@ -43,11 +43,15 @@ def _compose_owner(
     speed: float,
     duration_s: float,
     seed: int,
+    stress: bool = False,
 ) -> Any:
     register_conf_search_path()
     GlobalHydra.instance().clear()
+    owner = (
+        "microduck_sprint_robust_flat/mujoco" if stress else "microduck_sprint_flat/mujoco"
+    )
     with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
-        cfg = compose("config", overrides=["task=microduck_sprint_flat/mujoco"])
+        cfg = compose("config", overrides=[f"task={owner}"])
     with open_dict(cfg):
         cfg.algo.seed = seed
         cfg.env.max_episode_seconds = duration_s + 1.0
@@ -66,6 +70,20 @@ def _compose_owner(
         # tripping finite checks before their reset is applied.
         for name in cfg.reward:
             cfg.reward[name] = None
+        if stress:
+            # Held-out stress from the playground release record: wider trunk
+            # CoM than the last training stage, plus the stage-C push/tilt.
+            tilt = math.radians(2.0)
+            cfg.env.events.push_robot.params.velocity_range.x = [-0.10, 0.10]
+            cfg.env.events.push_robot.params.velocity_range.y = [-0.10, 0.10]
+            cfg.env.events.base_com.params.com_range.x = [-0.010, 0.010]
+            cfg.env.events.base_com.params.com_range.y = [-0.010, 0.010]
+            cfg.env.events.base_com.params.com_range.z = [-0.010, 0.010]
+            cfg.env.events.head_com.params.com_range.x = [-0.006, 0.006]
+            cfg.env.events.head_com.params.com_range.y = [-0.006, 0.006]
+            cfg.env.events.head_com.params.com_range.z = [-0.006, 0.006]
+            cfg.env.events.reset_base.params.pose_range.roll = [-tilt, tilt]
+            cfg.env.events.reset_base.params.pose_range.pitch = [-tilt, tilt]
     return cfg
 
 
@@ -83,6 +101,7 @@ def evaluate(
     fall_tilt_deg: float = 70.0,
     seed: int = 123,
     device: str | None = None,
+    stress: bool = False,
 ) -> dict[str, Any]:
     if not checkpoint.is_file():
         raise FileNotFoundError(f"checkpoint not found: {checkpoint}")
@@ -100,6 +119,7 @@ def evaluate(
         speed=speed,
         duration_s=warmup_s + duration_s,
         seed=seed,
+        stress=stress,
     )
     importlib.import_module("microduck_rl_unilab.tasks.microduck")
     registry.ensure_registries()
@@ -178,6 +198,7 @@ def evaluate(
             "warmup_s": warmup_s,
             "duration_s": duration_s,
             "fall_tilt_deg": fall_tilt_deg,
+            "stress": stress,
             "survival_fraction": float(np.mean(alive)),
             "body_forward_speed_m_s": {
                 "mean": float(np.mean(mean_speed)) if mean_speed.size else None,
@@ -223,6 +244,7 @@ def main() -> None:
     parser.add_argument("--fall-tilt-deg", type=float, default=70.0)
     parser.add_argument("--seed", type=int, default=123)
     parser.add_argument("--device", default=None)
+    parser.add_argument("--stress", action="store_true")
     parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args()
 
@@ -235,6 +257,7 @@ def main() -> None:
         fall_tilt_deg=args.fall_tilt_deg,
         seed=args.seed,
         device=args.device,
+        stress=args.stress,
     )
     payload = json.dumps(result, ensure_ascii=False, indent=2)
     if args.output is not None:

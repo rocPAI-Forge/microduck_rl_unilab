@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, cast
@@ -92,6 +93,34 @@ def test_sprint_owner_specializes_velocity_contract() -> None:
     assert rewards["air_time"].weight == pytest.approx(0.0)
     assert rewards["head_pose_tracking"].weight == pytest.approx(0.0)
     assert rewards["action_rate"].weight == pytest.approx(-0.02)
+
+
+def test_sprint_robust_owner_pins_speed_and_restores_disturbances() -> None:
+    GlobalHydra.instance().clear()
+    with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
+        cfg = compose("config", overrides=["task=microduck_sprint_robust_flat/mujoco"])
+    registry.ensure_registries()
+    env_cfg = registry.materialize_env_config("MicroduckSprintFlat")
+    apply_cfg_overrides(
+        env_cfg,
+        BackendAdapter(cfg, root_dir=ROOT_DIR, algo_name="ppo").build_task_env_cfg_override(),
+    )
+    env_cfg.validate()
+
+    assert cfg.training.task_name == "MicroduckSprintFlat"
+    assert cfg.algo.max_iterations == 100
+    twist = env_cfg.commands["twist"]
+    assert twist.ranges.lin_vel_x == [1.65, 2.2]
+    assert env_cfg.curriculum["running_speed_range"] is None
+    assert env_cfg.curriculum["action_rate_weight"] is None
+    assert env_cfg.rewards["action_rate"].weight == pytest.approx(-0.10)
+    push = env_cfg.events["push_robot"]
+    assert push is not None
+    assert push.mode == "interval"
+    assert push.params["velocity_range"]["x"] == [-0.03, 0.03]
+    pose = env_cfg.events["reset_base"].params["pose_range"]
+    assert pose["roll"][1] == pytest.approx(math.radians(1.0))
+    assert pose["pitch"][1] == pytest.approx(math.radians(1.0))
 
 
 def test_sprint_registry_is_mujoco_only() -> None:
