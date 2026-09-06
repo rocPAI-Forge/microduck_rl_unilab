@@ -59,10 +59,13 @@ def _compose_owner(
         twist.rel_forward_envs = 0.0
         twist.turn_in_place_fraction = 0.0
         twist.resampling_time_range = [duration_s + 1.0, duration_s + 1.0]
-        for name in cfg.env.terminations:
-            cfg.env.terminations[name] = None
         for name in cfg.env.curriculum:
             cfg.env.curriculum[name] = None
+        # The battery reads kinematics directly. Keeping tilt/nan terminations
+        # recycles unsafe rows, while disabling rewards prevents dead rows from
+        # tripping finite checks before their reset is applied.
+        for name in cfg.reward:
+            cfg.reward[name] = None
     return cfg
 
 
@@ -93,7 +96,11 @@ def evaluate(
         raise ValueError("fall_tilt_deg must be in (0, 180]")
 
     device = device or ("cuda:0" if torch.cuda.is_available() else "cpu")
-    cfg = _compose_owner(speed=speed, duration_s=duration_s, seed=seed)
+    cfg = _compose_owner(
+        speed=speed,
+        duration_s=warmup_s + duration_s,
+        seed=seed,
+    )
     importlib.import_module("microduck_rl_unilab.tasks.microduck")
     registry.ensure_registries()
     override = BackendAdapter(
@@ -138,7 +145,12 @@ def evaluate(
         for step in range(total_steps):
             with torch.inference_mode():
                 actions = policy(obs)
-                obs, _, _, _ = wrapped_env.step(actions)
+                obs, _, dones, infos = wrapped_env.step(actions)
+            terminated = dones
+            time_outs = infos.get("time_outs")
+            if isinstance(time_outs, torch.Tensor):
+                terminated = dones & ~time_outs
+            alive &= ~terminated.detach().cpu().numpy()
             gravity = np.asarray(robot.data.projected_gravity_b)
             tilt = np.arccos(np.clip(-gravity[:, 2], -1.0, 1.0))
             alive &= tilt <= math.radians(fall_tilt_deg)
