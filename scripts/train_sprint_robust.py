@@ -32,6 +32,16 @@ STAGE_C = {
     "head": 0.006,
     "tilt_deg": 2.0,
 }
+# Between B and C. Full C dropped survival on the first pass, so long
+# continuation holds here until the 2.2 m/s battery recovers.
+STAGE_HOLD = {
+    "name": "Hold",
+    "iterations": 400,
+    "push": 0.08,
+    "trunk": 0.0065,
+    "head": 0.006,
+    "tilt_deg": 1.75,
+}
 STAGES = (
     {"name": "A", "iterations": 100, "push": 0.03, "trunk": 0.003, "head": 0.003, "tilt_deg": 1.0},
     {"name": "B", "iterations": 150, "push": 0.06, "trunk": 0.005, "head": 0.005, "tilt_deg": 1.5},
@@ -91,6 +101,29 @@ def _append_result(record: dict[str, Any]) -> None:
     RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
     with RESULTS_PATH.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
+def _iter_results() -> list[dict[str, Any]]:
+    if not RESULTS_PATH.is_file():
+        return []
+    records: list[dict[str, Any]] = []
+    for line in RESULTS_PATH.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            records.append(json.loads(line))
+    return records
+
+
+def _best_nominal() -> dict[str, Any] | None:
+    best: dict[str, Any] | None = None
+    for record in _iter_results():
+        if record.get("stress"):
+            continue
+        survival = record.get("survival_fraction")
+        if survival is None:
+            continue
+        if best is None or float(survival) > float(best["survival_fraction"]):
+            best = record
+    return best
 
 
 def _train_stage(
@@ -183,8 +216,9 @@ def _eval_checkpoint(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--load-run", required=True)
-    parser.add_argument("--checkpoint", required=True)
+    parser.add_argument("--load-run", default="")
+    parser.add_argument("--checkpoint", default="")
+    parser.add_argument("--from-best-jsonl", action="store_true")
     parser.add_argument("--num-envs", type=int, default=2048)
     parser.add_argument("--eval-envs", type=int, default=512)
     parser.add_argument("--skip-eval", action="store_true")
@@ -193,16 +227,26 @@ def main() -> None:
         "--budget-hours",
         type=float,
         default=0.0,
-        help="After A/B/C, keep training stage-C magnitudes until this wall clock budget.",
+        help="Keep training after the named stages until this wall-clock budget.",
     )
-    parser.add_argument("--extra-chunk", type=int, default=250)
+    parser.add_argument("--extra-chunk", type=int, default=400)
     parser.add_argument("--target-survival", type=float, default=0.988)
+    parser.add_argument("--hold-until-survival", type=float, default=0.94)
     parser.add_argument("--final-stress", action="store_true")
     args = parser.parse_args()
 
     wanted = {name.strip().upper() for name in args.stages.split(",") if name.strip()}
     load_run = args.load_run
     checkpoint = args.checkpoint
+    if args.from_best_jsonl:
+        best = _best_nominal()
+        if best is None:
+            raise SystemExit("no nominal eval records in results/sprint_robust.jsonl")
+        load_run = str(best["run_dir"])
+        checkpoint = str(best["checkpoint"])
+        print(f"resuming best jsonl record {best['label']} {load_run}/{checkpoint}", flush=True)
+    if not load_run or not checkpoint:
+        raise SystemExit("need --load-run and --checkpoint, or --from-best-jsonl")
     known_runs = set(_run_dirs())
     deadline = time.time() + max(args.budget_hours, 0.0) * 3600.0
     latest_payload: dict[str, Any] | None = None
@@ -238,15 +282,20 @@ def main() -> None:
         if latest_payload is not None and latest_payload.get("survival_fraction") is not None
         else 0.0
     )
+    if survival <= 0.0 and args.from_best_jsonl:
+        best = _best_nominal()
+        if best is not None:
+            survival = float(best["survival_fraction"])
     while (
         args.budget_hours > 0.0
         and time.time() + 25.0 * 60.0 < deadline
         and survival < args.target_survival
     ):
         extra_index += 1
-        label = f"Cplus{extra_index}"
+        extra_stage = STAGE_C if survival >= args.hold_until_survival else STAGE_HOLD
+        label = f"{extra_stage['name']}plus{extra_index}"
         run_dir, ckpt = _train_stage(
-            stage=STAGE_C,
+            stage=extra_stage,
             label=label,
             iterations=int(args.extra_chunk),
             load_run=load_run,
