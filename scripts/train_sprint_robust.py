@@ -24,6 +24,18 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[1]
 LOG_ROOT = REPO_ROOT / "logs" / "rsl_rl_ppo" / "MicroduckSprintFlat"
 RESULTS_PATH = REPO_ROOT / "results" / "sprint_robust.jsonl"
+ORIGINAL_REWARD_OVERRIDES = (
+    "reward.spawn_progress=null",
+    "reward.heading_abs=null",
+    "reward.forward_progress.func=microduck_rl_unilab.tasks.microduck.sprint_terms.running_forward_progress",
+    "reward.forward_progress.weight=5.0",
+    "reward.heading_hold.weight=1.5",
+    "reward.heading_hold.params.std=0.4",
+    "reward.planar_drift.weight=-0.05",
+    "reward.tracking_ang_vel.weight=0.5",
+    "env.commands.twist.ranges.lin_vel_y=[-0.02,0.02]",
+    "env.commands.twist.ranges.ang_vel_z=[-0.05,0.05]",
+)
 STAGE_C = {
     "name": "C",
     "iterations": 200,
@@ -135,6 +147,8 @@ def _train_stage(
     checkpoint: str,
     num_envs: int,
     known_runs: set[Path],
+    extra_overrides: list[str],
+    algo_log_name: str,
 ) -> tuple[Path, Path]:
     print(f"=== robust stage {label} ===", flush=True)
     before = {path.resolve() for path in known_runs}
@@ -154,8 +168,11 @@ def _train_stage(
             f"algo.num_envs={num_envs}",
             f"algo.load_run={load_run}",
             f"algo.checkpoint={checkpoint}",
+            f"algo.algo_log_name={algo_log_name}",
+            "training.task_name=MicroduckSprintFlat",
             "training.no_play=true",
             *_stage_overrides(stage, iterations=iterations),
+            *extra_overrides,
         ]
     )
     created = [
@@ -234,7 +251,27 @@ def main() -> None:
     parser.add_argument("--hold-until-survival", type=float, default=0.94)
     parser.add_argument("--min-speed", type=float, default=1.55)
     parser.add_argument("--final-stress", action="store_true")
+    parser.add_argument(
+        "--algo-log-name",
+        default="rsl_rl_ppo",
+        help="Separates log trees so heading and original recipes can train in parallel.",
+    )
+    parser.add_argument(
+        "--results-jsonl",
+        default=str(REPO_ROOT / "results" / "sprint_robust.jsonl"),
+    )
+    parser.add_argument(
+        "--recipe",
+        choices=("heading", "original"),
+        default="heading",
+        help="heading keeps spawn-aligned rewards; original restores the speed-discovery robustify terms.",
+    )
     args = parser.parse_args()
+
+    global LOG_ROOT, RESULTS_PATH
+    LOG_ROOT = REPO_ROOT / "logs" / args.algo_log_name / "MicroduckSprintFlat"
+    RESULTS_PATH = Path(args.results_jsonl)
+    extra_overrides = list(ORIGINAL_REWARD_OVERRIDES) if args.recipe == "original" else []
 
     wanted = {name.strip().upper() for name in args.stages.split(",") if name.strip()}
     load_run = args.load_run
@@ -263,6 +300,8 @@ def main() -> None:
             checkpoint=checkpoint,
             num_envs=args.num_envs,
             known_runs=known_runs,
+            extra_overrides=extra_overrides,
+            algo_log_name=args.algo_log_name,
         )
         known_runs.add(run_dir)
         load_run = run_dir.name
@@ -315,6 +354,8 @@ def main() -> None:
             checkpoint=checkpoint,
             num_envs=args.num_envs,
             known_runs=known_runs,
+            extra_overrides=extra_overrides,
+            algo_log_name=args.algo_log_name,
         )
         known_runs.add(run_dir)
         load_run = run_dir.name
