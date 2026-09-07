@@ -53,20 +53,28 @@ env:
     action_rate_weight: null
 
 reward:
-  # Body-frame progress lets a veering gait keep full speed reward. Align
-  # progress to spawn heading so yaw error cuts the dominant term.
+  # Keep body-frame speed so the gait cannot collapse to a standing turn-in-place.
+  # Spawn-aligned progress still pays extra for moving along the start heading.
   forward_progress:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.running_forward_progress
+    weight: 4.0
+    params:
+      speed_cap: 2.4
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+  spawn_progress:
     func: microduck_rl_unilab.tasks.microduck.sprint_terms.running_spawn_progress
-    weight: 5.0
+    weight: 3.0
     params:
       speed_cap: 2.4
       asset_cfg:
         _target_: unilab.managers.SceneEntityCfg
         name: robot
   planar_drift:
-    weight: -0.25
+    weight: -0.15
   heading_hold:
-    weight: 3.0
+    weight: 2.0
     params:
       std: 0.7
       asset_cfg:
@@ -74,12 +82,12 @@ reward:
         name: robot
   heading_abs:
     func: microduck_rl_unilab.tasks.microduck.sprint_terms.heading_abs_cost
-    weight: -1.2
+    weight: -0.4
     params:
       asset_cfg:
         _target_: unilab.managers.SceneEntityCfg
         name: robot
   tracking_ang_vel:
-    weight: 1.0
+    weight: 0.8
   action_rate:
     weight: -0.10

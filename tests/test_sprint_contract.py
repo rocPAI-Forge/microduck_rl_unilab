@@ -117,12 +117,15 @@ def test_sprint_robust_owner_pins_speed_and_restores_disturbances() -> None:
     assert twist.ranges.ang_vel_z == [-0.02, 0.02]
     assert env_cfg.curriculum["running_speed_range"] is None
     assert env_cfg.curriculum["action_rate_weight"] is None
-    assert env_cfg.rewards["forward_progress"].func is running_spawn_progress
-    assert env_cfg.rewards["planar_drift"].weight == pytest.approx(-0.25)
-    assert env_cfg.rewards["heading_hold"].weight == pytest.approx(3.0)
+    assert env_cfg.rewards["forward_progress"].func is running_forward_progress
+    assert env_cfg.rewards["forward_progress"].weight == pytest.approx(4.0)
+    assert env_cfg.rewards["spawn_progress"].func is running_spawn_progress
+    assert env_cfg.rewards["spawn_progress"].weight == pytest.approx(3.0)
+    assert env_cfg.rewards["planar_drift"].weight == pytest.approx(-0.15)
+    assert env_cfg.rewards["heading_hold"].weight == pytest.approx(2.0)
     assert env_cfg.rewards["heading_abs"].func is heading_abs_cost
-    assert env_cfg.rewards["heading_abs"].weight == pytest.approx(-1.2)
-    assert env_cfg.rewards["tracking_ang_vel"].weight == pytest.approx(1.0)
+    assert env_cfg.rewards["heading_abs"].weight == pytest.approx(-0.4)
+    assert env_cfg.rewards["tracking_ang_vel"].weight == pytest.approx(0.8)
     assert env_cfg.rewards["action_rate"].weight == pytest.approx(-0.10)
     push = env_cfg.events["push_robot"]
     assert push is not None

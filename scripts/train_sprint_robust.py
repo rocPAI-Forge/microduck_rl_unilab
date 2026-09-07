@@ -232,6 +232,7 @@ def main() -> None:
     parser.add_argument("--extra-chunk", type=int, default=400)
     parser.add_argument("--target-survival", type=float, default=0.988)
     parser.add_argument("--hold-until-survival", type=float, default=0.94)
+    parser.add_argument("--min-speed", type=float, default=1.55)
     parser.add_argument("--final-stress", action="store_true")
     args = parser.parse_args()
 
@@ -282,17 +283,29 @@ def main() -> None:
         if latest_payload is not None and latest_payload.get("survival_fraction") is not None
         else 0.0
     )
+    speed = 0.0
+    if latest_payload is not None:
+        speed_block = latest_payload.get("body_forward_speed_m_s") or {}
+        if speed_block.get("mean") is not None:
+            speed = float(speed_block["mean"])
     if survival <= 0.0 and args.from_best_jsonl:
         best = _best_nominal()
         if best is not None:
             survival = float(best["survival_fraction"])
+            speed_block = best.get("body_forward_speed_m_s") or {}
+            if speed_block.get("mean") is not None:
+                speed = float(speed_block["mean"])
     while (
         args.budget_hours > 0.0
         and time.time() + 25.0 * 60.0 < deadline
-        and survival < args.target_survival
+        and (survival < args.target_survival or speed < args.min_speed)
     ):
         extra_index += 1
-        extra_stage = STAGE_C if survival >= args.hold_until_survival else STAGE_HOLD
+        extra_stage = (
+            STAGE_C
+            if survival >= args.hold_until_survival and speed >= args.min_speed
+            else STAGE_HOLD
+        )
         label = f"{extra_stage['name']}plus{extra_index}"
         run_dir, ckpt = _train_stage(
             stage=extra_stage,
@@ -316,6 +329,8 @@ def main() -> None:
             stress=False,
         )
         survival = float(latest_payload["survival_fraction"])
+        speed_block = latest_payload.get("body_forward_speed_m_s") or {}
+        speed = float(speed_block["mean"] or 0.0)
 
     if args.final_stress and not args.skip_eval:
         run_dir = LOG_ROOT / load_run
