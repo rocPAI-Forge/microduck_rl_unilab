@@ -142,12 +142,12 @@ class heading_abs_cost(ManagerTermBase):
 
 
 class head_facing_hold(ManagerTermBase):
-    """Keep the face pointed body-forward; extra neck/head pitch is allowed.
+    """Keep the head in the sagittal plane; pitch nod is free.
 
-    The home keyframe pitches neck/head about +20°. Sprint playback extends
-    further by moving those joints *negative* of home; set
-    ``forward_pitch_sign=-1`` so that direction is free up to ``extra_slack``.
-    The opposite pitch, yaw, and roll are penalized.
+    ``neck_pitch`` / ``head_pitch`` may look up or down so the bird can reach
+    forward and balance. ``head_yaw`` and ``head_roll`` stay centered so the
+    face does not turn or tilt left/right. Pitch-related params are accepted
+    for Hydra merge compatibility and ignored.
     """
 
     def __init__(self, cfg: ManagerTermBaseCfg, env: ManagerBasedRlEnv):
@@ -207,13 +207,8 @@ class head_facing_hold(ManagerTermBase):
         actual = self._entity.data.joint_pos[:, self._joint_ids]
         default = self._entity.data.default_joint_pos[:, self._joint_ids]
         error = actual - default - command
-        extension = self._forward_sign * error[:, :2]
-        tuck = np.maximum(-extension, 0.0)
-        over = np.maximum(extension - self._extra_slack, 0.0)
         terms = np.concatenate(
             [
-                np.exp(-np.square(tuck / self._pitch_tuck_std)),
-                np.exp(-np.square(over / self._extra_std)),
                 np.exp(-np.square(error[:, 2:3] / self._yaw_std)),
                 np.exp(-np.square(error[:, 3:4] / self._roll_std)),
             ],

@@ -131,11 +131,15 @@ def test_sprint_robust_owner_pins_speed_and_restores_disturbances() -> None:
     assert env_cfg.rewards["heading_abs"].weight == pytest.approx(-0.2)
     assert env_cfg.rewards["tracking_ang_vel"].weight == pytest.approx(0.8)
     assert env_cfg.rewards["head_pose_tracking"].func is head_facing_hold
-    assert env_cfg.rewards["head_pose_tracking"].weight == pytest.approx(2.5)
-    assert env_cfg.rewards["head_pose_tracking"].params["extra_slack"] == pytest.approx(0.45)
-    assert env_cfg.rewards["head_pose_tracking"].params["forward_pitch_sign"] == pytest.approx(-1.0)
+    assert env_cfg.rewards["head_pose_tracking"].weight == pytest.approx(3.5)
+    assert env_cfg.rewards["head_pose_tracking"].params["yaw_std"] == pytest.approx(0.08)
+    assert env_cfg.rewards["head_pose_tracking"].params["roll_std"] == pytest.approx(0.08)
     assert env_cfg.rewards["head_pose_bias"].weight == pytest.approx(0.0)
-    assert env_cfg.rewards["head_joint_vel"].weight == pytest.approx(-0.005)
+    assert env_cfg.rewards["head_joint_vel"].weight == pytest.approx(-0.02)
+    assert env_cfg.rewards["head_joint_vel"].params["asset_cfg"].joint_names == [
+        "head_yaw",
+        "head_roll",
+    ]
     assert env_cfg.rewards["action_rate"].weight == pytest.approx(-0.10)
     push = env_cfg.events["push_robot"]
     assert push is not None
@@ -236,14 +240,15 @@ def test_spawn_aligned_progress_penalizes_world_yaw() -> None:
     np.testing.assert_allclose(abs_term(env), [0.4, 0.2, 0.3], atol=1e-6)
 
 
-def test_head_facing_hold_allows_forward_pitch_and_penalizes_yaw() -> None:
-    default = np.zeros((4, 4), dtype=np.float32)
+def test_head_facing_hold_allows_pitch_and_penalizes_yaw_roll() -> None:
+    default = np.zeros((5, 4), dtype=np.float32)
     actual = np.asarray(
         [
             [0.0, 0.0, 0.0, 0.0],
-            [0.3, 0.3, 0.0, 0.0],
-            [-0.3, -0.3, 0.0, 0.0],
+            [0.4, -0.5, 0.0, 0.0],
+            [-0.4, 0.5, 0.0, 0.0],
             [0.0, 0.0, 0.4, 0.0],
+            [0.0, 0.0, 0.0, 0.4],
         ],
         dtype=np.float32,
     )
@@ -254,10 +259,10 @@ def test_head_facing_hold_allows_forward_pitch_and_penalizes_yaw() -> None:
     env = cast(
         ManagerBasedRlEnv,
         SimpleNamespace(
-            num_envs=4,
+            num_envs=5,
             scene={"robot": entity},
-            command_manager=SimpleNamespace(get_command=lambda name: np.zeros((4, 4), dtype=np.float32)),
-            episode_length_buf=np.ones(4, dtype=np.int64),
+            command_manager=SimpleNamespace(get_command=lambda name: np.zeros((5, 4), dtype=np.float32)),
+            episode_length_buf=np.ones(5, dtype=np.int64),
         ),
     )
     term = head_facing_hold(
@@ -274,8 +279,9 @@ def test_head_facing_hold_allows_forward_pitch_and_penalizes_yaw() -> None:
     )
     values = term(env)
     assert values[1] == pytest.approx(values[0])
-    assert values[2] < values[0] - 0.05
-    assert values[3] < values[0] - 0.1
+    assert values[2] == pytest.approx(values[0])
+    assert values[3] < values[0] - 0.2
+    assert values[4] < values[0] - 0.2
 
 
 def test_running_speed_curriculum_mutates_only_forward_band() -> None:
