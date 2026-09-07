@@ -27,12 +27,17 @@ RESULTS_PATH = REPO_ROOT / "results" / "sprint_robust.jsonl"
 ORIGINAL_REWARD_OVERRIDES = (
     "reward.spawn_progress=null",
     "reward.heading_abs=null",
+    "reward.head_joint_vel=null",
     "reward.forward_progress.func=microduck_rl_unilab.tasks.microduck.sprint_terms.running_forward_progress",
     "reward.forward_progress.weight=5.0",
     "reward.heading_hold.weight=1.5",
     "reward.heading_hold.params.std=0.4",
     "reward.planar_drift.weight=-0.05",
     "reward.tracking_ang_vel.weight=0.5",
+    "reward.head_pose_tracking.weight=0.0",
+    "reward.head_pose_bias.weight=0.0",
+    "env.commands.head_pose.ranges=[[-0.05,0.05],[-0.05,0.05],[-0.07,0.07],[-0.015,0.015]]",
+    "env.commands.head_pose.resampling_time_range=[2.0,5.0]",
     "env.commands.twist.ranges.lin_vel_y=[-0.02,0.02]",
     "env.commands.twist.ranges.ang_vel_z=[-0.05,0.05]",
 )
@@ -224,6 +229,8 @@ def _eval_checkpoint(
         "survival_fraction": payload.get("survival_fraction"),
         "body_forward_speed_m_s": payload.get("body_forward_speed_m_s"),
         "mean_absolute_heading_error_deg": payload.get("mean_absolute_heading_error_deg"),
+        "head_home_error_deg": payload.get("head_home_error_deg"),
+        "head_joint_velocity_rms_rad_s": payload.get("head_joint_velocity_rms_rad_s"),
         "eval_path": str(eval_out),
     }
     _append_result(record)
@@ -266,12 +273,19 @@ def main() -> None:
         default="heading",
         help="heading keeps spawn-aligned rewards; original restores the speed-discovery robustify terms.",
     )
+    parser.add_argument(
+        "--override",
+        action="append",
+        default=[],
+        help="Additional Hydra override forwarded to every training chunk.",
+    )
     args = parser.parse_args()
 
     global LOG_ROOT, RESULTS_PATH
     LOG_ROOT = REPO_ROOT / "logs" / args.algo_log_name / "MicroduckSprintFlat"
     RESULTS_PATH = Path(args.results_jsonl)
     extra_overrides = list(ORIGINAL_REWARD_OVERRIDES) if args.recipe == "original" else []
+    extra_overrides.extend(args.override)
 
     wanted = {name.strip().upper() for name in args.stages.split(",") if name.strip()}
     load_run = args.load_run

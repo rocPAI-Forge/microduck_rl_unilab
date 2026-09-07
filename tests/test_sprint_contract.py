@@ -115,17 +115,23 @@ def test_sprint_robust_owner_pins_speed_and_restores_disturbances() -> None:
     assert twist.ranges.lin_vel_x == [1.65, 2.2]
     assert twist.ranges.lin_vel_y == [-0.01, 0.01]
     assert twist.ranges.ang_vel_z == [-0.02, 0.02]
+    head_pose = env_cfg.commands["head_pose"]
+    assert head_pose.ranges == [[0.0, 0.0]] * 4
+    assert head_pose.resampling_time_range == [12.0, 12.0]
     assert env_cfg.curriculum["running_speed_range"] is None
     assert env_cfg.curriculum["action_rate_weight"] is None
     assert env_cfg.rewards["forward_progress"].func is running_forward_progress
-    assert env_cfg.rewards["forward_progress"].weight == pytest.approx(4.0)
+    assert env_cfg.rewards["forward_progress"].weight == pytest.approx(5.0)
     assert env_cfg.rewards["spawn_progress"].func is running_spawn_progress
-    assert env_cfg.rewards["spawn_progress"].weight == pytest.approx(3.0)
-    assert env_cfg.rewards["planar_drift"].weight == pytest.approx(-0.15)
+    assert env_cfg.rewards["spawn_progress"].weight == pytest.approx(1.5)
+    assert env_cfg.rewards["planar_drift"].weight == pytest.approx(-0.10)
     assert env_cfg.rewards["heading_hold"].weight == pytest.approx(2.0)
     assert env_cfg.rewards["heading_abs"].func is heading_abs_cost
-    assert env_cfg.rewards["heading_abs"].weight == pytest.approx(-0.4)
+    assert env_cfg.rewards["heading_abs"].weight == pytest.approx(-0.2)
     assert env_cfg.rewards["tracking_ang_vel"].weight == pytest.approx(0.8)
+    assert env_cfg.rewards["head_pose_tracking"].weight == pytest.approx(3.0)
+    assert env_cfg.rewards["head_pose_bias"].weight == pytest.approx(0.8)
+    assert env_cfg.rewards["head_joint_vel"].weight == pytest.approx(-0.015)
     assert env_cfg.rewards["action_rate"].weight == pytest.approx(-0.10)
     push = env_cfg.events["push_robot"]
     assert push is not None

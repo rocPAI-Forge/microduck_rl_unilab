@@ -159,8 +159,14 @@ def evaluate(
         speed_sum = np.zeros(num_envs, dtype=np.float64)
         lateral_sum = np.zeros(num_envs, dtype=np.float64)
         heading_error_sum = np.zeros(num_envs, dtype=np.float64)
+        head_error_sum = np.zeros(num_envs, dtype=np.float64)
+        head_velocity_sum = np.zeros(num_envs, dtype=np.float64)
         sample_count = np.zeros(num_envs, dtype=np.int64)
         heading_ref = np.asarray(robot.data.heading_w).copy()
+        head_ids, _ = robot.find_joints(
+            ["neck_pitch", "head_pitch", "head_yaw", "head_roll"],
+            preserve_order=True,
+        )
 
         for step in range(total_steps):
             with torch.inference_mode():
@@ -178,9 +184,21 @@ def evaluate(
                 continue
             velocity = np.nan_to_num(np.asarray(robot.data.root_link_lin_vel_b))
             heading_error = np.abs(np_wrap_to_pi(np.asarray(robot.data.heading_w) - heading_ref))
+            head_error = np.mean(
+                np.abs(
+                    np.asarray(robot.data.joint_pos)[:, head_ids]
+                    - np.asarray(robot.data.default_joint_pos)[:, head_ids]
+                ),
+                axis=1,
+            )
+            head_velocity = np.sqrt(
+                np.mean(np.square(np.asarray(robot.data.joint_vel)[:, head_ids]), axis=1)
+            )
             speed_sum[alive] += velocity[alive, 0]
             lateral_sum[alive] += np.abs(velocity[alive, 1])
             heading_error_sum[alive] += heading_error[alive]
+            head_error_sum[alive] += head_error[alive]
+            head_velocity_sum[alive] += head_velocity[alive]
             sample_count[alive] += 1
 
         sampled = sample_count > 0
@@ -220,6 +238,16 @@ def evaluate(
                 math.degrees(
                     float(np.mean(heading_error_sum[sampled] / sample_count[sampled]))
                 )
+                if np.any(sampled)
+                else None
+            ),
+            "head_home_error_deg": (
+                math.degrees(float(np.mean(head_error_sum[sampled] / sample_count[sampled])))
+                if np.any(sampled)
+                else None
+            ),
+            "head_joint_velocity_rms_rad_s": (
+                float(np.mean(head_velocity_sum[sampled] / sample_count[sampled]))
                 if np.any(sampled)
                 else None
             ),
