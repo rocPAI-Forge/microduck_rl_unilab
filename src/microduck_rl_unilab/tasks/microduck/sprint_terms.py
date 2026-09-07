@@ -78,6 +78,26 @@ def running_planar_drift_cost(
     )
 
 
+def _bind_heading_asset(cfg: ManagerTermBaseCfg, env: ManagerBasedRlEnv, *, label: str):
+    asset_cfg = cfg.params.get("asset_cfg", _DEFAULT_ASSET_CFG)
+    if not isinstance(asset_cfg, SceneEntityCfg):
+        raise TypeError(f"{label} asset_cfg must be SceneEntityCfg")
+    entity = cast("Entity", env.scene[asset_cfg.name])
+    heading_ref = np.asarray(entity.data.heading_w, dtype=get_global_dtype()).copy()
+    return entity, heading_ref
+
+
+def _refresh_heading_ref(
+    env: ManagerBasedRlEnv,
+    entity: "Entity",
+    heading_ref: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    heading = np.asarray(entity.data.heading_w, dtype=get_global_dtype())
+    fresh = env.episode_length_buf <= 1
+    heading_ref[fresh] = heading[fresh]
+    return heading, np_wrap_to_pi(heading - heading_ref)
+
+
 class heading_hold(ManagerTermBase):
     """Reward holding each environment's spawn heading."""
 
@@ -88,14 +108,7 @@ class heading_hold(ManagerTermBase):
         if unexpected:
             raise TypeError(f"heading_hold received unsupported parameters: {sorted(unexpected)}")
         self._std = _positive_real(cfg.params.get("std", 0.4), label="heading_hold std")
-        asset_cfg = cfg.params.get("asset_cfg", _DEFAULT_ASSET_CFG)
-        if not isinstance(asset_cfg, SceneEntityCfg):
-            raise TypeError("heading_hold asset_cfg must be SceneEntityCfg")
-        self._entity = cast("Entity", env.scene[asset_cfg.name])
-        self._heading_ref = np.asarray(
-            self._entity.data.heading_w,
-            dtype=get_global_dtype(),
-        ).copy()
+        self._entity, self._heading_ref = _bind_heading_asset(cfg, env, label="heading_hold")
 
     def reset(self, env_ids: np.ndarray | slice | None) -> None:
         ids = slice(None) if env_ids is None else env_ids
@@ -103,11 +116,65 @@ class heading_hold(ManagerTermBase):
 
     def __call__(self, env: ManagerBasedRlEnv, **params: Any) -> np.ndarray:
         del params
-        heading = np.asarray(self._entity.data.heading_w, dtype=get_global_dtype())
-        fresh = env.episode_length_buf <= 1
-        self._heading_ref[fresh] = heading[fresh]
-        error = np_wrap_to_pi(heading - self._heading_ref)
+        _, error = _refresh_heading_ref(env, self._entity, self._heading_ref)
         return np.asarray(np.exp(-np.square(error) / self._std**2), dtype=get_global_dtype())
+
+
+class heading_abs_cost(ManagerTermBase):
+    """Linear spawn-heading error. Keeps a gradient after the Gaussian bowl dies."""
+
+    def __init__(self, cfg: ManagerTermBaseCfg, env: ManagerBasedRlEnv):
+        super().__init__(env)
+        unexpected = set(cfg.params) - {"asset_cfg"}
+        if unexpected:
+            raise TypeError(f"heading_abs_cost received unsupported parameters: {sorted(unexpected)}")
+        self._entity, self._heading_ref = _bind_heading_asset(cfg, env, label="heading_abs_cost")
+
+    def reset(self, env_ids: np.ndarray | slice | None) -> None:
+        ids = slice(None) if env_ids is None else env_ids
+        self._heading_ref[ids] = self._entity.data.heading_w[ids]
+
+    def __call__(self, env: ManagerBasedRlEnv, **params: Any) -> np.ndarray:
+        del params
+        _, error = _refresh_heading_ref(env, self._entity, self._heading_ref)
+        return np.asarray(np.abs(error), dtype=get_global_dtype())
+
+
+class running_spawn_progress(ManagerTermBase):
+    """Reward capped world-frame speed along each environment's spawn heading."""
+
+    def __init__(self, cfg: ManagerTermBaseCfg, env: ManagerBasedRlEnv):
+        super().__init__(env)
+        allowed = {"speed_cap", "asset_cfg"}
+        unexpected = set(cfg.params) - allowed
+        if unexpected:
+            raise TypeError(
+                f"running_spawn_progress received unsupported parameters: {sorted(unexpected)}"
+            )
+        self._cap = _positive_real(
+            cfg.params.get("speed_cap", 1.2),
+            label="running_spawn_progress speed_cap",
+        )
+        self._entity, self._heading_ref = _bind_heading_asset(
+            cfg, env, label="running_spawn_progress"
+        )
+
+    def reset(self, env_ids: np.ndarray | slice | None) -> None:
+        ids = slice(None) if env_ids is None else env_ids
+        self._heading_ref[ids] = self._entity.data.heading_w[ids]
+
+    def __call__(self, env: ManagerBasedRlEnv, **params: Any) -> np.ndarray:
+        del params
+        heading, _ = _refresh_heading_ref(env, self._entity, self._heading_ref)
+        velocity = np.nan_to_num(self._entity.data.root_link_lin_vel_w, nan=0.0)
+        along_heading = velocity[:, 0] * np.cos(self._heading_ref) + velocity[:, 1] * np.sin(
+            self._heading_ref
+        )
+        del heading
+        return np.asarray(
+            np.clip(along_heading, 0.0, self._cap) / self._cap,
+            dtype=get_global_dtype(),
+        )
 
 
 class running_command_ranges_curriculum:
@@ -172,8 +239,10 @@ class running_command_ranges_curriculum:
 
 
 __all__ = [
+    "heading_abs_cost",
     "heading_hold",
     "running_command_ranges_curriculum",
     "running_forward_progress",
     "running_planar_drift_cost",
+    "running_spawn_progress",
 ]

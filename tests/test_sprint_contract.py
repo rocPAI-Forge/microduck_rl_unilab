@@ -20,10 +20,12 @@ from unilab.managers import CurriculumTermCfg, RewardTermCfg, SceneEntityCfg
 from unilab.managers._types import ManagerBasedRlEnv
 
 from microduck_rl_unilab.tasks.microduck.sprint_terms import (
+    heading_abs_cost,
     heading_hold,
     running_command_ranges_curriculum,
     running_forward_progress,
     running_planar_drift_cost,
+    running_spawn_progress,
 )
 from microduck_rl_unilab.tasks.microduck.manager_terms import MicroduckVelocityCommandCfg
 from microduck_rl_unilab.tasks.microduck.deploy_contract import (
@@ -111,8 +113,16 @@ def test_sprint_robust_owner_pins_speed_and_restores_disturbances() -> None:
     assert cfg.algo.max_iterations == 100
     twist = env_cfg.commands["twist"]
     assert twist.ranges.lin_vel_x == [1.65, 2.2]
+    assert twist.ranges.lin_vel_y == [-0.01, 0.01]
+    assert twist.ranges.ang_vel_z == [-0.02, 0.02]
     assert env_cfg.curriculum["running_speed_range"] is None
     assert env_cfg.curriculum["action_rate_weight"] is None
+    assert env_cfg.rewards["forward_progress"].func is running_spawn_progress
+    assert env_cfg.rewards["planar_drift"].weight == pytest.approx(-0.25)
+    assert env_cfg.rewards["heading_hold"].weight == pytest.approx(3.0)
+    assert env_cfg.rewards["heading_abs"].func is heading_abs_cost
+    assert env_cfg.rewards["heading_abs"].weight == pytest.approx(-1.2)
+    assert env_cfg.rewards["tracking_ang_vel"].weight == pytest.approx(1.0)
     assert env_cfg.rewards["action_rate"].weight == pytest.approx(-0.10)
     push = env_cfg.events["push_robot"]
     assert push is not None
@@ -138,11 +148,15 @@ class _FakeEntity:
                 [[-1.0, 0.1, 0.0], [0.7, -0.2, 0.0], [3.0, 0.0, 0.0]],
                 dtype=np.float32,
             ),
+            root_link_lin_vel_w=np.asarray(
+                [[1.4, 0.0, 0.0], [0.0, 1.4, 0.0], [0.0, 1.4, 0.0]],
+                dtype=np.float32,
+            ),
             root_link_ang_vel_b=np.asarray(
                 [[0.0, 0.0, 0.2], [0.0, 0.0, -0.1], [0.0, 0.0, 0.0]],
                 dtype=np.float32,
             ),
-            heading_w=np.asarray([0.0, 0.2, np.pi - 0.1], dtype=np.float32),
+            heading_w=np.asarray([0.0, 0.0, 0.5 * np.pi], dtype=np.float32),
         )
 
 
@@ -172,6 +186,7 @@ def test_sprint_rewards_match_reference_math_and_wrap_heading() -> None:
         atol=1e-6,
     )
 
+    cast(Any, env.scene["robot"]).data.heading_w[:] = [0.0, 0.2, np.pi - 0.1]
     term = heading_hold(
         RewardTermCfg(
             func=heading_hold,
@@ -183,6 +198,29 @@ def test_sprint_rewards_match_reference_math_and_wrap_heading() -> None:
     cast(Any, env.scene["robot"]).data.heading_w[:] = [0.4, -0.2, -np.pi + 0.1]
     expected = np.exp(-np.square([0.4, -0.4, 0.2]) / 0.4**2)
     np.testing.assert_allclose(term(env), expected, rtol=1e-5)
+
+
+def test_spawn_aligned_progress_penalizes_world_yaw() -> None:
+    env = _fake_env()
+    spawn = running_spawn_progress(
+        RewardTermCfg(
+            func=running_spawn_progress,
+            weight=1.0,
+            params={"speed_cap": 1.4, "asset_cfg": SceneEntityCfg("robot")},
+        ),
+        env,
+    )
+    np.testing.assert_allclose(spawn(env), [1.0, 0.0, 1.0], atol=1e-6)
+    abs_term = heading_abs_cost(
+        RewardTermCfg(
+            func=heading_abs_cost,
+            weight=-1.0,
+            params={"asset_cfg": SceneEntityCfg("robot")},
+        ),
+        env,
+    )
+    cast(Any, env.scene["robot"]).data.heading_w[:] = [0.4, -0.2, 0.5 * np.pi + 0.3]
+    np.testing.assert_allclose(abs_term(env), [0.4, 0.2, 0.3], atol=1e-6)
 
 
 def test_running_speed_curriculum_mutates_only_forward_band() -> None:

@@ -11,8 +11,8 @@ env:
     twist:
       ranges:
         lin_vel_x: [1.65, 2.2]
-        lin_vel_y: [-0.02, 0.02]
-        ang_vel_z: [-0.05, 0.05]
+        lin_vel_y: [-0.01, 0.01]
+        ang_vel_z: [-0.02, 0.02]
   events:
     push_robot:
       func: unilab.envs.mdp.push_by_setting_velocity
@@ -53,5 +53,33 @@ env:
     action_rate_weight: null
 
 reward:
+  # Body-frame progress lets a veering gait keep full speed reward. Align
+  # progress to spawn heading so yaw error cuts the dominant term.
+  forward_progress:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.running_spawn_progress
+    weight: 5.0
+    params:
+      speed_cap: 2.4
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+  planar_drift:
+    weight: -0.25
+  heading_hold:
+    weight: 3.0
+    params:
+      std: 0.7
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+  heading_abs:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.heading_abs_cost
+    weight: -1.2
+    params:
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+  tracking_ang_vel:
+    weight: 1.0
   action_rate:
     weight: -0.10
