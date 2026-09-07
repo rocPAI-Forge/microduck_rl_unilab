@@ -160,6 +160,9 @@ def evaluate(
         lateral_sum = np.zeros(num_envs, dtype=np.float64)
         heading_error_sum = np.zeros(num_envs, dtype=np.float64)
         head_error_sum = np.zeros(num_envs, dtype=np.float64)
+        head_yaw_sum = np.zeros(num_envs, dtype=np.float64)
+        head_roll_sum = np.zeros(num_envs, dtype=np.float64)
+        head_pitch_delta_sum = np.zeros(num_envs, dtype=np.float64)
         head_velocity_sum = np.zeros(num_envs, dtype=np.float64)
         sample_count = np.zeros(num_envs, dtype=np.int64)
         heading_ref = np.asarray(robot.data.heading_w).copy()
@@ -184,13 +187,11 @@ def evaluate(
                 continue
             velocity = np.nan_to_num(np.asarray(robot.data.root_link_lin_vel_b))
             heading_error = np.abs(np_wrap_to_pi(np.asarray(robot.data.heading_w) - heading_ref))
-            head_error = np.mean(
-                np.abs(
-                    np.asarray(robot.data.joint_pos)[:, head_ids]
-                    - np.asarray(robot.data.default_joint_pos)[:, head_ids]
-                ),
-                axis=1,
+            head_delta = (
+                np.asarray(robot.data.joint_pos)[:, head_ids]
+                - np.asarray(robot.data.default_joint_pos)[:, head_ids]
             )
+            head_error = np.mean(np.abs(head_delta), axis=1)
             head_velocity = np.sqrt(
                 np.mean(np.square(np.asarray(robot.data.joint_vel)[:, head_ids]), axis=1)
             )
@@ -198,6 +199,9 @@ def evaluate(
             lateral_sum[alive] += np.abs(velocity[alive, 1])
             heading_error_sum[alive] += heading_error[alive]
             head_error_sum[alive] += head_error[alive]
+            head_yaw_sum[alive] += np.abs(head_delta[alive, 2])
+            head_roll_sum[alive] += np.abs(head_delta[alive, 3])
+            head_pitch_delta_sum[alive] += np.mean(head_delta[alive, :2], axis=1)
             head_velocity_sum[alive] += head_velocity[alive]
             sample_count[alive] += 1
 
@@ -243,6 +247,23 @@ def evaluate(
             ),
             "head_home_error_deg": (
                 math.degrees(float(np.mean(head_error_sum[sampled] / sample_count[sampled])))
+                if np.any(sampled)
+                else None
+            ),
+            "head_yaw_abs_deg": (
+                math.degrees(float(np.mean(head_yaw_sum[sampled] / sample_count[sampled])))
+                if np.any(sampled)
+                else None
+            ),
+            "head_roll_abs_deg": (
+                math.degrees(float(np.mean(head_roll_sum[sampled] / sample_count[sampled])))
+                if np.any(sampled)
+                else None
+            ),
+            "head_forward_pitch_delta_deg": (
+                math.degrees(
+                    float(np.mean(head_pitch_delta_sum[sampled] / sample_count[sampled]))
+                )
                 if np.any(sampled)
                 else None
             ),

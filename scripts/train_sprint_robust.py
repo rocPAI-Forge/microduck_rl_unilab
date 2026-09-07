@@ -230,6 +230,9 @@ def _eval_checkpoint(
         "body_forward_speed_m_s": payload.get("body_forward_speed_m_s"),
         "mean_absolute_heading_error_deg": payload.get("mean_absolute_heading_error_deg"),
         "head_home_error_deg": payload.get("head_home_error_deg"),
+        "head_yaw_abs_deg": payload.get("head_yaw_abs_deg"),
+        "head_roll_abs_deg": payload.get("head_roll_abs_deg"),
+        "head_forward_pitch_delta_deg": payload.get("head_forward_pitch_delta_deg"),
         "head_joint_velocity_rms_rad_s": payload.get("head_joint_velocity_rms_rad_s"),
         "eval_path": str(eval_out),
     }

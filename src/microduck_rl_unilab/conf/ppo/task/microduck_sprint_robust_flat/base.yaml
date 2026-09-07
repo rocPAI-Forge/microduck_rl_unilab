@@ -97,18 +97,28 @@ reward:
         name: robot
   tracking_ang_vel:
     weight: 0.8
+  # Face body-forward (tight yaw/roll). Sprint gaits extend pitch *below*
+  # the +20° home keyframe (negative joint delta); that direction is free
+  # up to extra_slack so the bird can reach forward for balance and speed.
   head_pose_tracking:
-    weight: 3.0
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.head_facing_hold
+    weight: 2.5
     params:
       command_name: head_pose
-      std: 0.18
+      std: null
+      yaw_std: 0.15
+      roll_std: 0.12
+      pitch_tuck_std: 0.25
+      extra_slack: 0.45
+      extra_std: 0.35
+      forward_pitch_sign: -1.0
       asset_cfg:
         _target_: unilab.managers.SceneEntityCfg
         name: robot
         joint_names: [neck_pitch, head_pitch, head_yaw, head_roll]
         preserve_order: true
   head_pose_bias:
-    weight: 0.8
+    weight: 0.0
     params:
       command_name: head_pose
       tau_s: 0.5
@@ -119,7 +129,7 @@ reward:
         preserve_order: true
   head_joint_vel:
     func: unilab.envs.mdp.joint_vel_l2
-    weight: -0.015
+    weight: -0.005
     params:
       asset_cfg:
         _target_: unilab.managers.SceneEntityCfg

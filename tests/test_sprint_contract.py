@@ -20,6 +20,7 @@ from unilab.managers import CurriculumTermCfg, RewardTermCfg, SceneEntityCfg
 from unilab.managers._types import ManagerBasedRlEnv
 
 from microduck_rl_unilab.tasks.microduck.sprint_terms import (
+    head_facing_hold,
     heading_abs_cost,
     heading_hold,
     running_command_ranges_curriculum,
@@ -129,9 +130,12 @@ def test_sprint_robust_owner_pins_speed_and_restores_disturbances() -> None:
     assert env_cfg.rewards["heading_abs"].func is heading_abs_cost
     assert env_cfg.rewards["heading_abs"].weight == pytest.approx(-0.2)
     assert env_cfg.rewards["tracking_ang_vel"].weight == pytest.approx(0.8)
-    assert env_cfg.rewards["head_pose_tracking"].weight == pytest.approx(3.0)
-    assert env_cfg.rewards["head_pose_bias"].weight == pytest.approx(0.8)
-    assert env_cfg.rewards["head_joint_vel"].weight == pytest.approx(-0.015)
+    assert env_cfg.rewards["head_pose_tracking"].func is head_facing_hold
+    assert env_cfg.rewards["head_pose_tracking"].weight == pytest.approx(2.5)
+    assert env_cfg.rewards["head_pose_tracking"].params["extra_slack"] == pytest.approx(0.45)
+    assert env_cfg.rewards["head_pose_tracking"].params["forward_pitch_sign"] == pytest.approx(-1.0)
+    assert env_cfg.rewards["head_pose_bias"].weight == pytest.approx(0.0)
+    assert env_cfg.rewards["head_joint_vel"].weight == pytest.approx(-0.005)
     assert env_cfg.rewards["action_rate"].weight == pytest.approx(-0.10)
     push = env_cfg.events["push_robot"]
     assert push is not None
@@ -230,6 +234,48 @@ def test_spawn_aligned_progress_penalizes_world_yaw() -> None:
     )
     cast(Any, env.scene["robot"]).data.heading_w[:] = [0.4, -0.2, 0.5 * np.pi + 0.3]
     np.testing.assert_allclose(abs_term(env), [0.4, 0.2, 0.3], atol=1e-6)
+
+
+def test_head_facing_hold_allows_forward_pitch_and_penalizes_yaw() -> None:
+    default = np.zeros((4, 4), dtype=np.float32)
+    actual = np.asarray(
+        [
+            [0.0, 0.0, 0.0, 0.0],
+            [0.3, 0.3, 0.0, 0.0],
+            [-0.3, -0.3, 0.0, 0.0],
+            [0.0, 0.0, 0.4, 0.0],
+        ],
+        dtype=np.float32,
+    )
+    entity = SimpleNamespace(
+        num_joints=4,
+        data=SimpleNamespace(joint_pos=actual, default_joint_pos=default),
+    )
+    env = cast(
+        ManagerBasedRlEnv,
+        SimpleNamespace(
+            num_envs=4,
+            scene={"robot": entity},
+            command_manager=SimpleNamespace(get_command=lambda name: np.zeros((4, 4), dtype=np.float32)),
+            episode_length_buf=np.ones(4, dtype=np.int64),
+        ),
+    )
+    term = head_facing_hold(
+        RewardTermCfg(
+            func=head_facing_hold,
+            weight=1.0,
+            params={
+                "command_name": "head_pose",
+                "extra_slack": 0.45,
+                "asset_cfg": SceneEntityCfg("robot"),
+            },
+        ),
+        env,
+    )
+    values = term(env)
+    assert values[1] == pytest.approx(values[0])
+    assert values[2] < values[0] - 0.05
+    assert values[3] < values[0] - 0.1
 
 
 def test_running_speed_curriculum_mutates_only_forward_band() -> None:

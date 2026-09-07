@@ -12,6 +12,7 @@ from unilab.dtype_config import get_global_dtype
 from unilab.envs.mdp import UniformVelocityCommandCfg
 from unilab.managers import ManagerTermBase, ManagerTermBaseCfg, SceneEntityCfg
 from unilab.utils.rotation import np_wrap_to_pi
+from microduck_rl_unilab.tasks.microduck.manager_terms import _asset_selection, _command
 
 if TYPE_CHECKING:
     from unilab.base.entity import Entity
@@ -140,6 +141,87 @@ class heading_abs_cost(ManagerTermBase):
         return np.asarray(np.abs(error), dtype=get_global_dtype())
 
 
+class head_facing_hold(ManagerTermBase):
+    """Keep the face pointed body-forward; extra neck/head pitch is allowed.
+
+    The home keyframe pitches neck/head about +20°. Sprint playback extends
+    further by moving those joints *negative* of home; set
+    ``forward_pitch_sign=-1`` so that direction is free up to ``extra_slack``.
+    The opposite pitch, yaw, and roll are penalized.
+    """
+
+    def __init__(self, cfg: ManagerTermBaseCfg, env: ManagerBasedRlEnv):
+        super().__init__(env)
+        allowed = {
+            "asset_cfg",
+            "command_name",
+            "yaw_std",
+            "roll_std",
+            "pitch_tuck_std",
+            "extra_slack",
+            "extra_std",
+            "forward_pitch_sign",
+        }
+        unexpected = {
+            key for key in (set(cfg.params) - allowed) if cfg.params.get(key) is not None
+        }
+        if unexpected:
+            raise TypeError(f"head_facing_hold received unsupported parameters: {sorted(unexpected)}")
+        self._entity, self._joint_ids = _asset_selection(cfg, env, term="head_facing_hold")
+        if self._joint_ids.size != 4:
+            raise ValueError(
+                "head_facing_hold expects [neck_pitch, head_pitch, head_yaw, head_roll]"
+            )
+        command_name = cfg.params.get("command_name")
+        if not isinstance(command_name, str) or not command_name:
+            raise ValueError("head_facing_hold command_name must be a non-empty string")
+        self._command_name = command_name
+        self._yaw_std = _positive_real(cfg.params.get("yaw_std", 0.15), label="head_facing_hold yaw_std")
+        self._roll_std = _positive_real(
+            cfg.params.get("roll_std", 0.12), label="head_facing_hold roll_std"
+        )
+        self._pitch_tuck_std = _positive_real(
+            cfg.params.get("pitch_tuck_std", 0.25),
+            label="head_facing_hold pitch_tuck_std",
+        )
+        self._extra_slack = float(cfg.params.get("extra_slack", 0.45))
+        if not math.isfinite(self._extra_slack) or self._extra_slack < 0.0:
+            raise ValueError("head_facing_hold extra_slack must be finite and >= 0")
+        self._extra_std = _positive_real(
+            cfg.params.get("extra_std", 0.35), label="head_facing_hold extra_std"
+        )
+        sign = cfg.params.get("forward_pitch_sign", 1.0)
+        if isinstance(sign, bool) or not isinstance(sign, Real):
+            raise TypeError("head_facing_hold forward_pitch_sign must be a real number")
+        self._forward_sign = float(sign)
+        if self._forward_sign not in (-1.0, 1.0):
+            raise ValueError("head_facing_hold forward_pitch_sign must be +1 or -1")
+
+    def __call__(self, env: ManagerBasedRlEnv, **params: Any) -> np.ndarray:
+        del params
+        command = _command(env, "head_facing_hold", self._command_name)
+        if command.shape[1] != 4:
+            raise ValueError(
+                f"head_facing_hold command must have width 4, received {command.shape}"
+            )
+        actual = self._entity.data.joint_pos[:, self._joint_ids]
+        default = self._entity.data.default_joint_pos[:, self._joint_ids]
+        error = actual - default - command
+        extension = self._forward_sign * error[:, :2]
+        tuck = np.maximum(-extension, 0.0)
+        over = np.maximum(extension - self._extra_slack, 0.0)
+        terms = np.concatenate(
+            [
+                np.exp(-np.square(tuck / self._pitch_tuck_std)),
+                np.exp(-np.square(over / self._extra_std)),
+                np.exp(-np.square(error[:, 2:3] / self._yaw_std)),
+                np.exp(-np.square(error[:, 3:4] / self._roll_std)),
+            ],
+            axis=1,
+        )
+        return np.asarray(np.mean(terms, axis=1), dtype=get_global_dtype())
+
+
 class running_spawn_progress(ManagerTermBase):
     """Reward capped world-frame speed along each environment's spawn heading."""
 
@@ -239,6 +321,7 @@ class running_command_ranges_curriculum:
 
 
 __all__ = [
+    "head_facing_hold",
     "heading_abs_cost",
     "heading_hold",
     "running_command_ranges_curriculum",
