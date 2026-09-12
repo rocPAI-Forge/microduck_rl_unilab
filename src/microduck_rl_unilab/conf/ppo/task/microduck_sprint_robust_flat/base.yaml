@@ -11,17 +11,8 @@ env:
     twist:
       ranges:
         lin_vel_x: [1.65, 2.2]
-        lin_vel_y: [-0.01, 0.01]
-        ang_vel_z: [-0.02, 0.02]
-    # Zero offset means the task-level home keyframe: neck/head pitch extend
-    # forward while yaw and roll remain centered.
-    head_pose:
-      resampling_time_range: [12.0, 12.0]
-      ranges:
-        - [0.0, 0.0]
-        - [0.0, 0.0]
-        - [0.0, 0.0]
-        - [0.0, 0.0]
+        lin_vel_y: [-0.02, 0.02]
+        ang_vel_z: [-0.05, 0.05]
   events:
     push_robot:
       func: unilab.envs.mdp.push_by_setting_velocity
@@ -62,87 +53,5 @@ env:
     action_rate_weight: null
 
 reward:
-  # Preserve the fast gait while making veering reduce total progress reward.
-  forward_progress:
-    func: microduck_rl_unilab.tasks.microduck.sprint_terms.running_forward_progress
-    weight: 5.0
-    params:
-      speed_cap: 2.4
-      asset_cfg:
-        _target_: unilab.managers.SceneEntityCfg
-        name: robot
-  spawn_progress:
-    func: microduck_rl_unilab.tasks.microduck.sprint_terms.running_spawn_progress
-    weight: 1.5
-    params:
-      speed_cap: 2.4
-      asset_cfg:
-        _target_: unilab.managers.SceneEntityCfg
-        name: robot
-  planar_drift:
-    weight: -0.10
-  heading_hold:
-    weight: 2.0
-    params:
-      std: 0.7
-      asset_cfg:
-        _target_: unilab.managers.SceneEntityCfg
-        name: robot
-  heading_abs:
-    func: microduck_rl_unilab.tasks.microduck.sprint_terms.heading_abs_cost
-    weight: -0.2
-    params:
-      asset_cfg:
-        _target_: unilab.managers.SceneEntityCfg
-        name: robot
-  tracking_ang_vel:
-    weight: 0.8
-  # Tighten the head contract for the robustification stages. Shapes and joint
-  # selections are declared once in the speed-discovery owner; only the stage
-  # weights change here.
-  head_upright:
-    weight: 3.0
-  head_pitch_band:
-    weight: -1.5
-  head_facing_abs:
-    weight: -2.0
-  # Sagittal nod is free (look up/down / reach). Yaw and roll stay centered
-  # so the head does not turn left or right.
-  head_pose_tracking:
-    func: microduck_rl_unilab.tasks.microduck.sprint_terms.head_facing_hold
-    weight: 3.5
-    params:
-      command_name: head_pose
-      std: null
-      yaw_std: 0.15
-      roll_std: 0.12
-      pitch_tuck_std: 0.25
-      extra_slack: 0.45
-      extra_std: 0.35
-      forward_pitch_sign: -1.0
-      asset_cfg:
-        _target_: unilab.managers.SceneEntityCfg
-        name: robot
-        joint_names: [neck_pitch, head_pitch, head_yaw, head_roll]
-        preserve_order: true
-  head_pose_bias:
-    weight: 0.0
-    params:
-      command_name: head_pose
-      tau_s: 0.5
-      asset_cfg:
-        _target_: unilab.managers.SceneEntityCfg
-        name: robot
-        joint_names: [neck_pitch, head_pitch, head_yaw, head_roll]
-        preserve_order: true
-  head_joint_vel:
-    func: unilab.envs.mdp.joint_vel_l2
-    weight: -0.02
-    params:
-      asset_cfg:
-        _target_: unilab.managers.SceneEntityCfg
-        name: robot
-        joint_names: [head_yaw, head_roll]
-        preserve_order: true
   action_rate:
     weight: -0.10

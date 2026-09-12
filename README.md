@@ -17,6 +17,9 @@ Pollen Robotics MicroDuck 机器人 RL 训练仓库，**只依赖 UniLab 的包�
 本仓库只携带任务代码（manager terms / recovery terms / BAM action 等）、
 owner 配置和机器人 XML 资产。
 
+本地 `tutorial` 分支额外保留 sprint 训练过程的评测记录（`results/*.jsonl`）以及
+PR3/PR4 发表的三个 example checkpoint，供写训练得失教程使用；不要把该分支整包合进 PR。
+
 ## 任务 × 算法 × 后端矩阵
 
 | task | ppo | sac |
@@ -24,6 +27,10 @@ owner 配置和机器人 XML 资产。
 | `microduck_velocity_flat` | mujoco, mjwarp | mujoco, mjwarp |
 | `microduck_sprint_flat` | mujoco | — |
 | `microduck_sprint_robust_flat` | mujoco | — |
+| `microduck_sprint_gaitfix_flat` | mujoco | — |
+| `microduck_sprint_rollfix_flat` | mujoco | — |
+| `microduck_sprint_steerfix_flat` | mujoco | — |
+| `microduck_sprint_straightfix_flat` | mujoco | — |
 | `microduck_velstand_flat` | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
 | `microduck_ground_pick_flat` | mjwarp | — |
@@ -80,14 +87,34 @@ Sprint 评估口径为 2.20 m/s 前向命令、1 秒预热、10 秒测量：
 
 ```bash
 uv run --no-sync scripts/eval_sprint_speed.py \
-  logs/rsl_rl_ppo/MicroduckSprintFlat/<run>/model_<iteration>.pt
+  examples/sprint_speed_1p68/model_11997.pt
 ```
 
 从已训好的速度策略做三段 robustify（钉住 1.65–2.20 m/s 命令带，逐步加 push / CoM / 倾角）：
 
 ```bash
 uv run --no-sync scripts/train_sprint_robust.py \
-  --load-run <sprint-run> --checkpoint 11749
+  --load-run <sprint-run> --checkpoint <last-iter> --stages B
+```
+
+## 示例 checkpoint
+
+| 示例 | 速度 | 存活 | 头部倒置 | 说明 |
+|---|---|---|---|---|
+| [`examples/sprint_speed_1p68/`](examples/sprint_speed_1p68/) | 1.682 m/s | 89.8% | ~91% | 速度配方。大腿已左右交替；颈部折叠，头大部分时间倒置。 |
+| [`examples/sprint_head_upright/`](examples/sprint_head_upright/) | 1.315 m/s | 97.9% | 0.6% | 同一套交替步态，头顶朝天、面朝前；10 s 航向仍约 42° 左偏。 |
+| [`examples/sprint_straight_long/`](examples/sprint_straight_long/) | ~0.83 m/s 长时 | 300 s 100% | 0 | 续训后闭环节航向 + 横向误差。300 s 平均航向 1.7°，直姿窗口 295 s。 |
+
+每个目录含 `model_*.pt`、可视化、`metrics.json` 和复现命令。
+`model.pt` 约 4.7 MB，直接入 git。
+
+长时直线评测（需要闭环 owner，不要用默认 `microduck_sprint_flat`）：
+
+```bash
+uv run --no-sync scripts/eval_sprint_speed.py \
+  examples/sprint_straight_long/model_19297.pt \
+  --owner microduck_sprint_straightfix_flat/mujoco \
+  --duration 300 --num-envs 128
 ```
 
 ## 测试

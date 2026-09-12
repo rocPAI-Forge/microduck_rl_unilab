@@ -83,7 +83,6 @@ def _score_checkpoint(
     eval_envs: int,
     duration: float,
     gpu: int,
-    owner: str,
 ) -> dict[str, Any] | None:
     battery_out = checkpoint.with_name(f"battery_{checkpoint.stem}.json")
     gait_out = checkpoint.with_name(f"gait_{checkpoint.stem}.json")
@@ -95,7 +94,6 @@ def _score_checkpoint(
             "--warmup", "1",
             "--duration", str(duration),
             "--device", "cuda:0",
-            "--owner", owner,
             "--output", str(battery_out),
         ],
         output=battery_out,
@@ -108,9 +106,8 @@ def _score_checkpoint(
             "uv", "run", "--no-sync", "scripts/diagnose_gait.py", str(checkpoint),
             "--speed", str(speed),
             "--num-envs", "64",
-            "--duration", str(duration),
+            "--duration", "6",
             "--device", "cuda:0",
-            "--owner", owner,
             "--output", str(gait_out),
         ],
         output=gait_out,
@@ -198,7 +195,6 @@ def main() -> None:
     parser.add_argument("--eval-speed", type=float, default=2.2)
     parser.add_argument("--eval-duration", type=float, default=8.0)
     parser.add_argument("--final-eval-envs", type=int, default=512)
-    parser.add_argument("--final-duration", type=float, default=10.0)
     parser.add_argument("--budget-hours", type=float, default=8.0)
     parser.add_argument("--min-speed", type=float, default=1.30)
     parser.add_argument("--min-survival", type=float, default=0.80)
@@ -209,13 +205,7 @@ def main() -> None:
     parser.add_argument("--max-head-yaw", type=float, default=20.0)
     parser.add_argument("--max-head-roll", type=float, default=25.5)
     parser.add_argument("--results-jsonl", default=str(DEFAULT_RESULTS))
-    parser.add_argument(
-        "--eval-owner",
-        default=None,
-        help="Hydra task owner for checkpoint scoring. Defaults to --task/mujoco.",
-    )
     args = parser.parse_args()
-    eval_owner = args.eval_owner or f"{args.task}/mujoco"
 
     results_path = Path(args.results_jsonl)
     results_path.parent.mkdir(parents=True, exist_ok=True)
@@ -239,13 +229,8 @@ def main() -> None:
     print("+", " ".join(command), flush=True)
     started = time.time()
     training_log = REPO_ROOT / "logs" / f"head_repair_{int(started)}.log"
-    trainer_env = dict(os.environ)
-    trainer_env["HIP_VISIBLE_DEVICES"] = "0"
-    trainer_env["CUDA_VISIBLE_DEVICES"] = "0"
     with training_log.open("w", encoding="utf-8") as handle:
-        trainer = subprocess.Popen(
-            command, cwd=REPO_ROOT, stdout=handle, stderr=handle, env=trainer_env
-        )
+        trainer = subprocess.Popen(command, cwd=REPO_ROOT, stdout=handle, stderr=handle)
     print(f"training log: {training_log}", flush=True)
 
     scored: set[Path] = set()
@@ -269,7 +254,6 @@ def main() -> None:
                         eval_envs=args.eval_envs,
                         duration=args.eval_duration,
                         gpu=args.eval_gpu,
-                        owner=eval_owner,
                     )
                     if record is None:
                         continue
@@ -306,9 +290,8 @@ def main() -> None:
         Path(best["checkpoint"]),
         speed=args.eval_speed,
         eval_envs=args.final_eval_envs,
-        duration=args.final_duration,
+        duration=10.0,
         gpu=args.eval_gpu,
-        owner=eval_owner,
     )
     if final is not None:
         final["passes_gate"] = _passes(final, args)
