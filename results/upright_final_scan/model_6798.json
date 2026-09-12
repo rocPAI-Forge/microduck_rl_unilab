@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "task": "MicroduckSprintFlat",
+  "checkpoint": "/home/opea/Repo/microduck_rl_unilab/logs/rsl_rl_ppo_upright/MicroduckSprintFlat/2026-09-09_09-08-27_mujoco/model_6798.pt",
+  "backend": "mujoco",
+  "device": "cuda:0",
+  "seed": 123,
+  "num_envs": 512,
+  "command_forward_m_s": 2.2,
+  "warmup_s": 1.0,
+  "duration_s": 10.0,
+  "fall_tilt_deg": 70.0,
+  "stress": false,
+  "survival_fraction": 0.95703125,
+  "body_forward_speed_m_s": {
+    "mean": 0.7976198837136566,
+    "p10": 0.5640485882021486,
+    "median": 0.8318608929216862,
+    "p90": 0.9694300702691079,
+    "clean_survivor_mean": 0.7929001837987496
+  },
+  "mean_absolute_lateral_speed_m_s": 0.1028698485450745,
+  "mean_absolute_heading_error_deg": 49.876829136149226,
+  "head_home_error_deg": 27.83761807377268,
+  "head_yaw_abs_deg": 11.176348821711265,
+  "head_roll_abs_deg": 10.950728972159979,
+  "head_forward_pitch_delta_deg": -44.5341641581051,
+  "head_joint_velocity_rms_rad_s": 3.8988880188679675,
+  "head_up_tilt_deg": 18.54255458894882,
+  "head_inverted_time_fraction": 0.005363897078576726
+}

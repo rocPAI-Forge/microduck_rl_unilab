@@ -234,6 +234,8 @@ def _eval_checkpoint(
         "head_roll_abs_deg": payload.get("head_roll_abs_deg"),
         "head_forward_pitch_delta_deg": payload.get("head_forward_pitch_delta_deg"),
         "head_joint_velocity_rms_rad_s": payload.get("head_joint_velocity_rms_rad_s"),
+        "head_up_tilt_deg": payload.get("head_up_tilt_deg"),
+        "head_inverted_time_fraction": payload.get("head_inverted_time_fraction"),
         "eval_path": str(eval_out),
     }
     _append_result(record)

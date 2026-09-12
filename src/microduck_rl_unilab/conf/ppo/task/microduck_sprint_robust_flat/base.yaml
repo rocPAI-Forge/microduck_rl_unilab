@@ -97,6 +97,15 @@ reward:
         name: robot
   tracking_ang_vel:
     weight: 0.8
+  # Tighten the head contract for the robustification stages. Shapes and joint
+  # selections are declared once in the speed-discovery owner; only the stage
+  # weights change here.
+  head_upright:
+    weight: 3.0
+  head_pitch_band:
+    weight: -1.5
+  head_facing_abs:
+    weight: -2.0
   # Sagittal nod is free (look up/down / reach). Yaw and roll stay centered
   # so the head does not turn left or right.
   head_pose_tracking:
@@ -105,8 +114,8 @@ reward:
     params:
       command_name: head_pose
       std: null
-      yaw_std: 0.08
-      roll_std: 0.08
+      yaw_std: 0.15
+      roll_std: 0.12
       pitch_tuck_std: 0.25
       extra_slack: 0.45
       extra_std: 0.35

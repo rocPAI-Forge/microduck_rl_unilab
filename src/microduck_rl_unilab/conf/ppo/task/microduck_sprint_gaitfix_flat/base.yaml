@@ -1,0 +1,69 @@
+# @package _global_
+# Head repair owner for the fast alternating gait.
+#
+# The published 1.68 m/s checkpoint already runs the way a biped should: the
+# measured left-minus-right thigh split swings 123 deg peak to peak and
+# changes sign 47% of the time, and the ankles scissor 24 cm past each other.
+# What it does wrong is the head, which spends 91% of the run upside down
+# because the neck folds onto its stop and the face turns 134 deg away.
+#
+# Two earlier attempts bolted the full-strength head contract onto that gait
+# and halved the speed, so here the head weights ramp in over roughly three
+# thousand iterations while the gait guards from the speed-discovery owner
+# hold the leg pattern in place. ``reward_curriculum`` reads
+# ``env.common_step_counter``, which restarts at zero on a resumed run, so the
+# ramp always begins at the resume point.
+defaults:
+  - /task/microduck_sprint_robust_flat/base
+  - _self_
+
+env:
+  curriculum:
+    head_upright_weight:
+      func: unilab.envs.mdp.reward_curriculum
+      params:
+        reward_name: head_upright
+        stages:
+          - {step: 0, weight: 0.5}
+          - {step: 24000, weight: 1.5}
+          - {step: 48000, weight: 2.5}
+          - {step: 72000, weight: 3.0}
+    head_pitch_band_weight:
+      func: unilab.envs.mdp.reward_curriculum
+      params:
+        reward_name: head_pitch_band
+        stages:
+          - {step: 0, weight: -0.1}
+          - {step: 24000, weight: -0.4}
+          - {step: 48000, weight: -1.0}
+          - {step: 72000, weight: -1.5}
+    head_facing_abs_weight:
+      func: unilab.envs.mdp.reward_curriculum
+      params:
+        reward_name: head_facing_abs
+        stages:
+          - {step: 0, weight: -0.2}
+          - {step: 24000, weight: -0.7}
+          - {step: 48000, weight: -1.4}
+          - {step: 72000, weight: -2.0}
+    head_pose_tracking_weight:
+      func: unilab.envs.mdp.reward_curriculum
+      params:
+        reward_name: head_pose_tracking
+        stages:
+          - {step: 0, weight: 1.0}
+          - {step: 24000, weight: 2.0}
+          - {step: 48000, weight: 3.0}
+          - {step: 72000, weight: 3.5}
+
+reward:
+  # Stage 0 of each ramp above. The curriculum reasserts these every step, so
+  # the values here only matter for the first update.
+  head_upright:
+    weight: 0.5
+  head_pitch_band:
+    weight: -0.1
+  head_facing_abs:
+    weight: -0.2
+  head_pose_tracking:
+    weight: 1.0

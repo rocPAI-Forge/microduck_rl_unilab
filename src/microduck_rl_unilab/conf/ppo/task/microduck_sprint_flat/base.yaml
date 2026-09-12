@@ -69,6 +69,24 @@ reward:
       asset_cfg:
         _target_: unilab.managers.SceneEntityCfg
         name: robot
+  # Body-frame forward speed alone also rewards running in circles. Keep a
+  # world-frame component along the spawn heading, plus a linear yaw cost that
+  # still teaches after the Gaussian heading bowl has decayed to zero.
+  spawn_progress:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.running_spawn_progress
+    weight: 1.5
+    params:
+      speed_cap: 2.4
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+  heading_abs:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.heading_abs_cost
+    weight: -0.25
+    params:
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
   tracking_lin_vel:
     weight: 2.0
     params: {std: 0.3872983346207417, command_name: twist}
@@ -92,8 +110,57 @@ reward:
       asset_cfg:
         _target_: unilab.managers.SceneEntityCfg
         name: robot
+  # Human-like run: the thighs must trade places front to back, and the feet
+  # must scissor past each other. Contact-only terms cannot enforce that -- a
+  # policy that parks one thigh forward and one back still takes turns
+  # touching the ground, and it farmed exactly that while driving the shins
+  # and ankles alone. Both terms below score the swing of a left-minus-right
+  # signal around its own running average, so a parked split earns nothing.
+  leg_alternation:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.running_leg_alternation
+    weight: 2.5
+    params:
+      command_name: twist
+      command_threshold: 0.01
+      swing_cap_deg: 50.0
+      tau_s: 0.5
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+        joint_names: [left_hip_pitch, right_hip_pitch]
+        preserve_order: true
+  stride_length:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.running_stride_length
+    weight: 1.5
+    params:
+      command_name: twist
+      command_threshold: 0.01
+      stride_cap: 0.10
+      tau_s: 0.5
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+        body_names: [ankle_left, ankle_right]
+        preserve_order: true
+  alternate_steps:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.running_alternate_steps
+    weight: 1.0
+    params:
+      command_name: twist
+      command_threshold: 0.01
+      flight_value: 0.6
+  contact_symmetry:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.running_contact_symmetry_cost
+    weight: -1.0
+    params:
+      command_name: twist
+      command_threshold: 0.01
+      tau_s: 0.4
   leg_pose:
     weight: 0.15
+  # The published 0.75 keeps the trunk over the feet. Lowering it to buy a
+  # forward bow instead bought a squat: the trunk dropped to 7.7 cm and the
+  # hips froze, because a compressed posture satisfies a lean cheaply.
   upright:
     weight: 0.75
     params:
@@ -120,3 +187,56 @@ reward:
     weight: 0.0
   body_pose_tracking:
     weight: 0.0
+  # Head contract, active from speed discovery onward: the top of the head
+  # stays skyward, the pitch chain stays off its mechanical stops, and yaw /
+  # roll stay centred. Retrofitting these onto an already fast gait failed
+  # twice -- that gait balances on a fully folded neck and only ever traded
+  # speed away -- so the constraint has to shape the gait while it is learned.
+  # The robustification owner raises these weights for the final stages.
+  head_upright:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.head_upright_hold
+    weight: 2.0
+    params:
+      free_tilt_deg: 45.0
+      zero_tilt_deg: 120.0
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+        body_names: [jaw_soft]
+        preserve_order: true
+  head_pitch_band:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.joint_band_cost
+    weight: -1.0
+    params:
+      band_deg: [[-50.0, 45.0], [-50.0, 50.0]]
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+        joint_names: [neck_pitch, head_pitch]
+        preserve_order: true
+  head_facing_abs:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.head_facing_abs_cost
+    weight: -1.0
+    params:
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+        joint_names: [head_yaw, head_roll]
+        preserve_order: true
+  # ``head_roll`` travels +-25 deg and homes at zero, yet every fast checkpoint
+  # parks it hard against the positive stop and holds it there, paying the
+  # linear ``head_facing_abs`` cost the whole run. That is the same trade the
+  # folded neck made: a joint limit used as a balance pivot. A permanently
+  # tilted head mass also biases yaw, which fits the measured one-sided veer.
+  # The band keeps the roll inside usable travel so balance has to come from
+  # somewhere else.
+  head_roll_band:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.joint_band_cost
+    weight: -2.0
+    params:
+      band_deg: [[-10.0, 10.0]]
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+        joint_names: [head_roll]
+        preserve_order: true

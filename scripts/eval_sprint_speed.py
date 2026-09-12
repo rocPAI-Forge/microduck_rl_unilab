@@ -29,13 +29,16 @@ from unilab.base import registry
 from unilab.base.config_adapter import BackendAdapter
 from unilab.cli import package_root
 from unilab.training import algo_config_dict
-from unilab.utils.rotation import np_wrap_to_pi
+from unilab.utils.rotation import np_quat_apply, np_wrap_to_pi
 
 from microduck_rl_unilab.conf_searchpath import register_conf_search_path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CONF_DIR = package_root() / "conf" / "ppo"
+# Head body plus its local "top of the head" axis, measured at the home keyframe.
+HEAD_BODY = "jaw_soft"
+HEAD_UP_AXIS_B = np.array([[1.0, 0.0, 0.0]])
 
 
 def _compose_owner(
@@ -44,14 +47,20 @@ def _compose_owner(
     duration_s: float,
     seed: int,
     stress: bool = False,
+    owner: str | None = None,
+    heading_stiffness: float | None = None,
+    heading_yaw_limit: float | None = None,
+    cross_track_stiffness: float | None = None,
 ) -> Any:
     register_conf_search_path()
     GlobalHydra.instance().clear()
-    owner = (
-        "microduck_sprint_robust_flat/mujoco" if stress else "microduck_sprint_flat/mujoco"
+    selected_owner = owner or (
+        "microduck_sprint_robust_flat/mujoco"
+        if stress
+        else "microduck_sprint_flat/mujoco"
     )
     with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
-        cfg = compose("config", overrides=[f"task={owner}"])
+        cfg = compose("config", overrides=[f"task={selected_owner}"])
     with open_dict(cfg):
         cfg.algo.seed = seed
         cfg.env.max_episode_seconds = duration_s + 1.0
@@ -59,6 +68,12 @@ def _compose_owner(
         twist.ranges.lin_vel_x = [speed, speed]
         twist.ranges.lin_vel_y = [0.0, 0.0]
         twist.ranges.ang_vel_z = [0.0, 0.0]
+        if heading_stiffness is not None:
+            twist.spawn_heading_stiffness = heading_stiffness
+        if heading_yaw_limit is not None:
+            twist.spawn_heading_yaw_rate_limit = heading_yaw_limit
+        if cross_track_stiffness is not None:
+            twist.spawn_cross_track_stiffness = cross_track_stiffness
         twist.rel_standing_envs = 0.0
         twist.rel_forward_envs = 0.0
         twist.turn_in_place_fraction = 0.0
@@ -102,6 +117,10 @@ def evaluate(
     seed: int = 123,
     device: str | None = None,
     stress: bool = False,
+    owner: str | None = None,
+    heading_stiffness: float | None = None,
+    heading_yaw_limit: float | None = None,
+    cross_track_stiffness: float | None = None,
 ) -> dict[str, Any]:
     if not checkpoint.is_file():
         raise FileNotFoundError(f"checkpoint not found: {checkpoint}")
@@ -120,6 +139,10 @@ def evaluate(
         duration_s=warmup_s + duration_s,
         seed=seed,
         stress=stress,
+        owner=owner,
+        heading_stiffness=heading_stiffness,
+        heading_yaw_limit=heading_yaw_limit,
+        cross_track_stiffness=cross_track_stiffness,
     )
     importlib.import_module("microduck_rl_unilab.tasks.microduck")
     registry.ensure_registries()
@@ -164,12 +187,28 @@ def evaluate(
         head_roll_sum = np.zeros(num_envs, dtype=np.float64)
         head_pitch_delta_sum = np.zeros(num_envs, dtype=np.float64)
         head_velocity_sum = np.zeros(num_envs, dtype=np.float64)
+        head_tilt_sum = np.zeros(num_envs, dtype=np.float64)
+        head_inverted_sum = np.zeros(num_envs, dtype=np.float64)
         sample_count = np.zeros(num_envs, dtype=np.int64)
         heading_ref = np.asarray(robot.data.heading_w).copy()
+        origin_xy = np.asarray(robot.data.root_link_pos_w)[:, :2].copy()
+        forward_axis = np.stack(
+            [np.cos(heading_ref), np.sin(heading_ref)], axis=1
+        )
+        lateral_axis = np.stack(
+            [-np.sin(heading_ref), np.cos(heading_ref)], axis=1
+        )
+        straight_pose_alive = np.ones(num_envs, dtype=np.bool_)
+        straight_pose_steps = np.zeros(num_envs, dtype=np.int64)
+        final_heading_error = np.zeros(num_envs, dtype=np.float64)
+        final_cross_track = np.zeros(num_envs, dtype=np.float64)
+        final_forward_displacement = np.zeros(num_envs, dtype=np.float64)
         head_ids, _ = robot.find_joints(
             ["neck_pitch", "head_pitch", "head_yaw", "head_roll"],
             preserve_order=True,
         )
+        head_body_ids, _ = robot.find_bodies([HEAD_BODY], preserve_order=True)
+        head_body_id = int(head_body_ids[0])
 
         for step in range(total_steps):
             with torch.inference_mode():
@@ -195,6 +234,25 @@ def evaluate(
             head_velocity = np.sqrt(
                 np.mean(np.square(np.asarray(robot.data.joint_vel)[:, head_ids]), axis=1)
             )
+            head_quat = np.asarray(robot.data.body_link_quat_w)[:, head_body_id, :]
+            head_up_w = np_quat_apply(head_quat.astype(np.float64), HEAD_UP_AXIS_B)
+            head_up_cos = np.nan_to_num(head_up_w[:, 2], nan=-1.0)
+            head_tilt = np.arccos(np.clip(head_up_cos, -1.0, 1.0))
+            displacement = (
+                np.asarray(robot.data.root_link_pos_w)[:, :2] - origin_xy
+            )
+            cross_track = np.abs(np.sum(displacement * lateral_axis, axis=1))
+            forward_displacement = np.sum(displacement * forward_axis, axis=1)
+            straight_pose_now = (
+                alive
+                & (heading_error <= math.radians(25.0))
+                & (head_up_cos >= 0.0)
+            )
+            straight_pose_alive &= straight_pose_now
+            straight_pose_steps[straight_pose_alive] += 1
+            final_heading_error[alive] = heading_error[alive]
+            final_cross_track[alive] = cross_track[alive]
+            final_forward_displacement[alive] = forward_displacement[alive]
             speed_sum[alive] += velocity[alive, 0]
             lateral_sum[alive] += np.abs(velocity[alive, 1])
             heading_error_sum[alive] += heading_error[alive]
@@ -203,6 +261,8 @@ def evaluate(
             head_roll_sum[alive] += np.abs(head_delta[alive, 3])
             head_pitch_delta_sum[alive] += np.mean(head_delta[alive, :2], axis=1)
             head_velocity_sum[alive] += head_velocity[alive]
+            head_tilt_sum[alive] += head_tilt[alive]
+            head_inverted_sum[alive] += (head_up_cos[alive] < 0.0).astype(np.float64)
             sample_count[alive] += 1
 
         sampled = sample_count > 0
@@ -221,6 +281,11 @@ def evaluate(
             "duration_s": duration_s,
             "fall_tilt_deg": fall_tilt_deg,
             "stress": stress,
+            "owner": owner or (
+                "microduck_sprint_robust_flat/mujoco"
+                if stress
+                else "microduck_sprint_flat/mujoco"
+            ),
             "survival_fraction": float(np.mean(alive)),
             "body_forward_speed_m_s": {
                 "mean": float(np.mean(mean_speed)) if mean_speed.size else None,
@@ -245,6 +310,53 @@ def evaluate(
                 if np.any(sampled)
                 else None
             ),
+            "final_absolute_heading_error_deg": {
+                "mean": (
+                    math.degrees(float(np.mean(final_heading_error[sampled])))
+                    if np.any(sampled)
+                    else None
+                ),
+                "p90": (
+                    math.degrees(float(np.quantile(final_heading_error[sampled], 0.90)))
+                    if np.any(sampled)
+                    else None
+                ),
+            },
+            "final_cross_track_error_m": {
+                "mean": (
+                    float(np.mean(final_cross_track[sampled]))
+                    if np.any(sampled)
+                    else None
+                ),
+                "p90": (
+                    float(np.quantile(final_cross_track[sampled], 0.90))
+                    if np.any(sampled)
+                    else None
+                ),
+            },
+            "final_spawn_forward_displacement_m": {
+                "mean": (
+                    float(np.mean(final_forward_displacement[sampled]))
+                    if np.any(sampled)
+                    else None
+                ),
+                "p10": (
+                    float(np.quantile(final_forward_displacement[sampled], 0.10))
+                    if np.any(sampled)
+                    else None
+                ),
+            },
+            # Sticky gate: once an environment falls, inverts its head, or
+            # exceeds 25 degrees from its spawn ray, its straight-pose horizon
+            # ends even if a later correction returns it inside the band.
+            "straight_pose_survival_fraction": float(
+                np.mean(straight_pose_alive)
+            ),
+            "straight_pose_horizon_s": {
+                "mean": float(np.mean(straight_pose_steps) * ctrl_dt),
+                "p10": float(np.quantile(straight_pose_steps, 0.10) * ctrl_dt),
+                "median": float(np.median(straight_pose_steps) * ctrl_dt),
+            },
             "head_home_error_deg": (
                 math.degrees(float(np.mean(head_error_sum[sampled] / sample_count[sampled])))
                 if np.any(sampled)
@@ -272,6 +384,18 @@ def evaluate(
                 if np.any(sampled)
                 else None
             ),
+            # Angle between the top of the head and world up, plus the share of
+            # sampled time the head is past horizontal (i.e. upside down).
+            "head_up_tilt_deg": (
+                math.degrees(float(np.mean(head_tilt_sum[sampled] / sample_count[sampled])))
+                if np.any(sampled)
+                else None
+            ),
+            "head_inverted_time_fraction": (
+                float(np.mean(head_inverted_sum[sampled] / sample_count[sampled]))
+                if np.any(sampled)
+                else None
+            ),
         }
     finally:
         if wrapped_env is not None:
@@ -294,6 +418,14 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=123)
     parser.add_argument("--device", default=None)
     parser.add_argument("--stress", action="store_true")
+    parser.add_argument(
+        "--owner",
+        default=None,
+        help="Hydra task owner used to build the evaluation environment.",
+    )
+    parser.add_argument("--heading-stiffness", type=float, default=None)
+    parser.add_argument("--heading-yaw-limit", type=float, default=None)
+    parser.add_argument("--cross-track-stiffness", type=float, default=None)
     parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args()
 
@@ -307,6 +439,10 @@ def main() -> None:
         seed=args.seed,
         device=args.device,
         stress=args.stress,
+        owner=args.owner,
+        heading_stiffness=args.heading_stiffness,
+        heading_yaw_limit=args.heading_yaw_limit,
+        cross_track_stiffness=args.cross_track_stiffness,
     )
     payload = json.dumps(result, ensure_ascii=False, indent=2)
     if args.output is not None:
