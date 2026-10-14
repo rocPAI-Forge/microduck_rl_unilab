@@ -1,0 +1,31 @@
+# @package _global_
+# SAC MotrixSim owner. Same manager contract as the MuJoCo owner. The interval
+# velocity push, joint-armature randomization, geom-friction override, and
+# body-inertia randomization are dropped because this Motrix build does not
+# expose those writes.
+defaults:
+  - /task/microduck_velocity_flat/base
+  - _self_
+
+training:
+  task_name: MicroduckVelocityFlat
+  sim_backend: motrix
+  play_render_mode: none
+
+algo:
+  num_envs: 2048
+  learning_starts: 10
+  max_iterations: 5000
+  save_interval: 1000
+  updates_per_step: 8
+  algo_params:
+    alpha_init: 0.001
+    target_entropy_ratio: 0.0
+
+env:
+  seed: 42
+  events:
+    push_robot: null
+    randomize_armature: null
+    foot_friction: null
+    randomize_mass_inertia: null

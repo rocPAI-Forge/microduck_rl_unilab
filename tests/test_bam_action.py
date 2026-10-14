@@ -403,7 +403,7 @@ def test_velocity_owner_materializes_bam_action() -> None:
     assert tuple(action.friction_scale_range) == (0.9, 1.1)
 
     registered = registry.list_registered_envs()
-    assert registered["MicroduckVelocityFlat"]["available_backends"] == ["mujoco", "mjwarp"]
+    assert registered["MicroduckVelocityFlat"]["available_backends"] == ["mujoco", "mjwarp", "motrix"]
     assert "MicroduckVelocityBamFlat" not in registered
 
 

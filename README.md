@@ -28,7 +28,7 @@ and so on), owner configs, and robot XML assets.
 
 | task | ppo | sac |
 |------|-----|-----|
-| `microduck_velocity_flat` | mujoco, mjwarp | mujoco, mjwarp |
+| `microduck_velocity_flat` | mujoco, mjwarp, motrix | mujoco, mjwarp, motrix |
 | `microduck_sprint_flat` | mujoco | — |
 | `microduck_sprint_robust_flat` | mujoco | — |
 | `microduck_sprint_gaitfix_flat` | mujoco | — |
@@ -42,8 +42,10 @@ Tasks stay 1:1 with upstream microduck_rl: BAM (bam xl330-m6 voltage servo,
 `BamVoltageAction` per-substep torque path) is the only upstream actuator
 model, so every task here uses BAM. Early simplified position-actuated
 variants were dropped. BAM's substep state-feedback contract
-(`SimBackend.set_pre_step_control`) is available on both mujoco and mjwarp
-(the latter since unisim PR #20).
+(`SimBackend.set_pre_step_control`) is available on mujoco, mjwarp, and motrix
+(mjwarp since unisim PR #20). The motrix owner drops the velocity push,
+joint-armature, foot-friction, and inertia randomization events that this
+backend does not expose.
 
 ## Install
 
@@ -58,7 +60,7 @@ uv sync
 > in-tree microduck task removal (PR #1495), the `read_reset_root_pose` base
 > API (PR #1494), and the `unilab-rl==1.0.0` bump (PR #1496). unisim-core
 > 1.0.0 includes mjwarp `set_pre_step_control` (PR #20, required for BAM ×
-> mjwarp).
+> mjwarp). `--sim motrix` also needs `unilab[motrix]` (`motrixsim-core==0.8.2`).
 
 ## Train
 
@@ -69,6 +71,7 @@ the repo root):
 uv run microduck-train --algo ppo --task microduck_velocity_flat --sim mujoco
 uv run microduck-train --algo ppo --task microduck_sprint_flat --sim mujoco
 uv run microduck-train --algo ppo --task microduck_velocity_flat --sim mjwarp
+uv run microduck-train --algo ppo --task microduck_velocity_flat --sim motrix
 uv run microduck-train --algo ppo --task microduck_standup_flat --sim mujoco
 uv run microduck-train --algo sac --task microduck_velocity_flat --sim mujoco
 ```
@@ -125,6 +128,10 @@ uv run --no-sync scripts/eval_sprint_speed.py \
   --duration 300 --num-envs 128
 ```
 
+## Throughput
+
+Short PPO throughput notes live in [`benchmark/`](benchmark/README.md). On 2026-10-14, `microduck_velocity_flat` on an RX 9070 XT with 256 envs and 5 iterations finished at 14,629 steps/s on MuJoCo and 13,503 steps/s on MotrixSim.
+
 ## Tests
 
 ```bash
@@ -170,6 +177,7 @@ src/microduck_rl_unilab/
         ├── deploy_contract.py      # obs/action dimension contract
         ├── alignment_contract.py   # upstream microduck_rl @ 29e887e alignment table
         └── sim2real_notes.py       # sim2real notes
+benchmark/                          # throughput notes (hardware, scale, comparison)
 tests/                              # contract/alignment suite migrated from UniLab
 scripts/                            # alignment audit / compare / rollout scripts
 ```

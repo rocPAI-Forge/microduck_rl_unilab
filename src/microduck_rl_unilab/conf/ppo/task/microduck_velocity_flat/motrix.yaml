@@ -1,0 +1,42 @@
+# @package _global_
+# PPO + MotrixSim owner for the canonical MicroDuck velocity task.
+# The manager contract matches the MuJoCo owner. Motrix cannot apply the
+# interval root-velocity push, joint-armature randomization, geom-friction
+# override, or body-inertia randomization, so those events are dropped here.
+defaults:
+  - /task/microduck_velocity_flat/base
+  - _self_
+
+training:
+  task_name: MicroduckVelocityFlat
+  sim_backend: motrix
+  play_render_mode: none
+  play_steps: 2000
+
+algo:
+  num_envs: 2048
+  max_iterations: 500
+  empirical_normalization: true
+  obs_groups:
+    actor:
+      - policy
+    critic:
+      - critic
+  policy:
+    init_noise_std: 1.0
+  algorithm:
+    learning_rate: 1.0e-3
+    entropy_coef: 0.01
+    symmetry_cfg:
+      use_data_augmentation: false
+      use_mirror_loss: true
+      mirror_loss_coeff: 0.5
+      data_augmentation_func: microduck_rl_unilab.tasks.microduck.symmetry.microduck_velocity_symmetry
+
+env:
+  seed: 42
+  events:
+    push_robot: null
+    randomize_armature: null
+    foot_friction: null
+    randomize_mass_inertia: null

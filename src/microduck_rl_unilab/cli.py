@@ -28,7 +28,7 @@ SCRIPT_NAMES = {
     "td3": "train_td3.py",
     "flashsac": "train_flashsac.py",
 }
-SUPPORTED_SIMS = ("mujoco", "mjwarp")
+SUPPORTED_SIMS = ("mujoco", "mjwarp", "motrix")
 
 # Per-algo config trees, mirroring UniLab's own conf/<algo>/ layout; the CLI
 # appends conf/<algo> to the UniLab config search path via Hydra --config-dir.

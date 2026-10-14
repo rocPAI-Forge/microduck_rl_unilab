@@ -27,6 +27,11 @@ registry.register_env(
     make_microduck_velocity_env,
     sim_backend="mjwarp",
 )
+registry.register_env(
+    "MicroduckVelocityFlat",
+    make_microduck_velocity_env,
+    sim_backend="motrix",
+)
 
 # Forward-only max-speed policy. The Hydra owner specializes the velocity
 # contract; the generic runtime and cold-path asset factory remain shared.
