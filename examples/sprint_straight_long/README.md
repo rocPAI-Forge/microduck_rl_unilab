@@ -22,10 +22,19 @@ possible. Speed is secondary.
 600 s dual-seed check: survival 95.3% / 100%, mean heading 3.05° / 2.77°,
 straight-pose horizon 561 s / 543 s.
 
-Raw numbers: [`metrics.json`](metrics.json). Tracking clip:
-[`play_video.mp4`](play_video.mp4) (30 s, 2.2 m/s command, zero yaw range;
-the owner still writes a heading/cross-track yaw command into the existing
-61D observation).
+Raw numbers: [`metrics.json`](metrics.json). Clips, all at a 2.2 m/s command
+with the spawn-heading loop writing yaw into the existing 61D observation:
+
+- [`play_video.mp4`](play_video.mp4) — 30 s far tracking shot.
+- [`play_video_follow.mp4`](play_video_follow.mp4) — 8 s close rear-quarter
+  follow (azimuth 45°, 1.15 m).
+- [`play_video_radial.mp4`](play_video_radial.mp4) — 10 s far overhead of eight
+  robots leaving the origin on headings 0°, 45°, …, 315°.
+- [`play_video_radial_low.mp4`](play_video_radial_low.mp4) — same eight-robot
+  shot from a lower overhead (about 12 m instead of 15.5 m), trimmed to 5.5 s
+  so the outer robots stay in frame.
+
+Regenerate the last two with `scripts/render_straight_demos.py`.
 
 ## What changed
 
