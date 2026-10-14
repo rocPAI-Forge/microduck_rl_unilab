@@ -1,0 +1,60 @@
+[build-system]
+requires = ["uv_build>=0.12.1,<0.13"]
+build-backend = "uv_build"
+
+[project]
+name = "microduck-rl-unilab"
+version = "0.1.0"
+description = "Pollen Robotics MicroDuck RL training built on the UniLab package distribution"
+readme = "README.md"
+license = "Apache-2.0"
+authors = [{ name = "UniLab" }]
+requires-python = ">=3.10,<3.14"
+dependencies = [
+    # UniLab 1.0.0 on PyPI includes the in-repo microduck removal
+    # (Motphys/UniLab#1495), the read_reset_root_pose base API (#1494) and
+    # the unilab-rl==1.0.0 pin (#1496).
+    "unilab[mujoco]==1.0.0",
+    "unilab-rl==1.0.0",
+    # MuJoCo and Motrix backends, including BAM substep torque, come from
+    # unisim-core 1.0.0.
+    "unisim-core==1.0.0",
+    # Re-declared as a direct dependency so the cu128 index source below
+    # applies (tool.uv.sources only affects direct dependencies); pins mirror
+    # unilab's own torch markers.
+    "torch==2.9.0 ; sys_platform == 'linux' and platform_machine == 'aarch64'",
+    "torch==2.8.0 ; sys_platform != 'linux' or platform_machine != 'aarch64'",
+    "huggingface_hub>=0.25",
+]
+
+[project.scripts]
+microduck-train = "microduck_rl_unilab.cli:train_main"
+microduck-eval = "microduck_rl_unilab.cli:eval_main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cu128", marker = "sys_platform=='linux' and platform_machine=='x86_64'" },
+    { index = "pytorch-cu128", marker = "sys_platform=='win32'" },
+]
+
+[tool.uv]
+# mujoco-uni-runtime records the build-time mujoco version in its native
+# extension; always compile it from the sdist against the resolved mujoco
+# (same rationale as UniLab's own pyproject.toml).
+no-build-isolation-package = ["mujoco-uni-runtime"]
+no-binary-package = ["mujoco-uni-runtime"]
+
+[tool.pytest.ini_options]
+markers = [
+    "slow: marks slow tests (real backend env builds, asset downloads)",
+]

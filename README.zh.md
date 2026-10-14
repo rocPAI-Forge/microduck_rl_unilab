@@ -42,8 +42,14 @@ motrix 后端可用。motrix 上关掉了该后端没有的速度推力、关节
 ```bash
 git clone https://github.com/unilabsim/microduck_rl_unilab.git
 cd microduck_rl_unilab
+# ROCm（默认）：Linux x86_64 从 ROCm 7.2 索引解析 torch 2.11.0 与 triton-rocm 3.6.0。
+# 需要系统 ROCm >= 7.1。
 uv sync
 ```
+
+CUDA 是另一套配置（Linux x86_64 与 Windows 上为 cu128 索引的 `torch==2.8.0`）。
+`make sync-cuda` 会把 `pyproject.cuda.toml` 和 `uv.cuda.lock` 换成当前工程文件并同步。
+`make sync-rocm` 切回默认的 ROCm。两套环境的训练设备名都仍写 `cuda`。不要把换进去的文件提交。
 
 > **依赖**：`unilab[mujoco]==1.0.0`、`unilab-rl==1.0.0`、`unisim-core==1.0.0`
 > 全部从生产 PyPI 解析。unilab 1.0.0 起包含仓内 microduck 任务移除（PR #1495）、

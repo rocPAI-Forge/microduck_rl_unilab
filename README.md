@@ -50,8 +50,16 @@ backend does not expose.
 ```bash
 git clone https://github.com/unilabsim/microduck_rl_unilab.git
 cd microduck_rl_unilab
+# ROCm (default): Linux x86_64 resolves torch 2.11.0 and triton-rocm 3.6.0
+# from the ROCm 7.2 index. Requires ROCm >= 7.1.
 uv sync
 ```
+
+CUDA is the other profile (`torch==2.8.0` from the cu128 index on Linux x86_64
+and Windows). `make sync-cuda` copies `pyproject.cuda.toml` and `uv.cuda.lock`
+over the active project files and syncs. `make sync-rocm` switches back to the
+default. The training device name stays `cuda` on both profiles. Do not commit
+the swapped files.
 
 > **Dependencies**: `unilab[mujoco]==1.0.0`, `unilab-rl==1.0.0`, and
 > `unisim-core==1.0.0` all resolve from production PyPI. unilab 1.0.0 includes
