@@ -27,7 +27,7 @@
 | `mujoco` | `mujoco-uni-runtime==0.4.0`，MuJoCo 3.8.0（`mujoco-uni`） | 无 |
 | `motrix` | `motrixsim-core==0.8.1.dev104665` | `push_robot`、`randomize_armature`、`foot_friction`、`randomize_mass_inertia` |
 
-这次机器上的 MotrixSim 是 UniLab ROCm 环境里已有的 `0.8.1.dev104665`。仓库安装说明里的针是 `unilab[motrix]` 的 `motrixsim-core==0.8.2`。本仓库的 `mjwarp` 后端依赖 NVIDIA `warp-lang`，这次没有跑。
+这次机器上的 MotrixSim 是 UniLab ROCm 环境里已有的 `0.8.1.dev104665`。仓库安装说明里的针是 `unilab[motrix]` 的 `motrixsim-core==0.8.2`。
 
 ```text
 microduck-train --algo ppo --task microduck_velocity_flat --sim <mujoco|motrix> \

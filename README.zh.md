@@ -23,22 +23,19 @@ owner 配置和机器人 XML 资产。
 
 | task | ppo | sac |
 |------|-----|-----|
-| `microduck_velocity_flat` | mujoco, mjwarp, motrix | mujoco, mjwarp, motrix |
+| `microduck_velocity_flat` | mujoco, motrix | mujoco, motrix |
 | `microduck_sprint_flat` | mujoco | — |
 | `microduck_sprint_robust_flat` | mujoco | — |
 | `microduck_sprint_gaitfix_flat` | mujoco | — |
 | `microduck_sprint_rollfix_flat` | mujoco | — |
 | `microduck_velstand_flat` | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
-| `microduck_ground_pick_flat` | mjwarp | — |
-| `microduck_sitstand_flat` | mjwarp | — |
 
 任务与上游 microduck_rl 保持 1:1：BAM（bam xl330-m6 电压伺服模型，
 `BamVoltageAction` 逐 substep 力矩路径）是上游唯一的驱动器模型，因此本仓库
 所有任务统一走 BAM，不再保留早期移植的简化位置驱动变体。
-BAM 的 substep 状态反馈契约（`SimBackend.set_pre_step_control`）在 mujoco、
-mjwarp 与 motrix 后端均已可用（mjwarp 自 unisim PR #20 起）。motrix 上关掉了
-该后端没有的速度推力、关节 armature、足端摩擦和惯量随机化。
+BAM 的 substep 状态反馈契约（`SimBackend.set_pre_step_control`）在 mujoco 与
+motrix 后端可用。motrix 上关掉了该后端没有的速度推力、关节 armature、足端摩擦和惯量随机化。
 
 ## 安装
 
@@ -48,10 +45,9 @@ cd microduck_rl_unilab
 uv sync
 ```
 
-> **依赖**：`unilab[mujoco,mjwarp]==1.0.0`、`unilab-rl==1.0.0`、`unisim-core==1.0.0`
+> **依赖**：`unilab[mujoco]==1.0.0`、`unilab-rl==1.0.0`、`unisim-core==1.0.0`
 > 全部从生产 PyPI 解析。unilab 1.0.0 起包含仓内 microduck 任务移除（PR #1495）、
-> `read_reset_root_pose` 基础 API（PR #1494）与 `unilab-rl==1.0.0` 升级（PR #1496）；
-> unisim-core 1.0.0 起包含 mjwarp `set_pre_step_control`（PR #20，BAM×mjwarp 必需）。
+> `read_reset_root_pose` 基础 API（PR #1494）与 `unilab-rl==1.0.0` 升级（PR #1496）。
 > `--sim motrix` 另需 `unilab[motrix]`（`motrixsim-core==0.8.2`）。
 
 ## 训练
@@ -61,7 +57,6 @@ uv sync
 ```bash
 uv run microduck-train --algo ppo --task microduck_velocity_flat --sim mujoco
 uv run microduck-train --algo ppo --task microduck_sprint_flat --sim mujoco
-uv run microduck-train --algo ppo --task microduck_velocity_flat --sim mjwarp
 uv run microduck-train --algo ppo --task microduck_velocity_flat --sim motrix
 uv run microduck-train --algo ppo --task microduck_standup_flat --sim mujoco
 uv run microduck-train --algo sac --task microduck_velocity_flat --sim mujoco

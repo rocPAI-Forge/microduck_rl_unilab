@@ -28,22 +28,20 @@ and so on), owner configs, and robot XML assets.
 
 | task | ppo | sac |
 |------|-----|-----|
-| `microduck_velocity_flat` | mujoco, mjwarp, motrix | mujoco, mjwarp, motrix |
+| `microduck_velocity_flat` | mujoco, motrix | mujoco, motrix |
 | `microduck_sprint_flat` | mujoco | — |
 | `microduck_sprint_robust_flat` | mujoco | — |
 | `microduck_sprint_gaitfix_flat` | mujoco | — |
 | `microduck_sprint_rollfix_flat` | mujoco | — |
 | `microduck_velstand_flat` | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
-| `microduck_ground_pick_flat` | mjwarp | — |
-| `microduck_sitstand_flat` | mjwarp | — |
 
 Tasks stay 1:1 with upstream microduck_rl: BAM (bam xl330-m6 voltage servo,
 `BamVoltageAction` per-substep torque path) is the only upstream actuator
 model, so every task here uses BAM. Early simplified position-actuated
 variants were dropped. BAM's substep state-feedback contract
-(`SimBackend.set_pre_step_control`) is available on mujoco, mjwarp, and motrix
-(mjwarp since unisim PR #20). The motrix owner drops the velocity push,
+(`SimBackend.set_pre_step_control`) is available on mujoco and motrix.
+The motrix owner drops the velocity push,
 joint-armature, foot-friction, and inertia randomization events that this
 backend does not expose.
 
@@ -55,12 +53,11 @@ cd microduck_rl_unilab
 uv sync
 ```
 
-> **Dependencies**: `unilab[mujoco,mjwarp]==1.0.0`, `unilab-rl==1.0.0`, and
+> **Dependencies**: `unilab[mujoco]==1.0.0`, `unilab-rl==1.0.0`, and
 > `unisim-core==1.0.0` all resolve from production PyPI. unilab 1.0.0 includes
 > in-tree microduck task removal (PR #1495), the `read_reset_root_pose` base
-> API (PR #1494), and the `unilab-rl==1.0.0` bump (PR #1496). unisim-core
-> 1.0.0 includes mjwarp `set_pre_step_control` (PR #20, required for BAM ×
-> mjwarp). `--sim motrix` also needs `unilab[motrix]` (`motrixsim-core==0.8.2`).
+> API (PR #1494), and the `unilab-rl==1.0.0` bump (PR #1496).
+> `--sim motrix` also needs `unilab[motrix]` (`motrixsim-core==0.8.2`).
 
 ## Train
 
@@ -70,7 +67,6 @@ the repo root):
 ```bash
 uv run microduck-train --algo ppo --task microduck_velocity_flat --sim mujoco
 uv run microduck-train --algo ppo --task microduck_sprint_flat --sim mujoco
-uv run microduck-train --algo ppo --task microduck_velocity_flat --sim mjwarp
 uv run microduck-train --algo ppo --task microduck_velocity_flat --sim motrix
 uv run microduck-train --algo ppo --task microduck_standup_flat --sim mujoco
 uv run microduck-train --algo sac --task microduck_velocity_flat --sim mujoco

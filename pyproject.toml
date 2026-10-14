@@ -14,11 +14,10 @@ dependencies = [
     # UniLab 1.0.0 on PyPI includes the in-repo microduck removal
     # (Motphys/UniLab#1495), the read_reset_root_pose base API (#1494) and
     # the unilab-rl==1.0.0 pin (#1496).
-    "unilab[mujoco,mjwarp]==1.0.0",
+    "unilab[mujoco]==1.0.0",
     "unilab-rl==1.0.0",
-    # BAM voltage actuation on the mjwarp backend requires the
-    # set_pre_step_control implementation from unilabsim/unisim PR #20,
-    # first released in unisim-core 1.0.0.
+    # MuJoCo and Motrix backends, including BAM substep torque, come from
+    # unisim-core 1.0.0.
     "unisim-core==1.0.0",
     # Re-declared as a direct dependency so the cu128 index source below
     # applies (tool.uv.sources only affects direct dependencies); pins mirror
