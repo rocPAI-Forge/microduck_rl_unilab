@@ -36,11 +36,11 @@ and so on), owner configs, and robot XML assets.
 | `microduck_velstand_flat` | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
 
-PPO for `microduck_velocity_flat` finished the owner budget on 2026-10-15 (2048 envs, 500 iterations, `algo.seed=42`, no playback).
+PPO for `microduck_velocity_flat` finished the owner budget on 2026-10-15 (2048 envs, 500 iterations, `algo.seed=42`). The MuJoCo 10 s tracking shot at a 0.4 m/s forward command was checked: the robot stays up and steps. Motrix has no inference video.
 
-| backend | final mean reward | checkpoint |
+| backend | final mean reward | checkpoint / video |
 |---|---:|---|
-| mujoco | 93.01 | [`examples/velocity_flat_mujoco/model_499.pt`](examples/velocity_flat_mujoco/model_499.pt) |
+| mujoco | 93.01 | [`model_499.pt`](examples/velocity_flat_mujoco/model_499.pt) / [`play_video.mp4`](examples/velocity_flat_mujoco/play_video.mp4) |
 | motrix (`motrixsim-core==0.8.2`) | 145.44 | [`examples/velocity_flat_motrix/model_499.pt`](examples/velocity_flat_motrix/model_499.pt) |
 
 Training reproduction status (complete requires both metrics and inference video to pass):

@@ -31,11 +31,11 @@ owner 配置和机器人 XML 资产。
 | `microduck_velstand_flat` | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
 
-`microduck_velocity_flat` 的 PPO 已按 owner 预算训完（2026-10-15，2048 环境，500 轮，`algo.seed=42`，不回放）。
+`microduck_velocity_flat` 的 PPO 已按 owner 预算训完（2026-10-15，2048 环境，500 轮，`algo.seed=42`）。MuJoCo 上 0.4 m/s 前进指令的 10 秒跟踪镜头已看过，能站住并迈步。Motrix 没有推理视频。
 
-| 后端 | 最终平均回报 | 权重 |
+| 后端 | 最终平均回报 | 权重 / 视频 |
 |---|---:|---|
-| mujoco | 93.01 | [`examples/velocity_flat_mujoco/model_499.pt`](examples/velocity_flat_mujoco/model_499.pt) |
+| mujoco | 93.01 | [`model_499.pt`](examples/velocity_flat_mujoco/model_499.pt) / [`play_video.mp4`](examples/velocity_flat_mujoco/play_video.mp4) |
 | motrix（`motrixsim-core==0.8.2`） | 145.44 | [`examples/velocity_flat_motrix/model_499.pt`](examples/velocity_flat_motrix/model_499.pt) |
 
 训练复现状态（只有指标和推理视频都通过才记为完成）：

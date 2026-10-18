@@ -14,5 +14,15 @@
     "best_mean_reward": 119.52992248535156,
     "mean_episode_length": 882.71
   },
-  "playback": null
+  "playback": {
+    "video": "examples/velocity_flat_mujoco/play_video.mp4",
+    "duration_s": 10.0,
+    "play_steps": 500,
+    "command_forward_m_s": 0.4,
+    "cam_distance": 1.0,
+    "cam_elevation": -12,
+    "cam_azimuth": 130,
+    "cam_tracking": true,
+    "note": "Checked 10 s tracking shot. The robot stays up and steps; the head pitches forward."
+  }
 }
