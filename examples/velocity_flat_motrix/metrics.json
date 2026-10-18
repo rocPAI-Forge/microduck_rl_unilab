@@ -1,0 +1,19 @@
+{
+  "label": "velocity_flat_motrix",
+  "task": "MicroduckVelocityFlat",
+  "train_owner": "microduck_velocity_flat/motrix",
+  "checkpoint": "examples/velocity_flat_motrix/model_499.pt",
+  "source_run": "2026-10-15_17-52-34_motrix",
+  "source_iteration": 499,
+  "training": {
+    "backend": "motrix",
+    "motrixsim_core": "0.8.2",
+    "seed": 42,
+    "num_envs": 2048,
+    "completed_iterations": 499,
+    "final_mean_reward": 145.44400450706482,
+    "best_mean_reward": 155.9832000732422,
+    "mean_episode_length": 990.52
+  },
+  "playback": null
+}

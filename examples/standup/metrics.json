@@ -1,0 +1,32 @@
+{
+  "label": "standup",
+  "task": "MicroduckStandupFlat",
+  "train_owner": "microduck_standup_flat/mujoco",
+  "checkpoint": "examples/standup/model_14999.pt",
+  "source_run": "2026-10-17_20-20-05_mujoco",
+  "source_iteration": 14999,
+  "training": {
+    "backend": "mujoco",
+    "seed": 42,
+    "num_envs": 2048,
+    "completed_iterations": 14999,
+    "final_mean_reward": 46.972839469909665,
+    "best_mean_reward": 56.69301223754883,
+    "mean_episode_length": 300.0
+  },
+  "playback": {
+    "video": "examples/standup/play_video.mp4",
+    "num_envs": 8,
+    "play_steps": 600,
+    "cam_distance": 2.0,
+    "cam_elevation": -14,
+    "cam_azimuth": 135,
+    "cam_tracking": false,
+    "hard_mix": {
+      "standing_prob": 0.15,
+      "sitting_prob": 0.20,
+      "face_down_prob": 0.30,
+      "face_up_prob": 0.35
+    }
+  }
+}

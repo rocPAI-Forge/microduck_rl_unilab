@@ -1,0 +1,18 @@
+{
+  "label": "velocity_flat_mujoco",
+  "task": "MicroduckVelocityFlat",
+  "train_owner": "microduck_velocity_flat/mujoco",
+  "checkpoint": "examples/velocity_flat_mujoco/model_499.pt",
+  "source_run": "2026-10-15_17-36-18_mujoco",
+  "source_iteration": 499,
+  "training": {
+    "backend": "mujoco",
+    "seed": 42,
+    "num_envs": 2048,
+    "completed_iterations": 499,
+    "final_mean_reward": 93.01111253738404,
+    "best_mean_reward": 119.52992248535156,
+    "mean_episode_length": 882.71
+  },
+  "playback": null
+}

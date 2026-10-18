@@ -1,0 +1,36 @@
+{
+  "label": "velstand_getup",
+  "task": "MicroduckVelstandFlat",
+  "train_owner": "microduck_velstand_flat/mujoco",
+  "checkpoint": "examples/velstand_getup/model_2250.pt",
+  "source_run": "2026-10-18_02-21-14_mujoco",
+  "source_iteration": 2250,
+  "training": {
+    "backend": "mujoco",
+    "seed": 42,
+    "num_envs": 2048,
+    "completed_iterations": 3999,
+    "selected_iteration": 2250,
+    "init": "standup actor warm start; critic was not transferred (74 vs 76 critic obs)",
+    "final_mean_reward": 93.5291801071167,
+    "best_mean_reward": 127.8382339477539,
+    "mean_episode_length": 898.17
+  },
+  "playback": {
+    "video": "examples/velstand_getup/play_video_side.mp4",
+    "slow_video": "examples/velstand_getup/play_video_side_slow.mp4",
+    "slow_factor": 3,
+    "num_envs": 4,
+    "tracked_env": 2,
+    "play_steps": 150,
+    "control_hz": 50,
+    "prone_prob": 1.0,
+    "seed": 42,
+    "root_tilt_deg": {
+      "step_0": [90.0, 90.0, 90.0, 90.0],
+      "step_50": [5.6, 89.7, 1.2, 90.9],
+      "step_400": [3.1, 94.6, 0.6, 89.9]
+    },
+    "note": "Side view of env 2, which stands within 1 s. Two of the four prone starts stay down for 8 s."
+  }
+}

@@ -36,6 +36,21 @@ and so on), owner configs, and robot XML assets.
 | `microduck_velstand_flat` | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
 
+PPO for `microduck_velocity_flat` finished the owner budget on 2026-10-15 (2048 envs, 500 iterations, `algo.seed=42`, no playback).
+
+| backend | final mean reward | checkpoint |
+|---|---:|---|
+| mujoco | 93.01 | [`examples/velocity_flat_mujoco/model_499.pt`](examples/velocity_flat_mujoco/model_499.pt) |
+| motrix (`motrixsim-core==0.8.2`) | 145.44 | [`examples/velocity_flat_motrix/model_499.pt`](examples/velocity_flat_motrix/model_499.pt) |
+
+Training reproduction status (complete requires both metrics and inference video to pass):
+
+| policy | status | checkpoint / video |
+|---|---|---|
+| `microduck_standup_flat` PPO | Complete; 15000 iterations, gets up from prone, supine, and sitting poses under the hard reset mix | [`examples/standup/model_14999.pt`](examples/standup/model_14999.pt) / [`play_video.mp4`](examples/standup/play_video.mp4) |
+| `microduck_velstand_flat` PPO | Checked; 2 of 4 forced prone starts stand within 1 s. Side-view demo is in the example below | [`examples/velstand_getup/model_2250.pt`](examples/velstand_getup/model_2250.pt) / [`play_video_side.mp4`](examples/velstand_getup/play_video_side.mp4) |
+| `microduck_velocity_flat` SAC | **Failed validation**; all 5000 iterations completed, but inference repeatedly falls and resets, so this is not a usable policy. The failure clip stays in local `logs/` and is not published | — |
+
 Tasks stay 1:1 with upstream microduck_rl: BAM (bam xl330-m6 voltage servo,
 `BamVoltageAction` per-substep torque path) is the only upstream actuator
 model, so every task here uses BAM. Early simplified position-actuated
@@ -121,6 +136,19 @@ uv run --no-sync scripts/train_sprint_robust.py \
 
 Each directory has `model_*.pt`, visualizations, `metrics.json`, and
 reproduce commands. `model.pt` is about 4.7 MB and is stored in git.
+
+Get-up example [`examples/velstand_getup/`](examples/velstand_getup/):
+
+| File | Contents |
+|---|---|
+| [`model_2250.pt`](examples/velstand_getup/model_2250.pt) | Checked weights, iteration 2250, after 4000 iterations from a standup-actor warm start |
+| [`play_video_side.mp4`](examples/velstand_getup/play_video_side.mp4) | 3 s side view at real time: prone, push-up, crouch, stand |
+| [`play_video_side_slow.mp4`](examples/velstand_getup/play_video_side_slow.mp4) | The same clip at 3× slow motion |
+
+At seed 42, environments 0 and 2 of four prone starts are upright within 1 s;
+1 and 3 stay down for the 8 s window. The video follows environment 2. A plain
+eval starts upright, because the step-0 curriculum writes `prone_prob` back to
+0. The reproduce command is in that directory's README.
 
 Long-horizon straight eval (needs the closed-loop owner, not default
 `microduck_sprint_flat`):
