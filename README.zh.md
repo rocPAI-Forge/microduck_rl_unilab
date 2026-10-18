@@ -42,9 +42,13 @@ owner 配置和机器人 XML 资产。
 
 | 策略 | 状态 | checkpoint / 视频 |
 |---|---|---|
-| `microduck_standup_flat` PPO | 完成；15000 轮，困难初态混合下可从趴、仰、坐姿站起 | [`examples/standup/model_14999.pt`](examples/standup/model_14999.pt) / [`play_video.mp4`](examples/standup/play_video.mp4) |
+| `microduck_standup_flat` PPO | 完成；15000 轮。慢放侧面近景依次是趴着撑起、仰着翻身站起、坐着站起 | [`examples/standup/model_14999.pt`](examples/standup/model_14999.pt) / [`play_video.mp4`](examples/standup/play_video.mp4) |
 | `microduck_velstand_flat` PPO | 已观察；强制趴下开场时 4 台里 2 台在 1 秒内起身。侧面演示见下方示例 | [`examples/velstand_getup/model_2250.pt`](examples/velstand_getup/model_2250.pt) / [`play_video_side.mp4`](examples/velstand_getup/play_video_side.mp4) |
 | `microduck_velocity_flat` SAC | **未通过**；5000 轮训练完成，但推理反复倒地重置，不能作为成品策略。失败样本留在本地 `logs/`，不入库 | — |
+| `sprint_speed_1p68` PPO | 完成，约 1.68 m/s。Sprint 不是上游 microduck_rl 的官方任务，是本仓库独有的冲刺步态 | [`examples/sprint_speed_1p68/model_11997.pt`](examples/sprint_speed_1p68/model_11997.pt) |
+| `sprint_head_upright` PPO | 完成，约 1.32 m/s，头朝上。同上，本仓库独有 | [`examples/sprint_head_upright/model_14500.pt`](examples/sprint_head_upright/model_14500.pt) |
+| `sprint_straight_long` PPO | 完成，约 0.83 m/s，300 秒走直。同上，本仓库独有 | [`examples/sprint_straight_long/model_19297.pt`](examples/sprint_straight_long/model_19297.pt) |
+| `sprint_steerfix_flat` PPO | 未训练。同上，本仓库独有；配置在，没有权重 | — |
 
 任务与上游 microduck_rl 保持 1:1：BAM（bam xl330-m6 电压伺服模型，
 `BamVoltageAction` 逐 substep 力矩路径）是上游唯一的驱动器模型，因此本仓库

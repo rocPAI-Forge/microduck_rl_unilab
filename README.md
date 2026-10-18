@@ -47,9 +47,13 @@ Training reproduction status (complete requires both metrics and inference video
 
 | policy | status | checkpoint / video |
 |---|---|---|
-| `microduck_standup_flat` PPO | Complete; 15000 iterations, gets up from prone, supine, and sitting poses under the hard reset mix | [`examples/standup/model_14999.pt`](examples/standup/model_14999.pt) / [`play_video.mp4`](examples/standup/play_video.mp4) |
+| `microduck_standup_flat` PPO | Complete; 15000 iterations. Slow side views, in order: prone push-up, supine roll-up, sit-to-stand | [`examples/standup/model_14999.pt`](examples/standup/model_14999.pt) / [`play_video.mp4`](examples/standup/play_video.mp4) |
 | `microduck_velstand_flat` PPO | Checked; 2 of 4 forced prone starts stand within 1 s. Side-view demo is in the example below | [`examples/velstand_getup/model_2250.pt`](examples/velstand_getup/model_2250.pt) / [`play_video_side.mp4`](examples/velstand_getup/play_video_side.mp4) |
 | `microduck_velocity_flat` SAC | **Failed validation**; all 5000 iterations completed, but inference repeatedly falls and resets, so this is not a usable policy. The failure clip stays in local `logs/` and is not published | — |
+| `sprint_speed_1p68` PPO | Complete, about 1.68 m/s. Sprint is not an upstream microduck_rl task; it is a gait that exists only in this repo | [`examples/sprint_speed_1p68/model_11997.pt`](examples/sprint_speed_1p68/model_11997.pt) |
+| `sprint_head_upright` PPO | Complete, about 1.32 m/s with the head up. Same: this repo only | [`examples/sprint_head_upright/model_14500.pt`](examples/sprint_head_upright/model_14500.pt) |
+| `sprint_straight_long` PPO | Complete, about 0.83 m/s and straight for 300 s. Same: this repo only | [`examples/sprint_straight_long/model_19297.pt`](examples/sprint_straight_long/model_19297.pt) |
+| `sprint_steerfix_flat` PPO | Not trained. Same: this repo only; the config exists and there are no weights | — |
 
 Tasks stay 1:1 with upstream microduck_rl: BAM (bam xl330-m6 voltage servo,
 `BamVoltageAction` per-substep torque path) is the only upstream actuator

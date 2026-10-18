@@ -16,17 +16,16 @@
   },
   "playback": {
     "video": "examples/standup/play_video.mp4",
-    "num_envs": 8,
-    "play_steps": 600,
-    "cam_distance": 2.0,
-    "cam_elevation": -14,
-    "cam_azimuth": 135,
-    "cam_tracking": false,
-    "hard_mix": {
-      "standing_prob": 0.15,
-      "sitting_prob": 0.20,
-      "face_down_prob": 0.30,
-      "face_up_prob": 0.35
-    }
+    "slow_factor": 3,
+    "duration_s": 21.54,
+    "parts": [
+      {"pose": "face_down", "cam_azimuth": 58.5, "play_steps": 120},
+      {"pose": "face_up", "cam_azimuth": 58.5, "play_steps": 120},
+      {"pose": "sitting", "cam_azimuth": 51.7, "play_steps": 120}
+    ],
+    "cam_distance": 0.7,
+    "cam_elevation": -8,
+    "cam_tracking": true,
+    "note": "Each part forces one ground pose and turns off ground_state_mix so the step-0 mix cannot replace it."
   }
 }
