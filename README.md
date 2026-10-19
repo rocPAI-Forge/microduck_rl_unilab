@@ -48,7 +48,7 @@ Training reproduction status (complete requires both metrics and inference video
 | policy | status | checkpoint / video |
 |---|---|---|
 | `microduck_standup_flat` PPO | Complete; 15000 iterations. Slow side views, in order: prone push-up, supine roll-up, sit-to-stand | [`examples/standup/model_14999.pt`](examples/standup/model_14999.pt) / [`play_video.mp4`](examples/standup/play_video.mp4) |
-| `microduck_velstand_flat` PPO | Checked; 2 of 4 forced prone starts stand within 1 s. Side-view demo is in the example below | [`examples/velstand_getup/model_2250.pt`](examples/velstand_getup/model_2250.pt) / [`play_video_side.mp4`](examples/velstand_getup/play_video_side.mp4) |
+| `microduck_velstand_flat` PPO | Complete. On 64 forced falls, face-down and face-up both stand within 8 s (mean tilt 1.2°), with stand-still and with the default walk commands | [`examples/velstand_getup/model_12498.pt`](examples/velstand_getup/model_12498.pt) / [`play_video_getup.mp4`](examples/velstand_getup/play_video_getup.mp4) |
 | `microduck_velocity_flat` SAC | **Failed validation**; all 5000 iterations completed, but inference repeatedly falls and resets, so this is not a usable policy. The failure clip stays in local `logs/` and is not published | — |
 | `sprint_speed_1p68` PPO | Complete, about 1.68 m/s. Sprint is not an upstream microduck_rl task; it is a gait that exists only in this repo | [`examples/sprint_speed_1p68/model_11997.pt`](examples/sprint_speed_1p68/model_11997.pt) |
 | `sprint_head_upright` PPO | Complete, about 1.32 m/s with the head up. Same: this repo only | [`examples/sprint_head_upright/model_14500.pt`](examples/sprint_head_upright/model_14500.pt) |
@@ -145,14 +145,13 @@ Get-up example [`examples/velstand_getup/`](examples/velstand_getup/):
 
 | File | Contents |
 |---|---|
-| [`model_2250.pt`](examples/velstand_getup/model_2250.pt) | Checked weights, iteration 2250, after 4000 iterations from a standup-actor warm start |
-| [`play_video_side.mp4`](examples/velstand_getup/play_video_side.mp4) | 3 s side view at real time: prone, push-up, crouch, stand |
-| [`play_video_side_slow.mp4`](examples/velstand_getup/play_video_side_slow.mp4) | The same clip at 3× slow motion |
+| [`model_12498.pt`](examples/velstand_getup/model_12498.pt) | Checked weights. Standup actor copied in, then 800 stand-still recovery iterations and 1200 walk-mix iterations |
+| [`play_video_getup.mp4`](examples/velstand_getup/play_video_getup.mp4) | Side-by-side at half speed, about 8 s. Left: face-down. Right: face-up. Same policy |
 
-At seed 42, environments 0 and 2 of four prone starts are upright within 1 s;
-1 and 3 stay down for the 8 s window. The video follows environment 2. A plain
-eval starts upright, because the step-0 curriculum writes `prone_prob` back to
-0. The reproduce command is in that directory's README.
+On 64 forced falls, both poses stand within 8 s and the mean tilt at 8 s is
+1.2°, including when the default walk commands are left on. A plain eval
+starts upright, because the step-0 curriculum writes `prone_prob` back to 0.
+The reproduce command is in that directory's README.
 
 Long-horizon straight eval (needs the closed-loop owner, not default
 `microduck_sprint_flat`):

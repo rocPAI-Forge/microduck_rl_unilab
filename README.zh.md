@@ -43,7 +43,7 @@ owner 配置和机器人 XML 资产。
 | 策略 | 状态 | checkpoint / 视频 |
 |---|---|---|
 | `microduck_standup_flat` PPO | 完成；15000 轮。慢放侧面近景依次是趴着撑起、仰着翻身站起、坐着站起 | [`examples/standup/model_14999.pt`](examples/standup/model_14999.pt) / [`play_video.mp4`](examples/standup/play_video.mp4) |
-| `microduck_velstand_flat` PPO | 已观察；强制趴下开场时 4 台里 2 台在 1 秒内起身。侧面演示见下方示例 | [`examples/velstand_getup/model_2250.pt`](examples/velstand_getup/model_2250.pt) / [`play_video_side.mp4`](examples/velstand_getup/play_video_side.mp4) |
+| `microduck_velstand_flat` PPO | 完成。64 次强制跌倒中，趴下和仰躺都在 8 秒内站起（末态倾角 1.2°），原地指令和默认行走指令都成立 | [`examples/velstand_getup/model_12498.pt`](examples/velstand_getup/model_12498.pt) / [`play_video_getup.mp4`](examples/velstand_getup/play_video_getup.mp4) |
 | `microduck_velocity_flat` SAC | **未通过**；5000 轮训练完成，但推理反复倒地重置，不能作为成品策略。失败样本留在本地 `logs/`，不入库 | — |
 | `sprint_speed_1p68` PPO | 完成，约 1.68 m/s。Sprint 不是上游 microduck_rl 的官方任务，是本仓库独有的冲刺步态 | [`examples/sprint_speed_1p68/model_11997.pt`](examples/sprint_speed_1p68/model_11997.pt) |
 | `sprint_head_upright` PPO | 完成，约 1.32 m/s，头朝上。同上，本仓库独有 | [`examples/sprint_head_upright/model_14500.pt`](examples/sprint_head_upright/model_14500.pt) |
@@ -132,11 +132,10 @@ uv run --no-sync scripts/train_sprint_robust.py \
 
 | 文件 | 内容 |
 |---|---|
-| [`model_2250.pt`](examples/velstand_getup/model_2250.pt) | 已观察权重，第 2250 轮。standup actor 热启动后训了 4000 轮 |
-| [`play_video_side.mp4`](examples/velstand_getup/play_video_side.mp4) | 侧面近景，正常速度，约 3 秒：趴下、撑起、蹲起、站稳 |
-| [`play_video_side_slow.mp4`](examples/velstand_getup/play_video_side_slow.mp4) | 同一段，3 倍慢放 |
+| [`model_12498.pt`](examples/velstand_getup/model_12498.pt) | 已观察权重。换入 standup 动作网络后，原地起身训 800 轮，再混入行走指令训 1200 轮 |
+| [`play_video_getup.mp4`](examples/velstand_getup/play_video_getup.mp4) | 左右同时、1/2 原速度，约 8 秒。左：趴下。右：仰躺。同一策略 |
 
-seed 42 下 4 个趴下开场里，环境 0 和 2 在 1 秒内站起，1 和 3 在 8 秒窗口内一直躺着。视频跟的是环境 2。直接回放会从站立开场，因为课程表第 0 阶段把 `prone_prob` 写回 0；复现命令在该目录的 README 里。
+64 次强制跌倒里，两种姿态都在 8 秒内站起，8 秒末平均倾角 1.2°；保留默认行走指令时同样成立。直接回放会从站立开场，因为课程表第 0 阶段把 `prone_prob` 写回 0。复现命令在该目录的 README 里。
 
 长时直线评测（需要闭环 owner，不要用默认 `microduck_sprint_flat`）：
 

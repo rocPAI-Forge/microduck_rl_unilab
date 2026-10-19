@@ -2,35 +2,53 @@
   "label": "velstand_getup",
   "task": "MicroduckVelstandFlat",
   "train_owner": "microduck_velstand_flat/mujoco",
-  "checkpoint": "examples/velstand_getup/model_2250.pt",
-  "source_run": "2026-10-18_02-21-14_mujoco",
-  "source_iteration": 2250,
+  "checkpoint": "examples/velstand_getup/model_12498.pt",
+  "source_run": "2026-10-18_20-57-22_mujoco",
+  "source_iteration": 12498,
   "training": {
     "backend": "mujoco",
     "seed": 42,
     "num_envs": 2048,
-    "completed_iterations": 3999,
-    "selected_iteration": 2250,
-    "init": "standup actor warm start; critic was not transferred (74 vs 76 critic obs)",
-    "final_mean_reward": 93.5291801071167,
-    "best_mean_reward": 127.8382339477539,
-    "mean_episode_length": 898.17
+    "selected_iteration": 12498,
+    "init": "standup actor copied into the velstand policy; the velstand critic was kept (74 vs 76 critic obs)",
+    "recovery_stage_iterations": 800,
+    "walk_mix_iterations": 1200,
+    "learning_rate": 0.0003,
+    "final_mean_reward": 115.61,
+    "mean_episode_length": 1000.0
+  },
+  "eval": {
+    "n": 64,
+    "prone_prob": 1.0,
+    "face_down_prob": 0.5,
+    "horizon_s": 8.0,
+    "success_rule": "tilt < 25 deg and root z > 0.09 at any step after 0.5 s",
+    "stand_still": {
+      "success_within_8s": 1.0,
+      "face_down": 1.0,
+      "face_up": 1.0,
+      "mean_tilt_deg_at_8s": 1.2
+    },
+    "default_walk_commands": {
+      "success_within_8s": 1.0,
+      "face_down": 1.0,
+      "face_up": 1.0,
+      "mean_tilt_deg_at_8s": 1.2
+    }
   },
   "playback": {
-    "video": "examples/velstand_getup/play_video_side.mp4",
-    "slow_video": "examples/velstand_getup/play_video_side_slow.mp4",
-    "slow_factor": 3,
-    "num_envs": 4,
-    "tracked_env": 2,
-    "play_steps": 150,
+    "video": "examples/velstand_getup/play_video_getup.mp4",
+    "layout": "side by side; face-down on the left, face-up on the right",
+    "playback_speed": 0.5,
+    "duration_s": 7.98,
+    "width": 2560,
+    "height": 720,
     "control_hz": 50,
-    "prone_prob": 1.0,
-    "seed": 42,
-    "root_tilt_deg": {
-      "step_0": [90.0, 90.0, 90.0, 90.0],
-      "step_50": [5.6, 89.7, 1.2, 90.9],
-      "step_400": [3.1, 94.6, 0.6, 89.9]
-    },
-    "note": "Side view of env 2, which stands within 1 s. Two of the four prone starts stay down for 8 s."
+    "source_play_steps": 200,
+    "cam_distance": 0.65,
+    "cam_elevation_deg": -8,
+    "cam_azimuth_deg": -83.6,
+    "commands": "stand-still",
+    "note": "One policy. Seed-42 single-env probe: face-down tilt 0.6 deg at 0.5 s; face-up tilt 0.9 deg at 1.0 s."
   }
 }
