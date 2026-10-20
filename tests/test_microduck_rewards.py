@@ -9,13 +9,19 @@ import numpy as np
 import pytest
 
 from unilab.envs.mdp import UniformPoseCommandCfg, UniformVelocityCommand, UniformVelocityCommandCfg
-from unilab.managers import RewardTermCfg
+from unilab.managers import RewardTermCfg, SceneEntityCfg
 from unilab.managers._types import ManagerBasedRlEnv
 from microduck_rl_unilab.tasks.microduck.manager_terms import (
     MicroduckVelocityCommandCfg,
     body_pose_tracking,
     flight_phase,
     foot_air_time_biped,
+    gait_phase_contact,
+    head_lateral_cost,
+    sagittal_step,
+    fallen_cost,
+    trunk_pitch_cost,
+    yaw_rate_cost,
 )
 
 
@@ -32,6 +38,17 @@ class _SensorScene:
             backend_type="fake",
             read=lambda: np.concatenate(arrays, axis=1),
         )
+
+
+class _RobotScene(_SensorScene):
+    def __init__(self, values: dict[str, np.ndarray], robot: Any) -> None:
+        super().__init__(values)
+        self._robot = robot
+
+    def __getitem__(self, name: str):
+        if name != "robot":
+            raise KeyError(name)
+        return self._robot
 
 
 def _env(contact: np.ndarray, command: np.ndarray) -> tuple[ManagerBasedRlEnv, _SensorScene]:
@@ -90,6 +107,252 @@ def test_flight_phase_penalizes_only_double_air() -> None:
     np.testing.assert_array_equal(term(env), [1.0, 0.0])
 
 
+def test_gait_phase_contact_requires_the_commanded_single_stance() -> None:
+    contact = np.asarray(
+        [
+            [1.0, 0.0],
+            [0.0, 1.0],
+            [1.0, 1.0],
+            [0.0, 0.0],
+            [1.0, 0.0],
+        ],
+        dtype=np.float32,
+    )
+    velocity = np.asarray(
+        [
+            [0.4, 0.0, 0.0],
+            [0.4, 0.0, 0.0],
+            [0.4, 0.0, 0.0],
+            [0.4, 0.0, 0.0],
+            [0.0, 0.0, 0.0],
+        ],
+        dtype=np.float32,
+    )
+    phase = np.asarray(
+        [
+            [1.0, 0.0, 0.0],
+            [-1.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+            [-1.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],
+        ],
+        dtype=np.float32,
+    )
+    env, _ = _env(contact, velocity)
+    env.command_manager = SimpleNamespace(
+        get_command=lambda name: phase if name == "gait_phase" else velocity
+    )
+    term = _term(
+        gait_phase_contact,
+        env,
+        phase_command_name="gait_phase",
+        velocity_command_name="twist",
+        command_threshold=0.01,
+    )
+
+    np.testing.assert_array_equal(term(env), [1.0, 1.0, 0.25, 0.25, 0.0])
+
+
+def test_head_lateral_cost_ignores_pitch_and_penalizes_yaw_velocity() -> None:
+    entity = SimpleNamespace(
+        num_joints=2,
+        data=SimpleNamespace(
+            joint_pos=np.asarray([[0.2, 0.0]], dtype=np.float32),
+            default_joint_pos=np.zeros((1, 2), dtype=np.float32),
+            joint_vel=np.asarray([[0.0, 1.5]], dtype=np.float32),
+        ),
+    )
+    env = cast(
+        ManagerBasedRlEnv,
+        SimpleNamespace(
+            num_envs=1,
+            scene={"robot": entity},
+            command_manager=SimpleNamespace(
+                get_command=lambda name: np.zeros((1, 4), dtype=np.float32)
+            ),
+        ),
+    )
+    term = _term(
+        head_lateral_cost,
+        env,
+        command_name="head_pose",
+        command_indices=[2, 3],
+        pos_std=0.1,
+        vel_std=1.5,
+        asset_cfg=SceneEntityCfg("robot", joint_ids=[0, 1]),
+    )
+
+    np.testing.assert_allclose(term(env), [2.5])
+
+
+def test_sagittal_step_rewards_swing_foot_reach_in_single_stance() -> None:
+    contact = np.asarray(
+        [
+            [1.0, 0.0],
+            [0.0, 1.0],
+            [1.0, 1.0],
+            [0.0, 0.0],
+            [1.0, 0.0],
+            [1.0, 0.0],
+        ],
+        dtype=np.float32,
+    )
+    command = np.asarray(
+        [
+            [0.4, 0.0, 0.0],
+            [0.4, 0.0, 0.0],
+            [0.4, 0.0, 0.0],
+            [0.4, 0.0, 0.0],
+            [0.0, 0.0, 0.0],
+            [0.4, 0.0, 0.0],
+        ],
+        dtype=np.float32,
+    )
+    feet = np.zeros((6, 2, 3), dtype=np.float32)
+    feet[0, 1, 0] = 0.08
+    feet[1, 0, 1] = 0.04
+    feet[4, 1, 0] = 0.08
+    feet[5, 1, 0] = -0.03
+    env, _ = _env(contact, command)
+    env.scene = _RobotScene(
+        env.scene.values,
+        SimpleNamespace(
+            body_names=["ankle_left", "ankle_right"],
+            data=SimpleNamespace(
+                heading_w=np.asarray([0.0, np.pi / 2, 0.0, 0.0, 0.0, 0.0], dtype=np.float32),
+                root_link_pos_w=np.zeros((6, 3), dtype=np.float32),
+                root_link_quat_w=np.tile(np.asarray([[1.0, 0.0, 0.0, 0.0]], dtype=np.float32), (6, 1)),
+                body_link_pos_w=feet,
+            ),
+        ),
+    )
+    term = _term(
+        sagittal_step,
+        env,
+        command_name="twist",
+        command_threshold=0.01,
+        target_length=0.08,
+        asset_cfg=SceneEntityCfg("robot", body_names=("ankle_left", "ankle_right")),
+    )
+
+    np.testing.assert_allclose(term(env), [1.0, 0.5, 0.0, 0.0, 0.0, 0.0], rtol=1e-6, atol=1e-6)
+
+
+def test_sagittal_step_drops_out_in_a_nose_dive() -> None:
+    contact = np.asarray([[1.0, 0.0], [1.0, 0.0]], dtype=np.float32)
+    command = np.asarray([[0.4, 0.0, 0.0], [0.4, 0.0, 0.0]], dtype=np.float32)
+    feet = np.zeros((2, 2, 3), dtype=np.float32)
+    feet[:, 1, 0] = 0.08
+    half = np.radians(45.0) / 2.0
+    env, _ = _env(contact, command)
+    env.scene = _RobotScene(
+        env.scene.values,
+        SimpleNamespace(
+            body_names=["ankle_left", "ankle_right"],
+            data=SimpleNamespace(
+                heading_w=np.zeros(2, dtype=np.float32),
+                root_link_pos_w=np.zeros((2, 3), dtype=np.float32),
+                root_link_quat_w=np.asarray(
+                    [
+                        [np.cos(half), 0.0, np.sin(half), 0.0],
+                        [np.cos(half), 0.0, -np.sin(half), 0.0],
+                    ],
+                    dtype=np.float32,
+                ),
+                body_link_pos_w=feet,
+            ),
+        ),
+    )
+    term = _term(
+        sagittal_step,
+        env,
+        command_name="twist",
+        command_threshold=0.01,
+        target_length=0.08,
+        pitch_gate_std=0.25,
+        asset_cfg=SceneEntityCfg("robot", body_names=("ankle_left", "ankle_right")),
+    )
+
+    np.testing.assert_array_less(term(env), 1e-3)
+
+
+def test_fallen_cost_is_one_only_past_the_tilt_limit() -> None:
+    env = cast(
+        ManagerBasedRlEnv,
+        SimpleNamespace(
+            num_envs=2,
+            scene={
+                "robot": SimpleNamespace(
+                    data=SimpleNamespace(
+                        projected_gravity_b=np.asarray(
+                            [[0.0, 0.0, -1.0], [0.0, 0.0, -0.1]],
+                            dtype=np.float32,
+                        )
+                    )
+                )
+            },
+        ),
+    )
+    term = _term(
+        fallen_cost,
+        env,
+        limit_angle=1.2217304763960306,
+        asset_cfg=SceneEntityCfg("robot"),
+    )
+
+    np.testing.assert_allclose(term(env), [0.0, 1.0])
+
+
+def test_trunk_pitch_cost_ignores_roll() -> None:
+    pitch_half = np.radians(20.0) / 2.0
+    roll_half = np.radians(30.0) / 2.0
+    env = cast(
+        ManagerBasedRlEnv,
+        SimpleNamespace(
+            num_envs=2,
+            scene={
+                "robot": SimpleNamespace(
+                    data=SimpleNamespace(
+                        root_link_quat_w=np.asarray(
+                            [
+                                [np.cos(pitch_half), 0.0, np.sin(pitch_half), 0.0],
+                                [np.cos(roll_half), np.sin(roll_half), 0.0, 0.0],
+                            ],
+                            dtype=np.float32,
+                        )
+                    )
+                )
+            },
+        ),
+    )
+    term = _term(trunk_pitch_cost, env, asset_cfg=SceneEntityCfg("robot"))
+
+    expected_pitch = np.square(np.radians(20.0))
+    np.testing.assert_allclose(term(env), [expected_pitch, 0.0], rtol=1e-5, atol=1e-5)
+
+
+def test_yaw_rate_cost_tracks_commanded_yaw() -> None:
+    env = cast(
+        ManagerBasedRlEnv,
+        SimpleNamespace(
+            num_envs=2,
+            scene={
+                "robot": SimpleNamespace(
+                    data=SimpleNamespace(
+                        root_link_ang_vel_b=np.asarray([[0.0, 0.0, 0.3], [0.0, 0.0, -0.1]], dtype=np.float32)
+                    )
+                )
+            },
+            command_manager=SimpleNamespace(
+                get_command=lambda name: np.asarray([[0.0, 0.0, 0.1], [0.0, 0.0, -0.1]], dtype=np.float32)
+            ),
+        ),
+    )
+    term = _term(yaw_rate_cost, env, command_name="twist", asset_cfg=SceneEntityCfg("robot"))
+
+    np.testing.assert_allclose(term(env), [0.04, 0.0], rtol=1e-6, atol=1e-6)
+
+
 def test_turn_in_place_bucket_overrides_independent_standing_sample(monkeypatch) -> None:
     env = cast(
         ManagerBasedRlEnv,
@@ -102,6 +365,8 @@ def test_turn_in_place_bucket_overrides_independent_standing_sample(monkeypatch)
                     data=SimpleNamespace(
                         root_link_lin_vel_b=np.zeros((2, 3), dtype=np.float32),
                         root_link_ang_vel_b=np.zeros((2, 3), dtype=np.float32),
+                        heading_w=np.zeros(2, dtype=np.float32),
+                        root_link_pos_w=np.zeros((2, 3), dtype=np.float32),
                     )
                 )
             },

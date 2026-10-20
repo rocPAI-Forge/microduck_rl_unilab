@@ -28,6 +28,10 @@ _OBS_SIGN = (
     + (1.0, 1.0, -1.0, -1.0)
     + (1.0, -1.0, 1.0, -1.0, 1.0, -1.0)
 )
+# SAC appends ``[cos(phase), sin(phase), 0]``. Mirroring exchanges stance
+# legs, which is a half-cycle phase shift and therefore negates cos and sin.
+_SAC_PHASE_PERM = (61, 62, 63)
+_SAC_PHASE_SIGN = (-1.0, -1.0, 1.0)
 
 _TENSOR_CACHE: dict[
     torch.device,
@@ -84,4 +88,28 @@ def microduck_velocity_symmetry(
     return augmented_obs, augmented_actions
 
 
-__all__ = ["microduck_velocity_symmetry"]
+def mirror_microduck_velocity_tensors(
+    actor: torch.Tensor,
+    actions: torch.Tensor | None = None,
+) -> tuple[torch.Tensor, torch.Tensor | None]:
+    """Mirror raw PPO (61D) or phase-conditioned SAC (64D) tensors."""
+    if actor.ndim != 2 or actor.shape[1] not in (61, 64):
+        raise ValueError(f"actor observations must have shape (N, 61|64), got {actor.shape}")
+    obs_perm, obs_sign, action_perm, action_sign = _mapping_tensors(actor.device)
+    if actor.shape[1] == 64:
+        obs_perm = torch.cat(
+            (obs_perm, torch.tensor(_SAC_PHASE_PERM, dtype=torch.long, device=actor.device))
+        )
+        obs_sign = torch.cat(
+            (obs_sign, torch.tensor(_SAC_PHASE_SIGN, dtype=actor.dtype, device=actor.device))
+        )
+    mirrored_actor = actor[:, obs_perm] * obs_sign.to(dtype=actor.dtype)
+    if actions is None:
+        return mirrored_actor, None
+    if actions.ndim != 2 or actions.shape[1] != 14:
+        raise ValueError(f"actions must have shape (N, 14), got {actions.shape}")
+    mirrored_actions = actions[:, action_perm] * action_sign.to(dtype=actions.dtype)
+    return mirrored_actor, mirrored_actions
+
+
+__all__ = ["microduck_velocity_symmetry", "mirror_microduck_velocity_tensors"]

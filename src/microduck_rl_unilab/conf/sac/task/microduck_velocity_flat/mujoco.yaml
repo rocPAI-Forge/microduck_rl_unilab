@@ -10,6 +10,13 @@ training:
   sim_backend: mujoco
 
 algo:
+  runtime_impl: microduck_pure_sac
+  runtime_resolver: microduck_rl_unilab.tasks.microduck.pure_sac:resolve_microduck_pure_sac_runtime
+  actor:
+    mirror_loss_coeff: 2.0
+    entropy_start_ratio: 0.0
+    entropy_end_ratio: 0.55
+    entropy_schedule_steps: 56000
   num_envs: 2048
   learning_starts: 10
   max_iterations: 5000

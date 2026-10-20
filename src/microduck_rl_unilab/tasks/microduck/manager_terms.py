@@ -24,7 +24,7 @@ from unilab.managers import (
     SceneEntityCfg,
 )
 from unilab.tasks.locomotion.common.manager_terms import SensorTermBase
-from unilab.utils.rotation import np_wrap_to_pi
+from unilab.utils.rotation import np_quat_apply_inverse, np_wrap_to_pi
 
 if TYPE_CHECKING:
     from unilab.base.entity import Entity
@@ -33,6 +33,19 @@ if TYPE_CHECKING:
 
 _DEFAULT_ASSET_CFG = SceneEntityCfg("robot")
 _FOOT_CONTACT_SENSORS = ("left_foot_contact", "right_foot_contact")
+
+
+def _trunk_pitch(quat: np.ndarray) -> np.ndarray:
+    """Trunk pitch in radians. Positive when the trunk pitches forward.
+
+    Body-frame gravity x is positive in a nose dive and stays near zero for
+    pure roll or yaw, so this angle does not charge a lateral weave.
+    """
+    gravity_b = np_quat_apply_inverse(
+        quat,
+        np.broadcast_to(np.asarray([[0.0, 0.0, -1.0]], dtype=quat.dtype), (quat.shape[0], 3)),
+    )
+    return np.arcsin(np.clip(np.nan_to_num(gravity_b[:, 0], nan=0.0), -1.0, 1.0))
 
 
 def _finite_real(
@@ -622,6 +635,267 @@ class flight_phase(_FootContactTerm):
         return np.asarray(~np.any(self._contact(env), axis=1), dtype=get_global_dtype())
 
 
+class gait_phase_contact(_FootContactTerm):
+    """Reward the alternating contact pattern selected by a cyclic phase command.
+
+    The phase command is encoded as ``[cos(phase), sin(phase), 0]``.  Positive
+    cosine selects left stance and negative cosine selects right stance.
+    Squaring the fraction of matching feet gives partial credit for discovering
+    one correct leg while preserving a 4:1 preference for the full alternating
+    pattern over double support or flight.
+    """
+
+    _allowed_params = frozenset(
+        {
+            "phase_command_name",
+            "velocity_command_name",
+            "command_threshold",
+        }
+    )
+
+    def __init__(self, cfg: ManagerTermBaseCfg, env: ManagerBasedRlEnv):
+        super().__init__(cfg, env)
+        self._phase_command_name = cfg.params.get("phase_command_name", "gait_phase")
+        self._velocity_command_name = cfg.params.get("velocity_command_name", "twist")
+        self._command_threshold = _finite_real(
+            cfg.params.get("command_threshold", 0.01),
+            label=f"{self.name} command_threshold",
+            minimum=0.0,
+        )
+
+    def __call__(self, env: ManagerBasedRlEnv, **params: Any) -> np.ndarray:
+        del params
+        phase = _command(env, self.name, self._phase_command_name)
+        if phase.shape[1] < 2:
+            raise ValueError(
+                f"{self.name} phase command must contain cosine and sine, "
+                f"received shape {phase.shape}"
+            )
+        velocity = _command(env, self.name, self._velocity_command_name)
+        moving = (
+            np.linalg.norm(velocity[:, :2], axis=1) + np.abs(velocity[:, 2])
+            > self._command_threshold
+        )
+        left_stance = phase[:, 0] >= 0.0
+        target = np.stack((left_stance, ~left_stance), axis=1)
+        match_fraction = np.mean(self._contact(env) == target, axis=1)
+        reward = np.square(match_fraction) * moving
+        return np.asarray(reward, dtype=get_global_dtype())
+
+
+class sagittal_step(_FootContactTerm):
+    """Reward how far the swing foot reaches ahead of the stance foot.
+
+    Scored only in single stance while a velocity command is active. Double
+    support, flight, and a stationary command score zero, so a static split
+    does not collect the reward. The reach is clipped to ``target_length``.
+    Trunk pitch in either direction multiplies the reward by a Gaussian that is
+    already near zero once the lean is clear, so tipping over cannot collect it.
+    """
+
+    _allowed_params = frozenset(
+        {
+            "command_name",
+            "command_threshold",
+            "target_length",
+            "pitch_gate_std",
+            "asset_cfg",
+        }
+    )
+
+    def __init__(self, cfg: ManagerTermBaseCfg, env: ManagerBasedRlEnv):
+        super().__init__(cfg, env)
+        self._command_name = cfg.params.get("command_name", "twist")
+        self._command_threshold = _finite_real(
+            cfg.params.get("command_threshold", 0.01),
+            label=f"{self.name} command_threshold",
+            minimum=0.0,
+        )
+        self._target_length = _finite_real(
+            cfg.params.get("target_length", 0.08),
+            label=f"{self.name} target_length",
+            minimum=0.0,
+            strict_minimum=True,
+        )
+        self._pitch_gate_std = _finite_real(
+            cfg.params.get("pitch_gate_std", 0.25),
+            label=f"{self.name} pitch_gate_std",
+            minimum=0.0,
+            strict_minimum=True,
+        )
+        asset_cfg = cfg.params.get("asset_cfg", _DEFAULT_ASSET_CFG)
+        if not isinstance(asset_cfg, SceneEntityCfg):
+            raise TypeError(f"{self.name} asset_cfg must be SceneEntityCfg")
+        self._entity = cast("Entity", env.scene[asset_cfg.name])
+        body_names = asset_cfg.body_names
+        if isinstance(body_names, str) or not isinstance(body_names, (list, tuple)) or len(body_names) != 2:
+            raise ValueError(f"{self.name} asset_cfg.body_names must list the left and right ankles")
+        available = list(self._entity.body_names)
+        try:
+            self._body_ids = np.asarray([available.index(name) for name in body_names], dtype=np.intp)
+        except ValueError as exc:
+            raise ValueError(f"{self.name} could not find bodies {list(body_names)} in {available}") from exc
+
+    def __call__(self, env: ManagerBasedRlEnv, **params: Any) -> np.ndarray:
+        del params
+        contact = self._contact(env)
+        command = _command(env, self.name, self._command_name)
+        moving = (
+            np.linalg.norm(command[:, :2], axis=1) + np.abs(command[:, 2]) > self._command_threshold
+        )
+        single_stance = np.sum(contact, axis=1) == 1
+        heading = np.asarray(self._entity.data.heading_w, dtype=get_global_dtype())
+        forward = np.stack((np.cos(heading), np.sin(heading)), axis=1)
+        feet = np.asarray(self._entity.data.body_link_pos_w[:, self._body_ids, :2], dtype=get_global_dtype())
+        root = np.asarray(self._entity.data.root_link_pos_w[:, :2], dtype=get_global_dtype())
+        along = np.sum((feet - root[:, None, :]) * forward[:, None, :], axis=-1)
+        left_stance = contact[:, 0]
+        stance = np.where(left_stance, along[:, 0], along[:, 1])
+        swing = np.where(left_stance, along[:, 1], along[:, 0])
+        reach = np.clip(swing - stance, 0.0, self._target_length) / self._target_length
+        pitch = _trunk_pitch(np.asarray(self._entity.data.root_link_quat_w, dtype=get_global_dtype()))
+        gate = np.exp(-np.square(np.abs(pitch) / self._pitch_gate_std))
+        reward = reach * single_stance * moving * gate
+        return np.asarray(reward, dtype=get_global_dtype())
+
+
+class trunk_pitch_cost(ManagerTermBase):
+    """Squared trunk pitch. The exponential upright reward saturates in a dive.
+
+    Positive pitch is a nose dive. Roll and yaw leave this cost near zero.
+    """
+
+    _allowed_params = frozenset({"asset_cfg"})
+
+    def __init__(self, cfg: ManagerTermBaseCfg, env: ManagerBasedRlEnv):
+        super().__init__(env)
+        unexpected = set(cfg.params) - self._allowed_params
+        if unexpected:
+            raise TypeError(f"{self.name} received unsupported parameters: {sorted(unexpected)}")
+        asset_cfg = cfg.params.get("asset_cfg", _DEFAULT_ASSET_CFG)
+        if not isinstance(asset_cfg, SceneEntityCfg):
+            raise TypeError(f"{self.name} asset_cfg must be SceneEntityCfg")
+        self._entity = cast("Entity", env.scene[asset_cfg.name])
+
+    def __call__(self, env: ManagerBasedRlEnv, **params: Any) -> np.ndarray:
+        del env, params
+        quat = np.asarray(self._entity.data.root_link_quat_w, dtype=get_global_dtype())
+        return np.asarray(np.square(_trunk_pitch(quat)), dtype=get_global_dtype())
+
+
+class fallen_cost(ManagerTermBase):
+    """1 on the step whose trunk tilt exceeds the fall limit, otherwise 0.
+
+    SAC discounts a later fall away within about a second at gamma 0.97. Charging
+    the fall on the termination step, with a higher discount, is what reaches the
+    actions that tipped the robot.
+    """
+
+    _allowed_params = frozenset({"asset_cfg", "limit_angle"})
+
+    def __init__(self, cfg: ManagerTermBaseCfg, env: ManagerBasedRlEnv):
+        super().__init__(env)
+        unexpected = set(cfg.params) - self._allowed_params
+        if unexpected:
+            raise TypeError(f"{self.name} received unsupported parameters: {sorted(unexpected)}")
+        asset_cfg = cfg.params.get("asset_cfg", _DEFAULT_ASSET_CFG)
+        if not isinstance(asset_cfg, SceneEntityCfg):
+            raise TypeError(f"{self.name} asset_cfg must be SceneEntityCfg")
+        self._entity = cast("Entity", env.scene[asset_cfg.name])
+        self._limit_angle = _finite_real(
+            cfg.params.get("limit_angle", 1.2217304763960306),
+            label=f"{self.name} limit_angle",
+            minimum=0.0,
+            strict_minimum=True,
+        )
+
+    def __call__(self, env: ManagerBasedRlEnv, **params: Any) -> np.ndarray:
+        del env, params
+        gravity = np.asarray(self._entity.data.projected_gravity_b, dtype=get_global_dtype())
+        tilt = np.arccos(np.clip(-gravity[:, 2], -1.0, 1.0))
+        return np.asarray(tilt > self._limit_angle, dtype=get_global_dtype())
+
+
+class head_lateral_cost(_JointCommandTerm):
+    """Quadratic yaw/roll cost, leaving neck and head pitch to the pose reward.
+
+    The returned cost is the mean squared position error and joint velocity.
+    A negative reward weight penalizes the lateral head weave without pulling
+    the forward head pitch back to zero.
+    """
+
+    _allowed_params = frozenset(
+        {"asset_cfg", "command_name", "command_indices", "pos_std", "vel_std"}
+    )
+
+    def __init__(self, cfg: ManagerTermBaseCfg, env: ManagerBasedRlEnv):
+        super().__init__(cfg, env)
+        indices = cfg.params.get("command_indices")
+        if not isinstance(indices, (list, tuple)) or not indices:
+            raise ValueError(f"{self.name} command_indices must be a non-empty sequence")
+        self._command_indices = np.asarray(indices, dtype=np.intp)
+        if self._command_indices.shape != (self._joint_ids.size,):
+            raise ValueError(
+                f"{self.name} command_indices must match the selected joint count, "
+                f"received {self._command_indices.size} indices for {self._joint_ids.size} joints"
+            )
+        self._pos_std = _finite_real(
+            cfg.params.get("pos_std", 0.1),
+            label=f"{self.name} pos_std",
+            minimum=0.0,
+            strict_minimum=True,
+        )
+        self._vel_std = _finite_real(
+            cfg.params.get("vel_std", 1.0),
+            label=f"{self.name} vel_std",
+            minimum=0.0,
+            strict_minimum=True,
+        )
+
+    def __call__(self, env: ManagerBasedRlEnv, **params: Any) -> np.ndarray:
+        del params
+        command = _command(env, self.name, self._command_name)
+        if int(np.max(self._command_indices)) >= command.shape[1]:
+            raise ValueError(
+                f"{self.name} command width {command.shape[1]} does not cover "
+                f"indices {self._command_indices.tolist()}"
+            )
+        position = self._entity.data.joint_pos[:, self._joint_ids]
+        default = self._entity.data.default_joint_pos[:, self._joint_ids]
+        velocity = self._entity.data.joint_vel[:, self._joint_ids]
+        error = position - default - command[:, self._command_indices]
+        cost = np.square(error / self._pos_std) + np.square(velocity / self._vel_std)
+        return np.asarray(np.mean(cost, axis=1), dtype=get_global_dtype())
+
+
+class yaw_rate_cost(ManagerTermBase):
+    """Squared yaw-rate tracking error. The exponential tracking kernel saturates."""
+
+    _allowed_params = frozenset({"command_name", "asset_cfg"})
+
+    def __init__(self, cfg: ManagerTermBaseCfg, env: ManagerBasedRlEnv):
+        super().__init__(env)
+        unexpected = set(cfg.params) - self._allowed_params
+        if unexpected:
+            raise TypeError(f"{self.name} received unsupported parameters: {sorted(unexpected)}")
+        command_name = cfg.params.get("command_name", "twist")
+        if not isinstance(command_name, str) or not command_name:
+            raise ValueError(f"{self.name} command_name must be a non-empty string")
+        self._command_name = command_name
+        asset_cfg = cfg.params.get("asset_cfg", _DEFAULT_ASSET_CFG)
+        if not isinstance(asset_cfg, SceneEntityCfg):
+            raise TypeError(f"{self.name} asset_cfg must be SceneEntityCfg")
+        self._entity = cast("Entity", env.scene[asset_cfg.name])
+
+    def __call__(self, env: ManagerBasedRlEnv, **params: Any) -> np.ndarray:
+        del params
+        command = _command(env, self.name, self._command_name)
+        if command.shape[1] < 3:
+            raise ValueError(f"{self.name} command must contain yaw rate")
+        yaw_rate = np.asarray(self._entity.data.root_link_ang_vel_b[:, 2], dtype=get_global_dtype())
+        return np.asarray(np.square(yaw_rate - command[:, 2]), dtype=get_global_dtype())
+
+
 def posture_height_tracking(
     env: ManagerBasedRlEnv,
     command_name: str = "twist",
@@ -750,9 +1024,15 @@ __all__ = [
     "body_pose_tracking",
     "flight_phase",
     "foot_air_time_biped",
+    "gait_phase_contact",
+    "sagittal_step",
+    "fallen_cost",
+    "trunk_pitch_cost",
+    "head_lateral_cost",
     "head_pose_bias",
     "head_pose_tracking",
     "leg_pose",
     "phase_height_tracking",
     "posture_height_tracking",
+    "yaw_rate_cost",
 ]

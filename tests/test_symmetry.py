@@ -5,7 +5,10 @@ from __future__ import annotations
 import torch
 from tensordict import TensorDict
 
-from microduck_rl_unilab.tasks.microduck.symmetry import microduck_velocity_symmetry
+from microduck_rl_unilab.tasks.microduck.symmetry import (
+    microduck_velocity_symmetry,
+    mirror_microduck_velocity_tensors,
+)
 
 
 def _mirror(actor: torch.Tensor, action: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -38,3 +41,19 @@ def test_microduck_velocity_mirror_flips_lateral_and_yaw_commands() -> None:
     mirrored_actor, _ = _mirror(actor, action)
 
     torch.testing.assert_close(mirrored_actor[0, 48:51], torch.tensor((0.3, -0.2, -0.7)))
+
+
+def test_phase_conditioned_sac_mirror_shifts_phase_by_half_cycle() -> None:
+    actor = torch.arange(64, dtype=torch.float32).unsqueeze(0)
+    actor[0, 61:64] = torch.tensor((0.6, -0.8, 0.0))
+    action = torch.arange(14, dtype=torch.float32).unsqueeze(0)
+
+    mirrored_actor, mirrored_action = mirror_microduck_velocity_tensors(actor, action)
+    restored_actor, restored_action = mirror_microduck_velocity_tensors(
+        mirrored_actor, mirrored_action
+    )
+
+    torch.testing.assert_close(mirrored_actor[0, 61:64], torch.tensor((-0.6, 0.8, 0.0)))
+    torch.testing.assert_close(restored_actor, actor)
+    assert restored_action is not None
+    torch.testing.assert_close(restored_action, action)
