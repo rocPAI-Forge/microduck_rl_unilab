@@ -127,6 +127,10 @@ class MicroduckVelocityCommandCfg(UniformVelocityCommandCfg):
     spawn_heading_stiffness: float = 1.5
     spawn_cross_track_stiffness: float = 0.0
     spawn_heading_yaw_rate_limit: float = 0.5
+    # Share of resamples whose forward speed is drawn from high_speed_range
+    # instead of ranges.lin_vel_x, so the top of a wide band keeps practice.
+    high_speed_fraction: float = 0.0
+    high_speed_range: tuple[float, float] | None = None
 
     def build(self, env: ManagerBasedRlEnv) -> MicroduckVelocityCommand:
         return MicroduckVelocityCommand(self, env)
@@ -164,6 +168,23 @@ class MicroduckVelocityCommand(UniformVelocityCommand):
             minimum=0.0,
             strict_minimum=True,
         )
+        self._high_speed_fraction = _ratio(
+            cfg.high_speed_fraction,
+            label="MicroduckVelocityCommand high_speed_fraction",
+        )
+        self._high_speed_range: tuple[float, float] | None = None
+        if self._high_speed_fraction > 0.0:
+            if cfg.high_speed_range is None or len(cfg.high_speed_range) != 2:
+                raise ValueError(
+                    "MicroduckVelocityCommand high_speed_fraction needs a "
+                    "two-value high_speed_range"
+                )
+            low, high = (float(value) for value in cfg.high_speed_range)
+            if not (np.isfinite(low) and np.isfinite(high) and low <= high):
+                raise ValueError(
+                    "MicroduckVelocityCommand high_speed_range must be finite and ordered"
+                )
+            self._high_speed_range = (low, high)
         super().__init__(cfg, env)
         self._spawn_heading = np.asarray(
             self.robot.data.heading_w, dtype=get_global_dtype()
@@ -180,7 +201,22 @@ class MicroduckVelocityCommand(UniformVelocityCommand):
     def _resample_command(self, env_ids: np.ndarray) -> None:
         super()._resample_command(env_ids)
         if self._hold_spawn_heading:
-            self._capture_spawn_heading[env_ids] = True
+            # CommandTerm.reset zeroes command_counter before resampling, so a
+            # zero count marks an episode start. Timed resamples change speed
+            # only and must keep the ray the rewards measure against.
+            fresh = env_ids[self.command_counter[env_ids] == 0]
+            self._capture_spawn_heading[fresh] = True
+        if self._high_speed_range is not None and len(env_ids) > 0:
+            biased = (
+                self._env.rng.uniform(0.0, 1.0, len(env_ids)) < self._high_speed_fraction
+            )
+            fast_ids = env_ids[biased & ~self.is_standing_env[env_ids]]
+            if len(fast_ids) > 0:
+                low, high = self._high_speed_range
+                self.vel_command_b[fast_ids, 0] = self._env.rng.uniform(
+                    low, high, len(fast_ids)
+                )
+                self.vel_command_w[fast_ids, 0] = self.vel_command_b[fast_ids, 0]
         if self._turn_fraction == 0.0 or len(env_ids) == 0:
             return
         selected = self._env.rng.uniform(0.0, 1.0, len(env_ids)) < self._turn_fraction

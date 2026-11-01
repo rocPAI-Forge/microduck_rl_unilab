@@ -10,6 +10,11 @@ policy was trained with. A checkpoint counts only when a 60 s battery keeps
 the head upright, the heading inside the published band, and the sticky
 straight-pose gate up. The fastest such checkpoint then gets the 300 s battery.
 
+``--eval-speeds`` scores every checkpoint at several commands and gates on
+the worst one; with ``--max-speed-error`` the speed gate becomes
+``|measured - command|`` instead of a minimum speed. ``--stress-speeds`` adds
+the push/CoM/tilt stress battery at those commands.
+
 Usage:
     HIP_VISIBLE_DEVICES=0 uv run --no-sync scripts/train_sprint_straight_speed.py
 """
@@ -31,6 +36,7 @@ DEFAULT_RESULTS = REPO_ROOT / "results" / "sprint_straight_speed.jsonl"
 # Scoring always uses the push-free closed-loop owner so every round is judged
 # on the same battery, whichever owner trained it.
 OWNER = "microduck_sprint_straightspeed_flat/mujoco"
+STRESS_OWNER = "microduck_sprint_straighthold_flat/mujoco"
 DEFAULT_TASK = "microduck_sprint_straightspeed_flat"
 
 
@@ -77,21 +83,25 @@ def _run_json(command: list[str], *, output: Path) -> dict[str, Any] | None:
     return json.loads(output.read_text(encoding="utf-8"))
 
 
-def _score_checkpoint(
+def _battery(
     checkpoint: Path,
     *,
+    speed: float,
     num_envs: int,
     duration: float,
     seed: int,
+    stress: bool = False,
 ) -> dict[str, Any] | None:
+    tag = "stress_" if stress else ""
     battery_out = checkpoint.with_name(
-        f"battery_{checkpoint.stem}_{int(duration)}s_seed{seed}.json"
+        f"battery_{tag}{checkpoint.stem}_{int(duration)}s_seed{seed}_v{speed:g}.json"
     )
     battery = _run_json(
         [
             "uv", "run", "--no-sync", "scripts/eval_sprint_speed.py", str(checkpoint),
-            "--owner", OWNER,
-            "--speed", "2.2",
+            "--owner", STRESS_OWNER if stress else OWNER,
+            *(["--stress"] if stress else []),
+            "--speed", str(speed),
             "--num-envs", str(num_envs),
             "--warmup", "1",
             "--duration", str(duration),
@@ -105,12 +115,11 @@ def _score_checkpoint(
         return None
     speed_block = battery.get("body_forward_speed_m_s") or {}
     horizon = battery.get("straight_pose_horizon_s") or {}
+    measured = speed_block.get("mean")
     return {
-        "checkpoint": str(checkpoint),
-        "iteration": int(checkpoint.stem.split("_")[1]),
-        "duration_s": duration,
-        "seed": seed,
-        "speed_m_s": speed_block.get("mean"),
+        "command_m_s": speed,
+        "speed_m_s": measured,
+        "speed_error_m_s": None if measured is None else abs(float(measured) - speed),
         "spawn_forward_m": (battery.get("final_spawn_forward_displacement_m") or {}).get("mean"),
         "survival_fraction": battery.get("survival_fraction"),
         "heading_error_deg": battery.get("mean_absolute_heading_error_deg"),
@@ -121,19 +130,88 @@ def _score_checkpoint(
     }
 
 
+def _score_checkpoint(
+    checkpoint: Path,
+    *,
+    speeds: list[float],
+    num_envs: int,
+    duration: float,
+    seed: int,
+    stress_speeds: list[float] | None = None,
+    stress_duration: float = 60.0,
+) -> dict[str, Any] | None:
+    """Run one battery per command speed and keep the worst case of each gate."""
+    per_speed = []
+    for speed in speeds:
+        battery = _battery(
+            checkpoint, speed=speed, num_envs=num_envs, duration=duration, seed=seed
+        )
+        if battery is None or battery["speed_m_s"] is None:
+            return None
+        per_speed.append(battery)
+    stress_rows = []
+    for speed in stress_speeds or []:
+        battery = _battery(
+            checkpoint,
+            speed=speed,
+            num_envs=num_envs,
+            duration=stress_duration,
+            seed=seed,
+            stress=True,
+        )
+        if battery is None or battery["survival_fraction"] is None:
+            return None
+        stress_rows.append(battery)
+
+    def worst(key: str, pick: Any) -> Any:
+        values = [row[key] for row in per_speed]
+        return None if any(value is None for value in values) else pick(values)
+
+    record = {
+        "checkpoint": str(checkpoint),
+        "iteration": int(checkpoint.stem.split("_")[1]),
+        "duration_s": duration,
+        "seed": seed,
+        "speed_m_s": sum(row["speed_m_s"] for row in per_speed) / len(per_speed),
+        "speed_error_m_s": worst("speed_error_m_s", max),
+        "survival_fraction": worst("survival_fraction", min),
+        "heading_error_deg": worst("heading_error_deg", max),
+        "straight_pose_survival_fraction": worst("straight_pose_survival_fraction", min),
+        "head_inverted_time_fraction": worst("head_inverted_time_fraction", max),
+    }
+    if len(per_speed) == 1:
+        record.update({key: value for key, value in per_speed[0].items() if key not in record})
+    else:
+        record["per_speed"] = per_speed
+    if stress_rows:
+        record["stress_per_speed"] = stress_rows
+        record["stress_survival_fraction"] = min(
+            float(row["survival_fraction"]) for row in stress_rows
+        )
+    return record
+
+
 def _passes(record: dict[str, Any], args: argparse.Namespace) -> bool:
-    values = (
-        record.get("speed_m_s"),
-        record.get("survival_fraction"),
-        record.get("heading_error_deg"),
-        record.get("straight_pose_survival_fraction"),
-        record.get("head_inverted_time_fraction"),
+    keys = (
+        "speed_m_s",
+        "speed_error_m_s",
+        "survival_fraction",
+        "heading_error_deg",
+        "straight_pose_survival_fraction",
+        "head_inverted_time_fraction",
     )
-    if any(value is None for value in values):
+    if any(record.get(key) is None for key in keys):
         return False
-    speed, survival, heading, straight, inverted = (float(value) for value in values)
+    speed, error, survival, heading, straight, inverted = (float(record[key]) for key in keys)
+    if args.max_speed_error is None:
+        speed_ok = speed >= args.min_speed
+    else:
+        speed_ok = error <= args.max_speed_error
+    stress = record.get("stress_survival_fraction")
+    stress_ok = stress is None or float(stress) >= args.min_stress_survival
     return (
-        speed >= args.min_speed
+        speed_ok
+        and stress_ok
         and survival >= args.min_survival
         and heading <= args.max_heading
         and straight >= args.min_straight
@@ -146,14 +224,19 @@ def _value(record: dict[str, Any], key: str, missing: float) -> float:
     return missing if value is None else float(value)
 
 
-def _score(record: dict[str, Any]) -> float:
-    speed = _value(record, "speed_m_s", 0.0)
+def _score(record: dict[str, Any], args: argparse.Namespace) -> float:
+    if args.max_speed_error is None:
+        speed_term = _value(record, "speed_m_s", 0.0)
+    else:
+        error = _value(record, "speed_error_m_s", 1.0)
+        speed_term = max(0.0, 1.0 - error / (3.0 * args.max_speed_error))
     survival = _value(record, "survival_fraction", 0.0)
     straight = _value(record, "straight_pose_survival_fraction", 0.0)
     heading = _value(record, "heading_error_deg", 90.0)
     inverted = _value(record, "head_inverted_time_fraction", 1.0)
     heading_quality = max(0.0, 1.0 - heading / 25.0)
-    return speed * survival * straight * heading_quality * (1.0 - inverted)
+    stress = _value(record, "stress_survival_fraction", 1.0)
+    return speed_term * survival * straight * heading_quality * (1.0 - inverted) * stress
 
 
 def _append(results_path: Path, record: dict[str, Any]) -> None:
@@ -177,6 +260,26 @@ def main() -> None:
     parser.add_argument("--eval-duration", type=float, default=60.0)
     parser.add_argument("--final-envs", type=int, default=128)
     parser.add_argument("--final-duration", type=float, default=300.0)
+    parser.add_argument(
+        "--eval-speeds",
+        type=lambda text: [float(value) for value in text.split(",")],
+        default=[2.2],
+        help="Comma-separated command speeds; every gate takes the worst speed.",
+    )
+    parser.add_argument(
+        "--max-speed-error",
+        type=float,
+        default=None,
+        help="Gate on |measured - command| instead of --min-speed.",
+    )
+    parser.add_argument(
+        "--stress-speeds",
+        type=lambda text: [float(value) for value in text.split(",")],
+        default=[],
+        help="Also run the push/CoM/tilt stress battery at these command speeds.",
+    )
+    parser.add_argument("--stress-duration", type=float, default=60.0)
+    parser.add_argument("--min-stress-survival", type=float, default=0.95)
     parser.add_argument("--min-speed", type=float, default=0.95)
     parser.add_argument("--min-survival", type=float, default=0.95)
     parser.add_argument("--max-heading", type=float, default=6.0)
@@ -254,21 +357,24 @@ def main() -> None:
     for checkpoint in checkpoints:
         record = _score_checkpoint(
             checkpoint,
+            speeds=args.eval_speeds,
             num_envs=args.eval_envs,
             duration=args.eval_duration,
             seed=args.seed,
+            stress_speeds=args.stress_speeds,
+            stress_duration=args.stress_duration,
         )
         if record is None:
             continue
         record["passes_gate"] = _passes(record, args)
-        record["score"] = _score(record)
+        record["score"] = _score(record, args)
         records.append(record)
         _append(results_path, record)
 
     passing = [record for record in records if record["passes_gate"]]
     if not passing:
         raise SystemExit("no checkpoint kept the straight-pose gate")
-    best = max(passing, key=_score)
+    best = max(passing, key=lambda record: _score(record, args))
     print(
         f"best gated checkpoint: {best['checkpoint']}\n"
         f"{json.dumps(best, ensure_ascii=False, indent=2)}",
@@ -276,14 +382,17 @@ def main() -> None:
     )
     final = _score_checkpoint(
         Path(best["checkpoint"]),
+        speeds=args.eval_speeds,
         num_envs=args.final_envs,
         duration=args.final_duration,
         seed=123,
+        stress_speeds=args.stress_speeds,
+        stress_duration=args.stress_duration,
     )
     if final is None:
         raise SystemExit("300 s battery failed")
     final["passes_gate"] = _passes(final, args)
-    final["score"] = _score(final)
+    final["score"] = _score(final, args)
     final["label"] = "final_300s"
     _append(results_path, final)
 

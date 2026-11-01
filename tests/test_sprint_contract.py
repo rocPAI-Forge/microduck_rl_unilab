@@ -412,6 +412,47 @@ def test_sprint_straighthold_owner_pins_weights_and_prices_falls() -> None:
     assert rewards["head_roll_band"].weight == pytest.approx(-4.0)
 
 
+def test_sprint_straightcmd_owner_pays_for_tracking_not_progress() -> None:
+    GlobalHydra.instance().clear()
+    with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
+        cfg = compose(
+            "config", overrides=["task=microduck_sprint_straightcmd_flat/mujoco"]
+        )
+    registry.ensure_registries()
+    env_cfg = registry.materialize_env_config("MicroduckSprintFlat")
+    apply_cfg_overrides(
+        env_cfg,
+        BackendAdapter(
+            cfg, root_dir=ROOT_DIR, algo_name="ppo"
+        ).build_task_env_cfg_override(),
+    )
+    env_cfg.validate()
+
+    twist = env_cfg.commands["twist"]
+    assert twist.hold_spawn_heading is True
+    assert twist.ranges.lin_vel_x == [0.3, 1.2]
+    assert twist.resampling_time_range == [6.0, 12.0]
+    assert env_cfg.max_episode_seconds == pytest.approx(60.0)
+    assert env_cfg.events["push_robot"].params["velocity_range"]["x"] == [-0.10, 0.10]
+    assert env_cfg.events["base_com"].params["com_range"]["x"] == [-0.008, 0.008]
+    assert env_cfg.events["head_com"].params["com_range"]["x"] == [-0.005, 0.005]
+    assert env_cfg.events["reset_base"].params["pose_range"]["roll"] == pytest.approx(
+        [-0.0262, 0.0262]
+    )
+    rewards = env_cfg.rewards
+    assert rewards["forward_progress"] is None
+    assert rewards["spawn_progress"] is None
+    assert twist.high_speed_fraction == pytest.approx(0.0)
+    assert rewards["tracking_lin_vel"].weight == pytest.approx(4.0)
+    assert rewards["tracking_lin_vel"].params["std"] == pytest.approx(0.6)
+    assert rewards["tracking_lin_vel_fine"].weight == pytest.approx(10.0)
+    assert rewards["tracking_lin_vel_fine"].params["std"] == pytest.approx(0.25)
+    assert rewards["head_tilt_excess"].weight == pytest.approx(-40.0)
+    assert rewards["fall"].weight == pytest.approx(-300.0)
+    assert rewards["heading_abs"].weight == pytest.approx(-0.75)
+    assert rewards["cross_track"].weight == pytest.approx(-0.8)
+
+
 def test_sprint_steerfix_owner_restores_bidirectional_yaw_lessons() -> None:
     GlobalHydra.instance().clear()
     with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
@@ -440,6 +481,56 @@ def test_sprint_steerfix_owner_restores_bidirectional_yaw_lessons() -> None:
     assert env_cfg.rewards["tracking_ang_vel"].weight == pytest.approx(12.0)
     assert env_cfg.rewards["planar_drift"].weight == pytest.approx(-0.20)
     assert env_cfg.rewards["head_roll_band"].weight == pytest.approx(-4.0)
+
+
+def test_timed_resample_keeps_the_spawn_ray(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        UniformVelocityCommand,
+        "_resample_command",
+        lambda self, env_ids: None,
+    )
+    term = object.__new__(MicroduckVelocityCommand)
+    term._hold_spawn_heading = True
+    term._turn_fraction = 0.0
+    term._high_speed_range = None
+    term._capture_spawn_heading = np.zeros(3, dtype=np.bool_)
+    # Row 0 was just reset; rows 1 and 2 hit their resampling timer mid-episode.
+    term.command_counter = np.asarray([0, 1, 4], dtype=np.int64)
+
+    term._resample_command(np.asarray([0, 1, 2], dtype=np.intp))
+
+    np.testing.assert_array_equal(term._capture_spawn_heading, [True, False, False])
+
+
+def test_high_speed_fraction_redraws_forward_speed_from_the_top_band(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        UniformVelocityCommand,
+        "_resample_command",
+        lambda self, env_ids: None,
+    )
+    num_envs = 2000
+    term = object.__new__(MicroduckVelocityCommand)
+    term._hold_spawn_heading = False
+    term._turn_fraction = 0.0
+    term._high_speed_fraction = 0.4
+    term._high_speed_range = (0.9, 1.2)
+    term._env = SimpleNamespace(rng=np.random.default_rng(0))
+    term.vel_command_b = np.zeros((num_envs, 3), dtype=np.float32)
+    term.vel_command_b[:, 0] = 0.5
+    term.vel_command_w = term.vel_command_b.copy()
+    term.is_standing_env = np.zeros(num_envs, dtype=np.bool_)
+    term.is_standing_env[:10] = True
+
+    term._resample_command(np.arange(num_envs, dtype=np.intp))
+
+    speeds = term.vel_command_b[:, 0]
+    fast = speeds != 0.5
+    assert not fast[:10].any()
+    assert 0.35 < fast.mean() < 0.45
+    assert speeds[fast].min() >= 0.9 and speeds[fast].max() <= 1.2
+    np.testing.assert_array_equal(term.vel_command_w[:, 0], speeds)
 
 
 def test_spawn_heading_capture_is_deferred_until_committed_state(

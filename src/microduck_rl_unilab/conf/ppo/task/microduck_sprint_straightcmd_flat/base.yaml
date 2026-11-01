@@ -1,0 +1,59 @@
+# @package _global_
+# Make the fast straight gait follow its forward-speed command.
+#
+# model_27000 runs about 1.15 m/s whatever the command says: it was trained on
+# a 1.65-2.2 m/s band it cannot reach, with uncapped forward and along-ray
+# progress rewards. This owner samples reachable commands, resamples them
+# mid-episode so the policy learns speed changes, and pays for tracking
+# instead of raw progress. A wide kernel pulls a policy that is still at its
+# old speed toward the command; a narrow kernel pays for landing on it. The
+# spawn-ray loop, head contract, fall penalty, and the stress-level
+# perturbations of the last straighthold stage stay on.
+defaults:
+  - /task/microduck_sprint_straighthold_flat/base
+  - _self_
+
+env:
+  commands:
+    twist:
+      resampling_time_range: [6.0, 12.0]
+      ranges:
+        lin_vel_x: [0.3, 1.2]
+  events:
+    push_robot:
+      params:
+        velocity_range:
+          x: [-0.10, 0.10]
+          y: [-0.10, 0.10]
+    base_com:
+      params:
+        com_range:
+          x: [-0.008, 0.008]
+          y: [-0.008, 0.008]
+          z: [-0.008, 0.008]
+    head_com:
+      params:
+        com_range:
+          x: [-0.005, 0.005]
+          y: [-0.005, 0.005]
+          z: [-0.005, 0.005]
+    reset_base:
+      params:
+        pose_range:
+          roll: [-0.0262, 0.0262]
+          pitch: [-0.0262, 0.0262]
+
+reward:
+  forward_progress: null
+  spawn_progress: null
+  # At 2 / 4 with a 0.2 fine kernel, the cheaper-to-hold slow gait won and the
+  # whole speed response collapsed toward the middle of the band.
+  tracking_lin_vel:
+    weight: 4.0
+    params: {std: 0.6, command_name: twist}
+  tracking_lin_vel_fine:
+    func: unilab.envs.mdp.track_linear_velocity
+    weight: 10.0
+    params: {std: 0.25, command_name: twist}
+  head_tilt_excess:
+    weight: -40.0

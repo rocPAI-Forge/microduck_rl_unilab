@@ -9,7 +9,7 @@ forward command:
   0°, 45°, …, 315°
 
 The ``--follow-*`` flags move the tracking camera, e.g. ``--follow-azimuth 90``
-for a side view of the gait.
+for a side view of the gait, and ``--speed`` changes the forward command.
 
     MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa \\
       uv run --no-sync scripts/render_straight_demos.py
@@ -58,7 +58,7 @@ FOLLOW_ELEVATION = -14.0
 FOLLOW_DISTANCE = 1.15
 
 
-def _compose_owner(*, duration_s: float, seed: int) -> Any:
+def _compose_owner(*, duration_s: float, seed: int, speed: float) -> Any:
     register_conf_search_path()
     GlobalHydra.instance().clear()
     with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
@@ -67,7 +67,7 @@ def _compose_owner(*, duration_s: float, seed: int) -> Any:
         cfg.algo.seed = seed
         cfg.env.max_episode_seconds = duration_s + 5.0
         twist = cfg.env.commands.twist
-        twist.ranges.lin_vel_x = [SPEED_M_S, SPEED_M_S]
+        twist.ranges.lin_vel_x = [speed, speed]
         twist.ranges.lin_vel_y = [0.0, 0.0]
         twist.ranges.ang_vel_z = [0.0, 0.0]
         twist.hold_spawn_heading = True
@@ -137,9 +137,10 @@ def _rollout(
     yaws: np.ndarray,
     xy: np.ndarray,
     steps: int,
+    speed: float,
 ) -> list[np.ndarray]:
     obs = wrapped.get_observations()
-    _place_robots(raw_env, yaws=yaws, xy=xy, speed=SPEED_M_S)
+    _place_robots(raw_env, yaws=yaws, xy=xy, speed=speed)
     obs = wrapped.get_observations()
     states = [np.asarray(raw_env.get_physics_state_snapshot(), dtype=np.float32).copy()]
     for _ in range(steps):
@@ -240,6 +241,7 @@ def _run_clip(
     output: Path,
     stride: int,
     kind: str,
+    speed: float = SPEED_M_S,
     low_camera: bool = False,
     follow_camera: tuple[float, float, float] = (
         FOLLOW_AZIMUTH,
@@ -247,7 +249,7 @@ def _run_clip(
         FOLLOW_DISTANCE,
     ),
 ) -> None:
-    cfg = _compose_owner(duration_s=duration_s, seed=seed)
+    cfg = _compose_owner(duration_s=duration_s, seed=seed, speed=speed)
     # algo cfg is the hydra cfg, not stored on the env. Load the policy with it.
     raw_env = _make_env(cfg, num_envs)
     wrapped: RslRlVecEnvWrapper | None = None
@@ -264,7 +266,9 @@ def _run_clip(
         policy = runner.get_inference_policy(device=device)
         steps = int(round(duration_s / float(raw_env.cfg.ctrl_dt)))
         xy = np.zeros((num_envs, 2), dtype=np.float64)
-        states = _rollout(raw_env, wrapped, policy, yaws=yaws, xy=xy, steps=steps)
+        states = _rollout(
+            raw_env, wrapped, policy, yaws=yaws, xy=xy, steps=steps, speed=speed
+        )
         travel = _travel(states)
         print(
             f"{kind}: {len(states)} states, travel m = {np.round(travel, 2).tolist()}",
@@ -297,6 +301,7 @@ def main() -> None:
     parser.add_argument("--follow-name", default="play_video_follow.mp4")
     parser.add_argument("--radial-seconds", type=float, default=10.0)
     parser.add_argument("--stride", type=int, default=2, help="Keep every Nth control step.")
+    parser.add_argument("--speed", type=float, default=SPEED_M_S, help="Forward command, m/s.")
     parser.add_argument("--device", default=None)
     parser.add_argument("--only", choices=("follow", "radial", "both"), default="both")
     parser.add_argument(
@@ -320,6 +325,7 @@ def main() -> None:
             output=args.out_dir / args.follow_name,
             stride=args.stride,
             kind="follow",
+            speed=args.speed,
             follow_camera=(args.follow_azimuth, args.follow_elevation, args.follow_distance),
         )
     if args.only in ("radial", "both"):
@@ -335,6 +341,7 @@ def main() -> None:
             output=args.out_dir / radial_name,
             stride=args.stride,
             kind="radial",
+            speed=args.speed,
             low_camera=args.low_camera,
         )
 

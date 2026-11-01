@@ -1,0 +1,191 @@
+{
+  "label": "sprint_straight_cmd",
+  "task": "MicroduckSprintFlat",
+  "train_owner": "microduck_sprint_straightcmd_flat",
+  "resume_from": "examples/sprint_straight_fast/model_27000.pt",
+  "checkpoint": "examples/sprint_straight_cmd/model_32250.pt",
+  "source_run": "2026-11-02_02-09-00_mujoco",
+  "source_iteration": 32250,
+  "command_band_m_s": [
+    0.3,
+    1.2
+  ],
+  "eval": {
+    "backend": "mujoco",
+    "num_envs": 512,
+    "seed": 777,
+    "warmup_s": 1.0,
+    "fall_tilt_deg": 70.0,
+    "clean_owner": "microduck_sprint_straightspeed_flat/mujoco",
+    "stress_owner": "microduck_sprint_straighthold_flat/mujoco",
+    "stress": {
+      "push_m_s": 0.1,
+      "trunk_com_m": 0.01,
+      "head_com_m": 0.006,
+      "reset_tilt_deg": 2.0
+    }
+  },
+  "clean_300s": {
+    "0.3": {
+      "body_forward_speed_m_s": 0.305,
+      "survival_fraction": 0.984,
+      "mean_absolute_heading_error_deg": 2.6,
+      "straight_pose_survival_fraction": 0.975,
+      "straight_pose_horizon_s": 292.5,
+      "spawn_forward_displacement_m": 93.9,
+      "head_up_tilt_deg": 25.8,
+      "head_inverted_time_fraction": 0.0005,
+      "straight_pose_break_counts": {
+        "fall": 4,
+        "heading": 8,
+        "head_inverted": 1
+      },
+      "falls": 8,
+      "falls_within_6s": 8
+    },
+    "0.6": {
+      "body_forward_speed_m_s": 0.58,
+      "survival_fraction": 0.996,
+      "mean_absolute_heading_error_deg": 1.94,
+      "straight_pose_survival_fraction": 0.996,
+      "straight_pose_horizon_s": 299.1,
+      "spawn_forward_displacement_m": 176.3,
+      "head_up_tilt_deg": 30.1,
+      "head_inverted_time_fraction": 0.0,
+      "straight_pose_break_counts": {
+        "fall": 1,
+        "heading": 0,
+        "head_inverted": 1
+      },
+      "falls": 2,
+      "falls_within_6s": 0
+    },
+    "0.9": {
+      "body_forward_speed_m_s": 0.878,
+      "survival_fraction": 0.994,
+      "mean_absolute_heading_error_deg": 1.61,
+      "straight_pose_survival_fraction": 0.969,
+      "straight_pose_horizon_s": 295.3,
+      "spawn_forward_displacement_m": 265.8,
+      "head_up_tilt_deg": 30.6,
+      "head_inverted_time_fraction": 0.0,
+      "straight_pose_break_counts": {
+        "fall": 0,
+        "heading": 15,
+        "head_inverted": 1
+      },
+      "falls": 3,
+      "falls_within_6s": 0
+    },
+    "1.2": {
+      "body_forward_speed_m_s": 1.12,
+      "survival_fraction": 0.947,
+      "mean_absolute_heading_error_deg": 1.8,
+      "straight_pose_survival_fraction": 0.9,
+      "straight_pose_horizon_s": 281.1,
+      "spawn_forward_displacement_m": 328.5,
+      "head_up_tilt_deg": 31.4,
+      "head_inverted_time_fraction": 0.0024,
+      "straight_pose_break_counts": {
+        "fall": 1,
+        "heading": 23,
+        "head_inverted": 28
+      },
+      "falls": 27,
+      "falls_within_6s": 2
+    }
+  },
+  "stress_60s": {
+    "0.3": {
+      "body_forward_speed_m_s": 0.303,
+      "survival_fraction": 0.953,
+      "mean_absolute_heading_error_deg": 2.63,
+      "straight_pose_survival_fraction": 0.939,
+      "straight_pose_horizon_s": 56.7,
+      "spawn_forward_displacement_m": 18.5,
+      "head_up_tilt_deg": 26.2,
+      "head_inverted_time_fraction": 0.0028,
+      "straight_pose_break_counts": {
+        "fall": 10,
+        "heading": 18,
+        "head_inverted": 3
+      },
+      "falls": 24,
+      "falls_within_6s": 18
+    },
+    "0.6": {
+      "body_forward_speed_m_s": 0.582,
+      "survival_fraction": 0.996,
+      "mean_absolute_heading_error_deg": 1.83,
+      "straight_pose_survival_fraction": 0.986,
+      "straight_pose_horizon_s": 59.2,
+      "spawn_forward_displacement_m": 35.7,
+      "head_up_tilt_deg": 30.2,
+      "head_inverted_time_fraction": 0.0,
+      "straight_pose_break_counts": {
+        "fall": 1,
+        "heading": 6,
+        "head_inverted": 0
+      },
+      "falls": 2,
+      "falls_within_6s": 2
+    },
+    "0.9": {
+      "body_forward_speed_m_s": 0.877,
+      "survival_fraction": 0.996,
+      "mean_absolute_heading_error_deg": 1.63,
+      "straight_pose_survival_fraction": 0.984,
+      "straight_pose_horizon_s": 59.4,
+      "spawn_forward_displacement_m": 53.5,
+      "head_up_tilt_deg": 30.7,
+      "head_inverted_time_fraction": 0.0,
+      "straight_pose_break_counts": {
+        "fall": 0,
+        "heading": 8,
+        "head_inverted": 0
+      },
+      "falls": 2,
+      "falls_within_6s": 0
+    },
+    "1.2": {
+      "body_forward_speed_m_s": 1.116,
+      "survival_fraction": 0.951,
+      "mean_absolute_heading_error_deg": 1.96,
+      "straight_pose_survival_fraction": 0.906,
+      "straight_pose_horizon_s": 56.3,
+      "spawn_forward_displacement_m": 66.1,
+      "head_up_tilt_deg": 32.3,
+      "head_inverted_time_fraction": 0.0037,
+      "straight_pose_break_counts": {
+        "fall": 2,
+        "heading": 25,
+        "head_inverted": 21
+      },
+      "falls": 25,
+      "falls_within_6s": 7
+    }
+  },
+  "gait": {
+    "0.6": {
+      "hip_split_sign_flip_fraction": 0.481,
+      "hip_crossings_per_s": 6.75,
+      "foot_gap_sign_flip_fraction": 0.47,
+      "foot_gap_peak_to_peak_m": 0.126,
+      "trunk_height_m": 0.125,
+      "head_yaw_deg": 1.18,
+      "head_roll_deg": 0.37
+    },
+    "1.2": {
+      "hip_split_sign_flip_fraction": 0.48,
+      "hip_crossings_per_s": 7.2,
+      "foot_gap_sign_flip_fraction": 0.48,
+      "foot_gap_peak_to_peak_m": 0.182,
+      "trunk_height_m": 0.13,
+      "head_yaw_deg": 2.08,
+      "head_roll_deg": 0.72
+    }
+  },
+  "known_limits": {
+    "note": "A 1.2 m/s command runs about 1.12 m/s; the top of the band is slightly under-tracked. At 1.2 m/s the 300 s straight-pose pass is about 90%, below model_27000 at the same speed. Every 0.3 m/s fall, clean or stressed, happens within the first 6 s after a standing start. Training pushed at up to 0.10 m/s, the same magnitude as the stress battery."
+  }
+}
