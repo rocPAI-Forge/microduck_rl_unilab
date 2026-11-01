@@ -1,0 +1,41 @@
+# @package _global_
+# Speed recovery on the published long-horizon straight gait.
+#
+# model_19297 holds the spawn ray and the head, but only covers it at about
+# 0.83 m/s. A faster continuation already showed that paying for body-frame
+# speed lets the gait cut the corner and fail the 300 s straight-pose gate.
+# This owner leaves that body-frame term, the yaw loop, and the head contract
+# alone. It ramps only the along-ray speed term, and caps that term at 1.6 m/s
+# so extra reward stops once the gait is near the 1.2 m/s target. Heading cost
+# ramps with it, because a new run restarts common_step_counter and a step
+# change in either term would not be attributable.
+defaults:
+  - /task/microduck_sprint_straightfix_flat/base
+  - _self_
+
+env:
+  curriculum:
+    spawn_progress_weight:
+      func: unilab.envs.mdp.reward_curriculum
+      params:
+        reward_name: spawn_progress
+        stages:
+          - {step: 0, weight: 3.0}
+          - {step: 24000, weight: 4.0}
+          - {step: 48000, weight: 5.0}
+    heading_abs_weight:
+      func: unilab.envs.mdp.reward_curriculum
+      params:
+        reward_name: heading_abs
+        stages:
+          - {step: 0, weight: -0.25}
+          - {step: 24000, weight: -0.50}
+          - {step: 48000, weight: -0.75}
+
+reward:
+  spawn_progress:
+    weight: 3.0
+    params:
+      speed_cap: 1.6
+  heading_abs:
+    weight: -0.25

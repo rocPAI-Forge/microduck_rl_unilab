@@ -200,6 +200,10 @@ def evaluate(
         )
         straight_pose_alive = np.ones(num_envs, dtype=np.bool_)
         straight_pose_steps = np.zeros(num_envs, dtype=np.int64)
+        alive_steps = np.zeros(num_envs, dtype=np.int64)
+        break_fall = np.zeros(num_envs, dtype=np.bool_)
+        break_heading = np.zeros(num_envs, dtype=np.bool_)
+        break_head = np.zeros(num_envs, dtype=np.bool_)
         final_heading_error = np.zeros(num_envs, dtype=np.float64)
         final_cross_track = np.zeros(num_envs, dtype=np.float64)
         final_forward_displacement = np.zeros(num_envs, dtype=np.float64)
@@ -222,6 +226,7 @@ def evaluate(
             gravity = np.asarray(robot.data.projected_gravity_b)
             tilt = np.arccos(np.clip(-gravity[:, 2], -1.0, 1.0))
             alive &= tilt <= math.radians(fall_tilt_deg)
+            alive_steps[alive] += 1
             if step < warmup_steps:
                 continue
             velocity = np.nan_to_num(np.asarray(robot.data.root_link_lin_vel_b))
@@ -248,6 +253,12 @@ def evaluate(
                 & (heading_error <= math.radians(25.0))
                 & (head_up_cos >= 0.0)
             )
+            breaking = straight_pose_alive & ~straight_pose_now
+            break_fall[breaking & ~alive] = True
+            break_heading[
+                breaking & alive & (heading_error > math.radians(25.0))
+            ] = True
+            break_head[breaking & alive & (head_up_cos < 0.0)] = True
             straight_pose_alive &= straight_pose_now
             straight_pose_steps[straight_pose_alive] += 1
             final_heading_error[alive] = heading_error[alive]
@@ -287,6 +298,10 @@ def evaluate(
                 else "microduck_sprint_flat/mujoco"
             ),
             "survival_fraction": float(np.mean(alive)),
+            # Rollout time (warm-up included) at which each fallen row went down.
+            "fall_times_s": sorted(
+                float(steps * ctrl_dt) for steps in alive_steps[~alive]
+            ),
             "body_forward_speed_m_s": {
                 "mean": float(np.mean(mean_speed)) if mean_speed.size else None,
                 "p10": _quantile(mean_speed, 0.10),
@@ -352,6 +367,13 @@ def evaluate(
             "straight_pose_survival_fraction": float(
                 np.mean(straight_pose_alive)
             ),
+            # Why each row first left the straight pose. Heading and head can
+            # break on the same step, so the counts may overlap.
+            "straight_pose_break_counts": {
+                "fall": int(np.sum(break_fall)),
+                "heading": int(np.sum(break_heading)),
+                "head_inverted": int(np.sum(break_head)),
+            },
             "straight_pose_horizon_s": {
                 "mean": float(np.mean(straight_pose_steps) * ctrl_dt),
                 "p10": float(np.quantile(straight_pose_steps, 0.10) * ctrl_dt),

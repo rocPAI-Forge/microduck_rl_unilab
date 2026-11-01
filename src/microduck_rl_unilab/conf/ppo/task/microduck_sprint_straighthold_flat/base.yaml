@@ -1,0 +1,66 @@
+# @package _global_
+# Hold the faster straight gait for long horizons.
+#
+# The straightspeed continuation reaches about 1.2 m/s with a ~2 deg mean
+# heading, but over 300 s a few percent of rows stumble: they either fall or
+# swing past the 25 deg straight-pose band once. Mean heading is already fine,
+# so this owner targets the rare event instead. A fall penalty prices the
+# stumble inside PPO's ~2 s discount horizon, and mild interval pushes put the
+# policy into near-stumble states during training. Every weight that ramps in
+# the parent owner is pinned at its converged value, because a resumed run
+# restarts common_step_counter.
+defaults:
+  - /task/microduck_sprint_straightspeed_flat/base
+  - _self_
+
+env:
+  max_episode_seconds: 60.0
+  commands:
+    twist:
+      resampling_time_range: [60.0, 60.0]
+  events:
+    push_robot:
+      func: unilab.envs.mdp.push_by_setting_velocity
+      mode: interval
+      interval_range_s: [3.0, 6.0]
+      is_global_time: false
+      params:
+        velocity_range:
+          x: [-0.05, 0.05]
+          y: [-0.05, 0.05]
+          z: [0.0, 0.0]
+          roll: [0.0, 0.0]
+          pitch: [0.0, 0.0]
+          yaw: [0.0, 0.0]
+  curriculum:
+    spawn_progress_weight: null
+    heading_abs_weight: null
+
+reward:
+  tracking_lin_vel:
+    weight: 1.0
+    params: {std: 1.0, command_name: twist}
+  spawn_progress:
+    weight: 5.0
+  heading_abs:
+    weight: -0.75
+  cross_track:
+    weight: -0.8
+  straightness:
+    weight: -0.5
+  fall:
+    func: unilab.envs.mdp.is_terminated
+    weight: -300.0
+  # Most 300 s straight-pose breaks are a brief head flip past horizontal,
+  # not a heading excursion. Off by default; the head-hold pass raises it.
+  head_tilt_excess:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.head_tilt_excess_cost
+    weight: 0.0
+    params:
+      free_tilt_deg: 60.0
+      zero_tilt_deg: 95.0
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+        body_names: [jaw_soft]
+        preserve_order: true

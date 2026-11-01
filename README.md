@@ -53,6 +53,7 @@ Training reproduction status (complete requires both metrics and inference video
 | `sprint_speed_1p68` PPO | Complete, about 1.68 m/s. Sprint is not an upstream microduck_rl task; it is a gait that exists only in this repo | [`examples/sprint_speed_1p68/model_11997.pt`](examples/sprint_speed_1p68/model_11997.pt) |
 | `sprint_head_upright` PPO | Complete, about 1.32 m/s with the head up. Same: this repo only | [`examples/sprint_head_upright/model_14500.pt`](examples/sprint_head_upright/model_14500.pt) |
 | `sprint_straight_long` PPO | Complete, about 0.83 m/s and straight for 300 s. Same: this repo only | [`examples/sprint_straight_long/model_19297.pt`](examples/sprint_straight_long/model_19297.pt) |
+| `sprint_straight_fast` PPO | Complete, about 1.15 m/s, 300 s straight-pose pass 93–99% over three seeds. Same: this repo only | [`examples/sprint_straight_fast/model_27000.pt`](examples/sprint_straight_fast/model_27000.pt) / [`play_video_side.mp4`](examples/sprint_straight_fast/play_video_side.mp4) |
 | `sprint_steerfix_flat` PPO | Not trained. Same: this repo only; the config exists and there are no weights | — |
 
 Tasks stay 1:1 with upstream microduck_rl: BAM (bam xl330-m6 voltage servo,
@@ -137,6 +138,7 @@ uv run --no-sync scripts/train_sprint_robust.py \
 | [`examples/sprint_speed_1p68/`](examples/sprint_speed_1p68/) | 1.682 m/s | 89.8% | ~91% | Speed recipe. Thighs already alternate; neck is folded and the head is inverted most of the time. |
 | [`examples/sprint_head_upright/`](examples/sprint_head_upright/) | 1.315 m/s | 97.9% | 0.6% | Same alternating gait with the crown up and face forward; 10 s heading still ~42° left. |
 | [`examples/sprint_straight_long/`](examples/sprint_straight_long/) | ~0.83 m/s long-horizon | 300 s 100% | 0 | Continued training with closed-loop heading + lateral error. 300 s mean heading 1.7°, straight window 295 s. |
+| [`examples/sprint_straight_fast/`](examples/sprint_straight_fast/) | ~1.15 m/s long-horizon | 300 s 98.4–100% | ≤ 0.02% | Same closed loop, wider lin-vel kernel, fall penalty, head-flip cost, stress-level pushes. 300 s mean heading 1.7–1.8°, straight-pose pass 93–99%; 600 s pass 94.5%. |
 
 Each directory has `model_*.pt`, visualizations, `metrics.json`, and
 reproduce commands. `model.pt` is about 4.7 MB and is stored in git.
@@ -161,6 +163,22 @@ uv run --no-sync scripts/eval_sprint_speed.py \
   examples/sprint_straight_long/model_19297.pt \
   --owner microduck_sprint_straightfix_flat/mujoco \
   --duration 300 --num-envs 128
+```
+
+The fast straight example uses the same battery on the push-free
+straightspeed owner, plus a stress battery on the straighthold owner. Its
+six-stage training chain (`scripts/train_sprint_straight_speed.py`) is in
+[`examples/sprint_straight_fast/README.md`](examples/sprint_straight_fast/README.md):
+
+```bash
+uv run --no-sync scripts/eval_sprint_speed.py \
+  examples/sprint_straight_fast/model_27000.pt \
+  --owner microduck_sprint_straightspeed_flat/mujoco \
+  --duration 300 --num-envs 128
+uv run --no-sync scripts/eval_sprint_speed.py \
+  examples/sprint_straight_fast/model_27000.pt \
+  --owner microduck_sprint_straighthold_flat/mujoco --stress \
+  --duration 60 --num-envs 128
 ```
 
 ## Throughput

@@ -1,0 +1,125 @@
+{
+  "label": "sprint_straight_fast",
+  "task": "MicroduckSprintFlat",
+  "train_owner": "microduck_sprint_straightspeed_flat then microduck_sprint_straighthold_flat",
+  "resume_from": "examples/sprint_straight_long/model_19297.pt",
+  "checkpoint": "examples/sprint_straight_fast/model_27000.pt",
+  "source_run": "2026-11-01_12-18-02_mujoco",
+  "source_iteration": 27000,
+  "eval_owner": "microduck_sprint_straightspeed_flat/mujoco",
+  "closed_loop": {
+    "hold_spawn_heading": true,
+    "spawn_heading_stiffness": 2.5,
+    "spawn_cross_track_stiffness": 0.08,
+    "spawn_heading_yaw_rate_limit": 0.35
+  },
+  "long_horizon": {
+    "backend": "mujoco",
+    "command_forward_m_s": 2.2,
+    "fall_tilt_deg": 70.0,
+    "seed_42_300s": {
+      "num_envs": 128,
+      "survival_fraction": 0.992,
+      "body_forward_speed_m_s": 1.152,
+      "mean_absolute_heading_error_deg": 1.74,
+      "straight_pose_horizon_s": {"mean": 288.6, "p10": 300.0},
+      "straight_pose_survival_fraction": 0.938,
+      "spawn_forward_displacement_m": 347.2,
+      "head_up_tilt_deg": 28.2,
+      "head_inverted_time_fraction": 0.0001,
+      "straight_pose_break_counts": {"fall": 0, "heading": 6, "head_inverted": 2}
+    },
+    "seed_123_300s": {
+      "num_envs": 128,
+      "survival_fraction": 1.0,
+      "body_forward_speed_m_s": 1.151,
+      "mean_absolute_heading_error_deg": 1.69,
+      "straight_pose_horizon_s": {"mean": 297.7, "p10": 300.0},
+      "straight_pose_survival_fraction": 0.992,
+      "spawn_forward_displacement_m": 349.8,
+      "head_up_tilt_deg": 28.3,
+      "head_inverted_time_fraction": 0.0,
+      "straight_pose_break_counts": {"fall": 0, "heading": 1, "head_inverted": 0}
+    },
+    "seed_456_300s": {
+      "num_envs": 128,
+      "survival_fraction": 0.984,
+      "body_forward_speed_m_s": 1.151,
+      "mean_absolute_heading_error_deg": 1.81,
+      "straight_pose_horizon_s": {"mean": 288.1, "p10": 300.0},
+      "straight_pose_survival_fraction": 0.930,
+      "spawn_forward_displacement_m": 346.3,
+      "head_up_tilt_deg": 28.4,
+      "head_inverted_time_fraction": 0.0002,
+      "straight_pose_break_counts": {"fall": 0, "heading": 4, "head_inverted": 5}
+    },
+    "seed_123_600s": {
+      "num_envs": 128,
+      "survival_fraction": 0.969,
+      "body_forward_speed_m_s": 1.143,
+      "mean_absolute_heading_error_deg": 1.82,
+      "straight_pose_horizon_s": {"mean": 578.0, "p10": 600.0},
+      "straight_pose_survival_fraction": 0.945,
+      "spawn_forward_displacement_m": 681.1,
+      "head_up_tilt_deg": 28.2,
+      "head_inverted_time_fraction": 0.0,
+      "straight_pose_break_counts": {"fall": 0, "heading": 4, "head_inverted": 3}
+    },
+    "seed_456_600s": {
+      "num_envs": 128,
+      "survival_fraction": 0.953,
+      "body_forward_speed_m_s": 1.159,
+      "mean_absolute_heading_error_deg": 1.75,
+      "straight_pose_horizon_s": {"mean": 578.3, "p10": 600.0},
+      "straight_pose_survival_fraction": 0.945,
+      "spawn_forward_displacement_m": 683.6,
+      "head_up_tilt_deg": 28.4,
+      "head_inverted_time_fraction": 0.0001,
+      "straight_pose_break_counts": {"fall": 0, "heading": 6, "head_inverted": 3}
+    }
+  },
+  "stress_60s": {
+    "owner": "microduck_sprint_straighthold_flat/mujoco",
+    "push_m_s": 0.10,
+    "trunk_com_m": 0.010,
+    "head_com_m": 0.006,
+    "reset_tilt_deg": 2.0,
+    "this_checkpoint": {
+      "seed_123": {
+        "survival_fraction": 0.961,
+        "body_forward_speed_m_s": 1.125,
+        "straight_pose_survival_fraction": 0.953,
+        "straight_pose_break_counts": {"fall": 2, "heading": 2, "head_inverted": 2}
+      },
+      "seed_456": {
+        "survival_fraction": 0.969,
+        "body_forward_speed_m_s": 1.141,
+        "straight_pose_survival_fraction": 0.922,
+        "straight_pose_break_counts": {"fall": 1, "heading": 7, "head_inverted": 2}
+      }
+    },
+    "model_19297": {
+      "seed_123": {
+        "survival_fraction": 0.930,
+        "body_forward_speed_m_s": 0.814,
+        "straight_pose_survival_fraction": 0.914
+      },
+      "seed_456": {
+        "survival_fraction": 0.938,
+        "body_forward_speed_m_s": 0.842,
+        "straight_pose_survival_fraction": 0.930
+      }
+    }
+  },
+  "gait": {
+    "hip_split_sign_flip_fraction": 0.482,
+    "foot_gap_sign_flip_fraction": 0.482,
+    "foot_gap_peak_to_peak_m": 0.172,
+    "trunk_height_m": 0.122,
+    "head_yaw_deg": -0.28,
+    "head_roll_deg": -0.06
+  },
+  "known_limits": {
+    "note": "About 1.15 m/s. Repeating a 300 s battery on the same seed moves the straight-pose pass by about 4 points, so single-seed gaps below that are noise. Training pushed at up to 0.10 m/s, the same magnitude as the stress battery, so the stress numbers are not fully held out for push size."
+  }
+}

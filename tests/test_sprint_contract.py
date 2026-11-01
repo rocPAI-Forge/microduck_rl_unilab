@@ -23,6 +23,7 @@ from unilab.managers._types import ManagerBasedRlEnv
 from microduck_rl_unilab.tasks.microduck.sprint_terms import (
     cross_track_abs_cost,
     head_facing_abs_cost,
+    head_tilt_excess_cost,
     head_upright_hold,
     heading_hold,
     joint_band_cost,
@@ -30,6 +31,7 @@ from microduck_rl_unilab.tasks.microduck.sprint_terms import (
     running_forward_progress,
     running_leg_alternation,
     running_planar_drift_cost,
+    running_spawn_progress,
     running_straightness_cost,
     running_stride_length,
 )
@@ -330,6 +332,86 @@ def test_sprint_straightfix_owner_extends_and_remembers_the_line() -> None:
     assert env_cfg.rewards["head_roll_band"].weight == pytest.approx(-4.0)
 
 
+def test_sprint_straightspeed_owner_pays_for_ray_speed_without_opening_the_line() -> None:
+    GlobalHydra.instance().clear()
+    with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
+        cfg = compose(
+            "config", overrides=["task=microduck_sprint_straightspeed_flat/mujoco"]
+        )
+    registry.ensure_registries()
+    env_cfg = registry.materialize_env_config("MicroduckSprintFlat")
+    apply_cfg_overrides(
+        env_cfg,
+        BackendAdapter(
+            cfg, root_dir=ROOT_DIR, algo_name="ppo"
+        ).build_task_env_cfg_override(),
+    )
+    env_cfg.validate()
+
+    twist = env_cfg.commands["twist"]
+    assert twist.hold_spawn_heading is True
+    assert twist.spawn_heading_stiffness == pytest.approx(2.5)
+    assert twist.spawn_cross_track_stiffness == pytest.approx(0.08)
+    assert twist.ranges.lin_vel_x == [1.65, 2.20]
+    assert env_cfg.events["push_robot"] is None
+    rewards = env_cfg.rewards
+    assert rewards["forward_progress"].weight == pytest.approx(5.0)
+    assert rewards["forward_progress"].params["speed_cap"] == pytest.approx(2.4)
+    assert rewards["spawn_progress"].func is running_spawn_progress
+    assert rewards["spawn_progress"].weight == pytest.approx(3.0)
+    assert rewards["spawn_progress"].params["speed_cap"] == pytest.approx(1.6)
+    assert rewards["heading_abs"].weight == pytest.approx(-0.25)
+    assert rewards["straightness"].weight == pytest.approx(-0.30)
+    assert rewards["cross_track"].weight == pytest.approx(-0.40)
+    assert rewards["tracking_ang_vel"].weight == pytest.approx(12.0)
+    assert rewards["head_roll_band"].weight == pytest.approx(-4.0)
+    spawn_stages = env_cfg.curriculum["spawn_progress_weight"].params["stages"]
+    heading_stages = env_cfg.curriculum["heading_abs_weight"].params["stages"]
+    assert spawn_stages[0] == {"step": 0, "weight": 3.0}
+    assert spawn_stages[-1] == {"step": 48000, "weight": 5.0}
+    assert heading_stages[0] == {"step": 0, "weight": -0.25}
+    assert heading_stages[-1] == {"step": 48000, "weight": -0.75}
+
+
+def test_sprint_straighthold_owner_pins_weights_and_prices_falls() -> None:
+    GlobalHydra.instance().clear()
+    with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
+        cfg = compose(
+            "config", overrides=["task=microduck_sprint_straighthold_flat/mujoco"]
+        )
+    registry.ensure_registries()
+    env_cfg = registry.materialize_env_config("MicroduckSprintFlat")
+    apply_cfg_overrides(
+        env_cfg,
+        BackendAdapter(
+            cfg, root_dir=ROOT_DIR, algo_name="ppo"
+        ).build_task_env_cfg_override(),
+    )
+    env_cfg.validate()
+
+    assert env_cfg.max_episode_seconds == pytest.approx(60.0)
+    twist = env_cfg.commands["twist"]
+    assert twist.hold_spawn_heading is True
+    assert twist.resampling_time_range == [60.0, 60.0]
+    push = env_cfg.events["push_robot"]
+    assert push is not None
+    assert push.params["velocity_range"]["x"] == [-0.05, 0.05]
+    assert env_cfg.curriculum["spawn_progress_weight"] is None
+    assert env_cfg.curriculum["heading_abs_weight"] is None
+    rewards = env_cfg.rewards
+    assert rewards["tracking_lin_vel"].weight == pytest.approx(1.0)
+    assert rewards["tracking_lin_vel"].params["std"] == pytest.approx(1.0)
+    assert rewards["spawn_progress"].weight == pytest.approx(5.0)
+    assert rewards["spawn_progress"].params["speed_cap"] == pytest.approx(1.6)
+    assert rewards["heading_abs"].weight == pytest.approx(-0.75)
+    assert rewards["cross_track"].weight == pytest.approx(-0.8)
+    assert rewards["straightness"].weight == pytest.approx(-0.5)
+    assert rewards["fall"].weight == pytest.approx(-300.0)
+    assert rewards["head_tilt_excess"].func is head_tilt_excess_cost
+    assert rewards["head_tilt_excess"].weight == pytest.approx(0.0)
+    assert rewards["head_roll_band"].weight == pytest.approx(-4.0)
+
+
 def test_sprint_steerfix_owner_restores_bidirectional_yaw_lessons() -> None:
     GlobalHydra.instance().clear()
     with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
@@ -533,6 +615,20 @@ def test_head_upright_hold_frees_the_nod_and_punishes_inversion() -> None:
         env,
     )
     np.testing.assert_allclose(term(env), [1.0, 1.0, 0.414214, 0.0], atol=1e-4)
+
+    excess = head_tilt_excess_cost(
+        RewardTermCfg(
+            func=head_tilt_excess_cost,
+            weight=-1.0,
+            params={
+                "free_tilt_deg": 60.0,
+                "zero_tilt_deg": 95.0,
+                "asset_cfg": SceneEntityCfg("robot", body_names=("jaw_soft",)),
+            },
+        ),
+        env,
+    )
+    np.testing.assert_allclose(excess(env), [0.0, 0.0, 0.851487, 1.0], atol=1e-4)
 
 
 def test_running_stride_length_pays_for_scissoring_not_a_parked_split() -> None:

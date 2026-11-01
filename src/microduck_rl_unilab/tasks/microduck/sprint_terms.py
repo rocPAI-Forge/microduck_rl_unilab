@@ -763,6 +763,20 @@ class head_upright_hold(ManagerTermBase):
         return np.asarray(np.clip(reward, 0.0, 1.0), dtype=get_global_dtype())
 
 
+class head_tilt_excess_cost(head_upright_hold):
+    """Cost that rises from 0 at ``free_tilt_deg`` to 1 at ``zero_tilt_deg``.
+
+    ``head_upright_hold`` ramps its reward down over a wide band, so a brief
+    nod past horizontal barely changes the return, yet that nod is what most
+    often breaks a long straight run. This is the same kernel as a cost over a
+    narrow band just below horizontal.
+    """
+
+    def __call__(self, env: ManagerBasedRlEnv, **params: Any) -> np.ndarray:
+        hold = super().__call__(env, **params)
+        return np.asarray(1.0 - hold, dtype=get_global_dtype())
+
+
 class running_spawn_progress(ManagerTermBase):
     """Reward capped world-frame speed along each environment's spawn heading."""
 
@@ -863,6 +877,7 @@ class running_command_ranges_curriculum:
 
 __all__ = [
     "head_facing_hold",
+    "head_tilt_excess_cost",
     "heading_abs_cost",
     "heading_hold",
     "running_command_ranges_curriculum",

@@ -8,6 +8,9 @@ forward command:
 * a fixed far shot of eight robots leaving the origin on headings
   0°, 45°, …, 315°
 
+The ``--follow-*`` flags move the tracking camera, e.g. ``--follow-azimuth 90``
+for a side view of the gait.
+
     MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa \\
       uv run --no-sync scripts/render_straight_demos.py
 """
@@ -160,7 +163,14 @@ def _travel(states: list[np.ndarray]) -> np.ndarray:
     return np.linalg.norm(xy1 - xy0, axis=1)
 
 
-def _render_follow(states: list[np.ndarray], model_file: str, output: Path, fps: int) -> None:
+def _render_follow(
+    states: list[np.ndarray],
+    model_file: str,
+    output: Path,
+    fps: int,
+    camera: tuple[float, float, float],
+) -> None:
+    azimuth, elevation, distance = camera
     frames = render_many.render_states_get_frames_tracking(
         states,
         model_file,
@@ -168,9 +178,9 @@ def _render_follow(states: list[np.ndarray], model_file: str, output: Path, fps:
         height=720,
         tracking_env_idx=0,
         max_extra_envs=0,
-        cam_distance=FOLLOW_DISTANCE,
-        cam_elevation=FOLLOW_ELEVATION,
-        cam_azimuth=FOLLOW_AZIMUTH,
+        cam_distance=distance,
+        cam_elevation=elevation,
+        cam_azimuth=azimuth,
         render_spacing=0.0,
     )
     if not frames:
@@ -231,6 +241,11 @@ def _run_clip(
     stride: int,
     kind: str,
     low_camera: bool = False,
+    follow_camera: tuple[float, float, float] = (
+        FOLLOW_AZIMUTH,
+        FOLLOW_ELEVATION,
+        FOLLOW_DISTANCE,
+    ),
 ) -> None:
     cfg = _compose_owner(duration_s=duration_s, seed=seed)
     # algo cfg is the hydra cfg, not stored on the env. Load the policy with it.
@@ -262,7 +277,7 @@ def _run_clip(
                 raw_env, num_envs=num_envs, tmp_dir=tmp_dir
             )
             if kind == "follow":
-                _render_follow(shown, model_file, output, video_fps)
+                _render_follow(shown, model_file, output, video_fps, follow_camera)
             else:
                 _render_radial(shown, model_file, output, video_fps, low=low_camera)
         print(f"wrote {output}", flush=True)
@@ -276,6 +291,10 @@ def main() -> None:
     parser.add_argument("--checkpoint", type=Path, default=DEFAULT_CHECKPOINT)
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     parser.add_argument("--follow-seconds", type=float, default=8.0)
+    parser.add_argument("--follow-azimuth", type=float, default=FOLLOW_AZIMUTH)
+    parser.add_argument("--follow-elevation", type=float, default=FOLLOW_ELEVATION)
+    parser.add_argument("--follow-distance", type=float, default=FOLLOW_DISTANCE)
+    parser.add_argument("--follow-name", default="play_video_follow.mp4")
     parser.add_argument("--radial-seconds", type=float, default=10.0)
     parser.add_argument("--stride", type=int, default=2, help="Keep every Nth control step.")
     parser.add_argument("--device", default=None)
@@ -298,9 +317,10 @@ def main() -> None:
             duration_s=args.follow_seconds,
             seed=123,
             device=device,
-            output=args.out_dir / "play_video_follow.mp4",
+            output=args.out_dir / args.follow_name,
             stride=args.stride,
             kind="follow",
+            follow_camera=(args.follow_azimuth, args.follow_elevation, args.follow_distance),
         )
     if args.only in ("radial", "both"):
         yaws = np.arange(8, dtype=np.float64) * (np.pi / 4.0)

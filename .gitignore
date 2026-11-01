@@ -9,6 +9,7 @@ build/
 logs/
 outputs/
 wandb/
+results/
 
 # Entrypoint logs written next to cwd by train scripts
 train_*.log

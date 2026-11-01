@@ -48,6 +48,7 @@ owner 配置和机器人 XML 资产。
 | `sprint_speed_1p68` PPO | 完成，约 1.68 m/s。Sprint 不是上游 microduck_rl 的官方任务，是本仓库独有的冲刺步态 | [`examples/sprint_speed_1p68/model_11997.pt`](examples/sprint_speed_1p68/model_11997.pt) |
 | `sprint_head_upright` PPO | 完成，约 1.32 m/s，头朝上。同上，本仓库独有 | [`examples/sprint_head_upright/model_14500.pt`](examples/sprint_head_upright/model_14500.pt) |
 | `sprint_straight_long` PPO | 完成，约 0.83 m/s，300 秒走直。同上，本仓库独有 | [`examples/sprint_straight_long/model_19297.pt`](examples/sprint_straight_long/model_19297.pt) |
+| `sprint_straight_fast` PPO | 完成，约 1.15 m/s，三个种子的 300 秒直线通过率 93–99%。同上，本仓库独有 | [`examples/sprint_straight_fast/model_27000.pt`](examples/sprint_straight_fast/model_27000.pt) / [`play_video_side.mp4`](examples/sprint_straight_fast/play_video_side.mp4) |
 | `sprint_steerfix_flat` PPO | 未训练。同上，本仓库独有；配置在，没有权重 | — |
 
 任务与上游 microduck_rl 保持 1:1：BAM（bam xl330-m6 电压伺服模型，
@@ -124,6 +125,7 @@ uv run --no-sync scripts/train_sprint_robust.py \
 | [`examples/sprint_speed_1p68/`](examples/sprint_speed_1p68/) | 1.682 m/s | 89.8% | ~91% | 速度配方。大腿已左右交替；颈部折叠，头大部分时间倒置。 |
 | [`examples/sprint_head_upright/`](examples/sprint_head_upright/) | 1.315 m/s | 97.9% | 0.6% | 同一套交替步态，头顶朝天、面朝前；10 s 航向仍约 42° 左偏。 |
 | [`examples/sprint_straight_long/`](examples/sprint_straight_long/) | ~0.83 m/s 长时 | 300 s 100% | 0 | 续训后闭环节航向 + 横向误差。300 s 平均航向 1.7°，直姿窗口 295 s。 |
+| [`examples/sprint_straight_fast/`](examples/sprint_straight_fast/) | ~1.15 m/s 长时 | 300 s 98.4–100% | ≤ 0.02% | 同一闭环，放宽速度跟踪核，加跌倒惩罚、头翻转代价和压测级推力。300 s 平均航向 1.7–1.8°，直线通过率 93–99%；600 s 通过率 94.5%。 |
 
 每个目录含 `model_*.pt`、可视化、`metrics.json` 和复现命令。
 `model.pt` 约 4.7 MB，直接入 git。
@@ -144,6 +146,19 @@ uv run --no-sync scripts/eval_sprint_speed.py \
   examples/sprint_straight_long/model_19297.pt \
   --owner microduck_sprint_straightfix_flat/mujoco \
   --duration 300 --num-envs 128
+```
+
+快速直线示例用同一套评测，owner 换成不加推力的 straightspeed；压力测试用 straighthold owner。六段训练链（`scripts/train_sprint_straight_speed.py`）写在 [`examples/sprint_straight_fast/README.md`](examples/sprint_straight_fast/README.md)：
+
+```bash
+uv run --no-sync scripts/eval_sprint_speed.py \
+  examples/sprint_straight_fast/model_27000.pt \
+  --owner microduck_sprint_straightspeed_flat/mujoco \
+  --duration 300 --num-envs 128
+uv run --no-sync scripts/eval_sprint_speed.py \
+  examples/sprint_straight_fast/model_27000.pt \
+  --owner microduck_sprint_straighthold_flat/mujoco --stress \
+  --duration 60 --num-envs 128
 ```
 
 ## 吞吐
