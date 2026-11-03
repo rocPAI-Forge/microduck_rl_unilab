@@ -29,7 +29,7 @@ from unilab.base import registry
 from unilab.base.config_adapter import BackendAdapter
 from unilab.cli import package_root
 from unilab.training import algo_config_dict
-from unilab.utils.rotation import np_quat_apply, np_wrap_to_pi
+from unilab.utils.rotation import np_quat_apply, np_quat_apply_inverse, np_wrap_to_pi
 
 from microduck_rl_unilab.conf_searchpath import register_conf_search_path
 
@@ -38,6 +38,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 CONF_DIR = package_root() / "conf" / "ppo"
 # Head body plus its local "top of the head" axis, measured at the home keyframe.
 HEAD_BODY = "jaw_soft"
+TRUNK_BODY = "trunk_base"
 HEAD_UP_AXIS_B = np.array([[1.0, 0.0, 0.0]])
 
 
@@ -51,6 +52,7 @@ def _compose_owner(
     heading_stiffness: float | None = None,
     heading_yaw_limit: float | None = None,
     cross_track_stiffness: float | None = None,
+    clip_targets: bool = False,
 ) -> Any:
     register_conf_search_path()
     GlobalHydra.instance().clear()
@@ -78,6 +80,8 @@ def _compose_owner(
         twist.rel_forward_envs = 0.0
         twist.turn_in_place_fraction = 0.0
         twist.resampling_time_range = [duration_s + 1.0, duration_s + 1.0]
+        if clip_targets:
+            cfg.env.actions.joint_pos.clip_target_to_joint_limits = True
         for name in cfg.env.curriculum:
             cfg.env.curriculum[name] = None
         # The battery reads kinematics directly. Keeping tilt/nan terminations
@@ -121,6 +125,7 @@ def evaluate(
     heading_stiffness: float | None = None,
     heading_yaw_limit: float | None = None,
     cross_track_stiffness: float | None = None,
+    clip_targets: bool = False,
 ) -> dict[str, Any]:
     if not checkpoint.is_file():
         raise FileNotFoundError(f"checkpoint not found: {checkpoint}")
@@ -143,6 +148,7 @@ def evaluate(
         heading_stiffness=heading_stiffness,
         heading_yaw_limit=heading_yaw_limit,
         cross_track_stiffness=cross_track_stiffness,
+        clip_targets=clip_targets,
     )
     importlib.import_module("microduck_rl_unilab.tasks.microduck")
     registry.ensure_registries()
@@ -211,8 +217,16 @@ def evaluate(
             ["neck_pitch", "head_pitch", "head_yaw", "head_roll"],
             preserve_order=True,
         )
-        head_body_ids, _ = robot.find_bodies([HEAD_BODY], preserve_order=True)
-        head_body_id = int(head_body_ids[0])
+        head_body_ids, _ = robot.find_bodies([HEAD_BODY, TRUNK_BODY], preserve_order=True)
+        head_body_id, trunk_body_id = int(head_body_ids[0]), int(head_body_ids[1])
+        neck_pitch_sum = np.zeros(num_envs, dtype=np.float64)
+        head_forward_sum = np.zeros(num_envs, dtype=np.float64)
+        action_term = raw_env.action_manager.get_term("joint_pos")
+        action_joint_ids = np.asarray(action_term.joint_ids)
+        action_limits = np.asarray(robot.data.soft_joint_pos_limits)[action_joint_ids]
+        overshoot_sum = np.zeros(num_envs, dtype=np.float64)
+        overshoot_joint_sum = np.zeros(action_joint_ids.size, dtype=np.float64)
+        overshoot_samples = 0
 
         for step in range(total_steps):
             with torch.inference_mode():
@@ -243,6 +257,12 @@ def evaluate(
             head_up_w = np_quat_apply(head_quat.astype(np.float64), HEAD_UP_AXIS_B)
             head_up_cos = np.nan_to_num(head_up_w[:, 2], nan=-1.0)
             head_tilt = np.arccos(np.clip(head_up_cos, -1.0, 1.0))
+            body_pos = np.asarray(robot.data.body_link_pos_w)
+            trunk_quat = np.asarray(robot.data.body_link_quat_w)[:, trunk_body_id, :]
+            head_in_trunk = np_quat_apply_inverse(
+                trunk_quat.astype(np.float64),
+                (body_pos[:, head_body_id] - body_pos[:, trunk_body_id]).astype(np.float64),
+            )
             displacement = (
                 np.asarray(robot.data.root_link_pos_w)[:, :2] - origin_xy
             )
@@ -274,6 +294,18 @@ def evaluate(
             head_velocity_sum[alive] += head_velocity[alive]
             head_tilt_sum[alive] += head_tilt[alive]
             head_inverted_sum[alive] += (head_up_cos[alive] < 0.0).astype(np.float64)
+            neck_pitch_sum[alive] += np.asarray(robot.data.joint_pos)[alive, head_ids[0]]
+            head_forward_sum[alive] += head_in_trunk[alive, 0]
+            target = np.asarray(
+                getattr(action_term, "requested_target", action_term.processed_action)
+            )
+            overshoot = np.maximum(action_limits[None, :, 0] - target, 0.0) + np.maximum(
+                target - action_limits[None, :, 1], 0.0
+            )
+            overshoot_sum[alive] += np.sum(overshoot[alive], axis=1)
+            if np.any(alive):
+                overshoot_joint_sum += np.sum(overshoot[alive], axis=0)
+                overshoot_samples += int(np.sum(alive))
             sample_count[alive] += 1
 
         sampled = sample_count > 0
@@ -418,6 +450,36 @@ def evaluate(
                 if np.any(sampled)
                 else None
             ),
+            # Absolute neck_pitch (home +20 deg, lower stop -90 deg) and how far
+            # the head body sits ahead of trunk_base along the trunk x axis
+            # (about -0.01 m at home).
+            "neck_pitch_deg": (
+                math.degrees(float(np.mean(neck_pitch_sum[sampled] / sample_count[sampled])))
+                if np.any(sampled)
+                else None
+            ),
+            "head_forward_in_trunk_m": (
+                float(np.mean(head_forward_sum[sampled] / sample_count[sampled]))
+                if np.any(sampled)
+                else None
+            ),
+            # Position targets past the soft joint limits, summed over joints
+            # (radians per step), and the per-joint mean behind that total.
+            "action_target_overshoot_rad": (
+                float(np.mean(overshoot_sum[sampled] / sample_count[sampled]))
+                if np.any(sampled)
+                else None
+            ),
+            "action_target_overshoot_by_joint_rad": (
+                dict(
+                    zip(
+                        [robot.joint_names[int(i)] for i in action_joint_ids],
+                        (overshoot_joint_sum / overshoot_samples).round(3).tolist(),
+                    )
+                )
+                if overshoot_samples
+                else None
+            ),
         }
     finally:
         if wrapped_env is not None:
@@ -448,6 +510,11 @@ def main() -> None:
     parser.add_argument("--heading-stiffness", type=float, default=None)
     parser.add_argument("--heading-yaw-limit", type=float, default=None)
     parser.add_argument("--cross-track-stiffness", type=float, default=None)
+    parser.add_argument(
+        "--clip-targets",
+        action="store_true",
+        help="Clamp BAM position targets to the joint limits (real-servo behavior).",
+    )
     parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args()
 
@@ -465,7 +532,9 @@ def main() -> None:
         heading_stiffness=args.heading_stiffness,
         heading_yaw_limit=args.heading_yaw_limit,
         cross_track_stiffness=args.cross_track_stiffness,
+        clip_targets=args.clip_targets,
     )
+    result["clip_targets"] = args.clip_targets
     payload = json.dumps(result, ensure_ascii=False, indent=2)
     if args.output is not None:
         args.output.write_text(payload + "\n", encoding="utf-8")

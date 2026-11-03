@@ -69,6 +69,7 @@ def _compose_owner(
     heading_stiffness: float | None,
     heading_yaw_limit: float | None,
     cross_track_stiffness: float | None,
+    clip_targets: bool = False,
 ) -> Any:
     register_conf_search_path()
     GlobalHydra.instance().clear()
@@ -93,6 +94,8 @@ def _compose_owner(
         twist.rel_forward_envs = 0.0
         twist.turn_in_place_fraction = 0.0
         twist.resampling_time_range = [duration_s + 1.0, duration_s + 1.0]
+        if clip_targets:
+            cfg.env.actions.joint_pos.clip_target_to_joint_limits = True
         for name in cfg.env.curriculum:
             cfg.env.curriculum[name] = None
         for name in cfg.reward:
@@ -133,6 +136,7 @@ def diagnose(
     heading_stiffness: float | None = None,
     heading_yaw_limit: float | None = None,
     cross_track_stiffness: float | None = None,
+    clip_targets: bool = False,
 ) -> dict[str, Any]:
     if not checkpoint.is_file():
         raise FileNotFoundError(f"checkpoint not found: {checkpoint}")
@@ -152,6 +156,7 @@ def diagnose(
         heading_stiffness=heading_stiffness,
         heading_yaw_limit=heading_yaw_limit,
         cross_track_stiffness=cross_track_stiffness,
+        clip_targets=clip_targets,
     )
     importlib.import_module("microduck_rl_unilab.tasks.microduck")
     registry.ensure_registries()
@@ -416,6 +421,11 @@ def main() -> None:
     parser.add_argument("--heading-stiffness", type=float, default=None)
     parser.add_argument("--heading-yaw-limit", type=float, default=None)
     parser.add_argument("--cross-track-stiffness", type=float, default=None)
+    parser.add_argument(
+        "--clip-targets",
+        action="store_true",
+        help="Clamp BAM position targets to the joint limits (real-servo behavior).",
+    )
     parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args()
 
@@ -433,7 +443,9 @@ def main() -> None:
         heading_stiffness=args.heading_stiffness,
         heading_yaw_limit=args.heading_yaw_limit,
         cross_track_stiffness=args.cross_track_stiffness,
+        clip_targets=args.clip_targets,
     )
+    result["clip_targets"] = args.clip_targets
     payload = json.dumps(result, ensure_ascii=False, indent=2)
     if args.output is not None:
         args.output.write_text(payload + "\n", encoding="utf-8")

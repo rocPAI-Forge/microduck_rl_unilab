@@ -1,0 +1,37 @@
+# @package _global_
+# Clamp position targets to the joint range, the way a real servo does.
+#
+# The straightrange owner pulled the summed target overshoot from about 150 rad
+# to about 2.6 rad without changing the gait, and then plateaued: about
+# 0.45 rad each on both hip_yaw, both hip_roll, and neck_pitch. That residual
+# still holds roughly a quarter of full voltage against the stops, and the
+# gait leans on it. Clamping outright drops survival to 13% at 0.3 m/s and 0%
+# at 1.2 m/s. So the clamp starts 0.5 rad outside the soft limits, just past
+# the residual, and the margin steps down to zero. The overshoot cost stays on
+# and reads the request before the clamp, so the request keeps its gradient
+# instead of drifting back out behind the clamp.
+defaults:
+  - /task/microduck_sprint_straightrange_flat/base
+  - _self_
+
+env:
+  actions:
+    joint_pos:
+      clip_target_to_joint_limits: true
+      clip_target_margin: 0.5
+  curriculum:
+    action_target_overshoot_weight: null
+    action_clip_margin:
+      func: microduck_rl_unilab.tasks.microduck.sprint_terms.action_clip_margin_curriculum
+      params:
+        action_name: joint_pos
+        stages:
+          - {step: 0, margin: 0.5}
+          - {step: 12000, margin: 0.35}
+          - {step: 24000, margin: 0.2}
+          - {step: 36000, margin: 0.1}
+          - {step: 48000, margin: 0.0}
+
+reward:
+  action_target_overshoot:
+    weight: -0.3

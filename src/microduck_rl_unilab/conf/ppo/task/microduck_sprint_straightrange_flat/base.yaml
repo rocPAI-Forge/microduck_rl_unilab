@@ -1,0 +1,48 @@
+# @package _global_
+# Pull position targets back inside the joint range on the speed-command gait.
+#
+# Since the first 1.68 m/s sprint, the policy has commanded hip_yaw and
+# neck_pitch targets tens of radians past their stops (model_32250: about
+# -102 / +23 rad on the two hip_yaw joints and -19 rad on neck_pitch). The BAM
+# action does not clip q_des, so those joints sit on the stop at full voltage,
+# the joint no longer moves with the action, and joint-space costs such as
+# head_pitch_band have no gradient. A real servo clamps the goal position, so
+# this is also a sim-to-real gap. This owner ramps a cost on the target
+# overshoot itself and keeps everything else at the model_32250 recipe: the
+# high-speed resample bias, 2.5 deg reset tilt, and 30 s episodes.
+defaults:
+  - /task/microduck_sprint_straightcmd_flat/base
+  - _self_
+
+env:
+  max_episode_seconds: 30.0
+  commands:
+    twist:
+      high_speed_fraction: 0.4
+      high_speed_range: [0.9, 1.2]
+  events:
+    reset_base:
+      params:
+        pose_range:
+          roll: [-0.0436, 0.0436]
+          pitch: [-0.0436, 0.0436]
+  curriculum:
+    action_target_overshoot_weight:
+      func: unilab.envs.mdp.reward_curriculum
+      params:
+        reward_name: action_target_overshoot
+        stages:
+          - {step: 0, weight: -0.002}
+          - {step: 12000, weight: -0.01}
+          - {step: 24000, weight: -0.03}
+          - {step: 36000, weight: -0.06}
+
+reward:
+  action_target_overshoot:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.action_target_overshoot_cost
+    weight: -0.002
+    params:
+      action_name: joint_pos
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot

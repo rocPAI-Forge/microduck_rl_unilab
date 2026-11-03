@@ -409,6 +409,83 @@ class joint_band_cost(ManagerTermBase):
         return np.asarray(np.mean(overshoot, axis=1), dtype=get_global_dtype())
 
 
+def action_target_overshoot_cost(
+    env: ManagerBasedRlEnv,
+    action_name: str = "joint_pos",
+    asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> np.ndarray:
+    """Linear cost, in radians, for position targets beyond the soft joint limits.
+
+    The BAM action does not clip ``q_des``, so a policy can park a joint on its
+    stop by commanding a target tens of radians past it, which keeps the servo
+    at full voltage. Once parked, the joint no longer moves with the action and
+    joint-space costs lose their gradient. This cost reads the target itself,
+    so it keeps pulling the command back toward the range even while the joint
+    sits on the stop. A real servo clamps the goal position to its range.
+    When the action clamps ``q_des`` itself, the cost reads the request before
+    the clamp, or a parked request would hide behind it with no gradient.
+    """
+    term = env.action_manager.get_term(action_name)
+    target = np.asarray(getattr(term, "requested_target", None))
+    if target.ndim == 0:
+        target = np.asarray(getattr(term, "processed_action"))
+    joint_ids = np.asarray(getattr(term, "joint_ids"))
+    asset = cast("Entity", env.scene[asset_cfg.name])
+    limits = np.asarray(asset.data.soft_joint_pos_limits)[joint_ids]
+    target = np.nan_to_num(target, nan=0.0)
+    overshoot = np.maximum(limits[None, :, 0] - target, 0.0) + np.maximum(
+        target - limits[None, :, 1], 0.0
+    )
+    return np.asarray(np.sum(overshoot, axis=1), dtype=get_global_dtype())
+
+
+class action_target_band_cost(ManagerTermBase):
+    """``joint_band_cost`` measured on the position request instead of the joint.
+
+    With the BAM goal-position clamp on, a request past a stop is pinned to the
+    stop, so the joint and any joint-space band cost stop responding to the
+    request. Reading the request before the clamp keeps a gradient all the way
+    back into the band.
+    """
+
+    def __init__(self, cfg: ManagerTermBaseCfg, env: ManagerBasedRlEnv):
+        super().__init__(env)
+        allowed = {"action_name", "joint_names", "band_deg"}
+        unexpected = set(cfg.params) - allowed
+        if unexpected:
+            raise TypeError(
+                f"action_target_band_cost received unsupported parameters: {sorted(unexpected)}"
+            )
+        self._term = env.action_manager.get_term(cfg.params.get("action_name", "joint_pos"))
+        if not hasattr(self._term, "requested_target"):
+            raise TypeError("action_target_band_cost needs an action exposing requested_target")
+        names = cfg.params.get("joint_names")
+        if not isinstance(names, (list, tuple)) or not names:
+            raise ValueError("action_target_band_cost joint_names must be a non-empty list")
+        entity = cast("Entity", env.scene["robot"])
+        action_joints = [entity.joint_names[int(i)] for i in self._term.joint_ids]
+        missing = [name for name in names if name not in action_joints]
+        if missing:
+            raise ValueError(f"action_target_band_cost joints not driven by the action: {missing}")
+        self._columns = np.asarray([action_joints.index(name) for name in names], dtype=np.intp)
+        bands = np.asarray(cfg.params.get("band_deg"), dtype=np.float64)
+        if bands.shape != (len(names), 2) or not np.isfinite(bands).all():
+            raise ValueError(
+                "action_target_band_cost band_deg must be one [lower, upper] pair per joint"
+            )
+        if not np.all(bands[:, 0] < bands[:, 1]):
+            raise ValueError("action_target_band_cost band_deg requires lower < upper")
+        radians = np.radians(bands)
+        self._lower = np.asarray(radians[None, :, 0], dtype=get_global_dtype())
+        self._upper = np.asarray(radians[None, :, 1], dtype=get_global_dtype())
+
+    def __call__(self, env: ManagerBasedRlEnv, **params: Any) -> np.ndarray:
+        del env, params
+        request = np.nan_to_num(np.asarray(self._term.requested_target)[:, self._columns])
+        overshoot = np.maximum(request - self._upper, 0.0) + np.maximum(self._lower - request, 0.0)
+        return np.asarray(np.mean(overshoot, axis=1), dtype=get_global_dtype())
+
+
 def _moving_gate(
     env: ManagerBasedRlEnv,
     *,
@@ -875,7 +952,57 @@ class running_command_ranges_curriculum:
         return {"min_speed": minimum, "max_speed": maximum}
 
 
+class action_clip_margin_curriculum:
+    """Step down the BAM target-clamp margin so stop-leaning is removed gradually."""
+
+    def __init__(self, cfg: ManagerTermBaseCfg, env: ManagerBasedRlEnv):
+        action_name = cfg.params.get("action_name", "joint_pos")
+        term = env.action_manager.get_term(action_name)
+        if not hasattr(term, "set_target_clip_margin"):
+            raise TypeError(
+                f"action_clip_margin_curriculum needs a clamping action, got {type(term).__name__}"
+            )
+        raw_stages = cfg.params.get("stages")
+        if not isinstance(raw_stages, list) or not raw_stages:
+            raise ValueError("action_clip_margin_curriculum stages must be a non-empty list")
+        stages: list[tuple[int, float]] = []
+        previous_step = -1
+        for index, stage in enumerate(raw_stages):
+            if not isinstance(stage, dict) or set(stage) != {"step", "margin"}:
+                raise ValueError(
+                    f"action_clip_margin_curriculum stage {index} must contain step and margin"
+                )
+            step = stage["step"]
+            if isinstance(step, bool) or not isinstance(step, int) or step < previous_step:
+                raise ValueError("action_clip_margin_curriculum steps must be ordered integers")
+            margin = float(stage["margin"])
+            if not math.isfinite(margin) or margin < 0.0:
+                raise ValueError("action_clip_margin_curriculum margins must be finite and >= 0")
+            stages.append((step, margin))
+            previous_step = step
+        self._term = term
+        self._stages = tuple(stages)
+
+    def __call__(
+        self,
+        env: ManagerBasedRlEnv,
+        env_ids: np.ndarray | slice,
+        action_name: str = "joint_pos",
+        stages: list[dict[str, Any]] | None = None,
+    ) -> dict[str, float]:
+        del env_ids, action_name, stages
+        margin = self._stages[0][1]
+        for step, stage_margin in self._stages:
+            if env.common_step_counter >= step:
+                margin = stage_margin
+        self._term.set_target_clip_margin(margin)
+        return {"margin": margin}
+
+
 __all__ = [
+    "action_clip_margin_curriculum",
+    "action_target_band_cost",
+    "action_target_overshoot_cost",
     "head_facing_hold",
     "head_tilt_excess_cost",
     "heading_abs_cost",

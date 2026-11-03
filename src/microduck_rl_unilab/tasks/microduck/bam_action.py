@@ -122,6 +122,12 @@ class BamVoltageActionCfg(ActionTermCfg):
 
     actuator_names: tuple[str, ...] | list[str]
     scale: float = 1.0
+    # Clamp q_des to the soft joint limits, like a servo's goal-position
+    # limits. Off by default: published policies were trained without it.
+    clip_target_to_joint_limits: bool = False
+    # Widen the clamp by this many radians on both sides. A curriculum can
+    # shrink it to zero so a policy that leans on its stops is weaned off.
+    clip_target_margin: float = 0.0
     # Firmware P gain (Dynamixel KP register domain; microduck keeps 200).
     kp_fw: float = 200.0
     error_gain: float = _XL330_ERROR_GAIN
@@ -183,7 +189,23 @@ class BamVoltageAction(ActionTerm):
         dtype = get_global_dtype()
         shape = (self.num_envs, num_joints)
         self._raw_action = np.zeros(shape, dtype=dtype)
+        self._requested_target = np.zeros(shape, dtype=dtype)
         self._processed_action = np.zeros(shape, dtype=dtype)
+        if not isinstance(cfg.clip_target_to_joint_limits, bool):
+            raise TypeError("BamVoltageActionCfg clip_target_to_joint_limits must be bool")
+        self._target_limits: np.ndarray | None = None
+        if cfg.clip_target_to_joint_limits:
+            limits = np.asarray(
+                self._entity.data.soft_joint_pos_limits, dtype=dtype
+            )[self._joint_ids]
+            if limits.shape != (num_joints, 2) or not np.all(limits[:, 0] <= limits[:, 1]):
+                raise ValueError(
+                    "BamVoltageAction soft joint limits must be ordered (lower, upper) "
+                    f"pairs with shape {(num_joints, 2)}, got {limits.shape}"
+                )
+            self._target_limits = limits
+        self._clip_margin = 0.0
+        self.set_target_clip_margin(cfg.clip_target_margin)
         self._motor_torque = np.zeros(shape, dtype=dtype)
         self._prev_motor_torque = np.zeros(shape, dtype=dtype)
         self._prev_applied_torque = np.zeros(shape, dtype=dtype)
@@ -277,6 +299,24 @@ class BamVoltageAction(ActionTerm):
         return self._processed_action
 
     @property
+    def target_clip_margin(self) -> float:
+        return self._clip_margin
+
+    def set_target_clip_margin(self, margin: float) -> None:
+        """Set how far, in radians, the clamp sits outside the soft limits."""
+        self._clip_margin = _real(margin, label="BamVoltageAction clip_target_margin", minimum=0.0)
+
+    @property
+    def requested_target(self) -> np.ndarray:
+        """``q_des`` before the optional joint-limit clamp."""
+        return self._requested_target
+
+    @property
+    def joint_ids(self) -> np.ndarray:
+        """Entity joint index for each column of ``processed_action``."""
+        return self._joint_ids
+
+    @property
     def motor_torque(self) -> np.ndarray:
         return self._motor_torque
 
@@ -307,8 +347,17 @@ class BamVoltageAction(ActionTerm):
         self._raw_action[:] = actions
         # q_des = action * scale + default_joint_pos, mirroring the PD recipe's
         # JointPositionAction (scale=1.0, use_default_offset=True).
-        np.multiply(self._raw_action, self._scale, out=self._processed_action)
-        self._processed_action += self._entity.data.default_joint_pos[:, self._joint_ids]
+        np.multiply(self._raw_action, self._scale, out=self._requested_target)
+        self._requested_target += self._entity.data.default_joint_pos[:, self._joint_ids]
+        if self._target_limits is None:
+            self._processed_action[:] = self._requested_target
+        else:
+            np.clip(
+                self._requested_target,
+                self._target_limits[None, :, 0] - self._clip_margin,
+                self._target_limits[None, :, 1] + self._clip_margin,
+                out=self._processed_action,
+            )
 
     def _delay_append(self, q_target: np.ndarray) -> None:
         capacity = self._delay_buffer.shape[0]
@@ -428,6 +477,7 @@ class BamVoltageAction(ActionTerm):
         if env_ids is None:
             env_ids = slice(None)
         self._raw_action[env_ids] = 0.0
+        self._requested_target[env_ids] = 0.0
         self._processed_action[env_ids] = 0.0
         self._motor_torque[env_ids] = 0.0
         self._prev_motor_torque[env_ids] = 0.0

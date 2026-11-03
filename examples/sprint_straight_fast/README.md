@@ -36,6 +36,11 @@ Stress battery (push 0.10 m/s, trunk CoM 10 mm, head CoM 6 mm, 2° reset tilt,
 The last training stage pushed at up to 0.10 m/s, so the stress battery is
 held out for CoM and tilt size but not for push size.
 
+This checkpoint also commands position targets far past the `hip_yaw` and
+`neck_pitch` stops (about −105 / +22 rad and −22 rad), which a real servo
+would clamp. See [`../sprint_straight_head/`](../sprint_straight_head/) for
+the clamp-trained follow-up.
+
 Gait: thigh and foot sign-flip 0.48, foot scissor 0.17 m peak-to-peak, head
 yaw and roll within 0.3°.
 

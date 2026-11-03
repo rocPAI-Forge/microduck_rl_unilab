@@ -21,6 +21,9 @@ from unilab.managers import CurriculumTermCfg, RewardTermCfg, SceneEntityCfg
 from unilab.managers._types import ManagerBasedRlEnv
 
 from microduck_rl_unilab.tasks.microduck.sprint_terms import (
+    action_clip_margin_curriculum,
+    action_target_band_cost,
+    action_target_overshoot_cost,
     cross_track_abs_cost,
     head_facing_abs_cost,
     head_tilt_excess_cost,
@@ -453,6 +456,135 @@ def test_sprint_straightcmd_owner_pays_for_tracking_not_progress() -> None:
     assert rewards["cross_track"].weight == pytest.approx(-0.8)
 
 
+def test_sprint_straightrange_owner_ramps_the_target_overshoot_cost() -> None:
+    GlobalHydra.instance().clear()
+    with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
+        cfg = compose(
+            "config", overrides=["task=microduck_sprint_straightrange_flat/mujoco"]
+        )
+    registry.ensure_registries()
+    env_cfg = registry.materialize_env_config("MicroduckSprintFlat")
+    apply_cfg_overrides(
+        env_cfg,
+        BackendAdapter(
+            cfg, root_dir=ROOT_DIR, algo_name="ppo"
+        ).build_task_env_cfg_override(),
+    )
+    env_cfg.validate()
+
+    assert env_cfg.max_episode_seconds == pytest.approx(30.0)
+    twist = env_cfg.commands["twist"]
+    assert twist.high_speed_fraction == pytest.approx(0.4)
+    assert list(twist.high_speed_range) == [0.9, 1.2]
+    term = env_cfg.rewards["action_target_overshoot"]
+    assert term.func is action_target_overshoot_cost
+    assert term.params["action_name"] == "joint_pos"
+    stages = env_cfg.curriculum["action_target_overshoot_weight"].params["stages"]
+    assert stages[0] == {"step": 0, "weight": -0.002}
+    assert stages[-1] == {"step": 36000, "weight": -0.06}
+    assert env_cfg.rewards["head_pitch_band"].weight == pytest.approx(-1.5)
+
+
+def test_sprint_straightclip_owner_clamps_targets_and_pins_the_cost() -> None:
+    GlobalHydra.instance().clear()
+    with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
+        cfg = compose(
+            "config", overrides=["task=microduck_sprint_straightclip_flat/mujoco"]
+        )
+    registry.ensure_registries()
+    env_cfg = registry.materialize_env_config("MicroduckSprintFlat")
+    apply_cfg_overrides(
+        env_cfg,
+        BackendAdapter(
+            cfg, root_dir=ROOT_DIR, algo_name="ppo"
+        ).build_task_env_cfg_override(),
+    )
+    env_cfg.validate()
+
+    assert env_cfg.actions["joint_pos"].clip_target_to_joint_limits is True
+    assert env_cfg.actions["joint_pos"].clip_target_margin == pytest.approx(0.5)
+    assert env_cfg.curriculum["action_target_overshoot_weight"] is None
+    margin = env_cfg.curriculum["action_clip_margin"]
+    assert margin.func is action_clip_margin_curriculum
+    assert margin.params["stages"][0] == {"step": 0, "margin": 0.5}
+    assert margin.params["stages"][-1] == {"step": 48000, "margin": 0.0}
+    assert env_cfg.rewards["action_target_overshoot"].weight == pytest.approx(-0.3)
+    assert env_cfg.rewards["head_pitch_band"].weight == pytest.approx(-1.5)
+
+
+def test_sprint_straightneck_owner_ramps_only_the_neck_band() -> None:
+    GlobalHydra.instance().clear()
+    with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
+        cfg = compose(
+            "config", overrides=["task=microduck_sprint_straightneck_flat/mujoco"]
+        )
+    registry.ensure_registries()
+    env_cfg = registry.materialize_env_config("MicroduckSprintFlat")
+    apply_cfg_overrides(
+        env_cfg,
+        BackendAdapter(
+            cfg, root_dir=ROOT_DIR, algo_name="ppo"
+        ).build_task_env_cfg_override(),
+    )
+    env_cfg.validate()
+
+    assert env_cfg.max_episode_seconds == pytest.approx(30.0)
+    twist = env_cfg.commands["twist"]
+    assert twist.ranges.lin_vel_x == [0.3, 1.2]
+    assert twist.high_speed_fraction == pytest.approx(0.4)
+    assert list(twist.high_speed_range) == [0.9, 1.2]
+    assert env_cfg.events["reset_base"].params["pose_range"]["roll"] == pytest.approx(
+        [-0.0436, 0.0436]
+    )
+    stages = env_cfg.curriculum["head_pitch_target_band_weight"].params["stages"]
+    assert stages[0] == {"step": 0, "weight": -1.5}
+    assert stages[-1] == {"step": 48000, "weight": -12.0}
+    target_band = env_cfg.rewards["head_pitch_target_band"]
+    assert target_band.func is action_target_band_cost
+    assert target_band.params["joint_names"] == ["neck_pitch", "head_pitch"]
+    assert target_band.params["band_deg"] == [[-50.0, 45.0], [-50.0, 50.0]]
+    assert env_cfg.curriculum["action_target_overshoot_weight"] is None
+    assert env_cfg.actions["joint_pos"].clip_target_to_joint_limits is True
+    assert env_cfg.actions["joint_pos"].clip_target_margin == pytest.approx(0.0)
+    assert env_cfg.curriculum["action_clip_margin"] is None
+    rewards = env_cfg.rewards
+    assert rewards["action_target_overshoot"].weight == pytest.approx(-0.3)
+    assert rewards["head_pitch_band"].func is joint_band_cost
+    assert rewards["head_pitch_band"].params["band_deg"] == [[-50.0, 45.0], [-50.0, 50.0]]
+    assert rewards["tracking_lin_vel_fine"].weight == pytest.approx(10.0)
+    assert rewards["head_tilt_excess"].weight == pytest.approx(-40.0)
+
+
+def test_sprint_straighthead_owner_caps_the_band_and_pins_the_head() -> None:
+    GlobalHydra.instance().clear()
+    with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
+        cfg = compose(
+            "config", overrides=["task=microduck_sprint_straighthead_flat/mujoco"]
+        )
+    registry.ensure_registries()
+    env_cfg = registry.materialize_env_config("MicroduckSprintFlat")
+    apply_cfg_overrides(
+        env_cfg,
+        BackendAdapter(
+            cfg, root_dir=ROOT_DIR, algo_name="ppo"
+        ).build_task_env_cfg_override(),
+    )
+    env_cfg.validate()
+
+    twist = env_cfg.commands["twist"]
+    assert twist.ranges.lin_vel_x == [0.3, 1.0]
+    assert list(twist.high_speed_range) == [0.75, 1.0]
+    assert twist.high_speed_fraction == pytest.approx(0.4)
+    action = env_cfg.actions["joint_pos"]
+    assert action.clip_target_to_joint_limits is True
+    assert action.clip_target_margin == pytest.approx(0.0)
+    assert env_cfg.curriculum["head_pitch_target_band_weight"] is None
+    assert env_cfg.curriculum["action_clip_margin"] is None
+    band = env_cfg.rewards["head_pitch_target_band"]
+    assert band.weight == pytest.approx(-12.0)
+    assert band.params["band_deg"] == [[-15.0, 45.0], [-50.0, 50.0]]
+
+
 def test_sprint_steerfix_owner_restores_bidirectional_yaw_lessons() -> None:
     GlobalHydra.instance().clear()
     with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
@@ -671,6 +803,95 @@ def _gait_env(*, contact: np.ndarray, feet_x: np.ndarray | None = None) -> Manag
             scene=_Scene(),
             command_manager=SimpleNamespace(get_command=lambda name: command),
         ),
+    )
+
+
+def test_action_target_overshoot_cost_reads_the_target_not_the_joint() -> None:
+    term = SimpleNamespace(
+        processed_action=np.asarray(
+            [[0.2, -0.1], [-3.0, 0.4], [0.0, 2.5]], dtype=np.float32
+        ),
+        joint_ids=np.asarray([2, 0], dtype=np.intp),
+    )
+    robot = SimpleNamespace(
+        data=SimpleNamespace(
+            soft_joint_pos_limits=np.asarray(
+                [[-0.5, 0.5], [-9.0, 9.0], [-1.0, 1.0]], dtype=np.float32
+            )
+        )
+    )
+    env = cast(
+        ManagerBasedRlEnv,
+        SimpleNamespace(
+            action_manager=SimpleNamespace(get_term=lambda name: term),
+            scene={"robot": robot},
+        ),
+    )
+    cost = action_target_overshoot_cost(env, action_name="joint_pos")
+    # Column 0 drives joint 2 (limit +-1.0), column 1 drives joint 0 (+-0.5).
+    np.testing.assert_allclose(cost, [0.0, 2.0, 2.0], atol=1e-6)
+
+    # With a clamping action, the cost reads the request before the clamp.
+    term.requested_target = term.processed_action
+    term.processed_action = np.zeros_like(term.requested_target)
+    np.testing.assert_allclose(
+        action_target_overshoot_cost(env, action_name="joint_pos"), [0.0, 2.0, 2.0], atol=1e-6
+    )
+
+
+def test_action_clip_margin_curriculum_steps_the_margin_down() -> None:
+    margins: list[float] = []
+    term = SimpleNamespace(set_target_clip_margin=margins.append)
+    env = SimpleNamespace(
+        action_manager=SimpleNamespace(get_term=lambda name: term),
+        common_step_counter=0,
+    )
+    stages = [
+        {"step": 0, "margin": 0.5},
+        {"step": 100, "margin": 0.2},
+        {"step": 200, "margin": 0.0},
+    ]
+    curriculum = action_clip_margin_curriculum(
+        CurriculumTermCfg(func=action_clip_margin_curriculum, params={"stages": stages}),
+        cast(ManagerBasedRlEnv, env),
+    )
+    for step in (0, 150, 250):
+        env.common_step_counter = step
+        curriculum(cast(ManagerBasedRlEnv, env), slice(None), stages=stages)
+    assert margins == [0.5, 0.2, 0.0]
+
+
+def test_action_target_band_cost_reads_the_request_behind_the_clamp() -> None:
+    term = SimpleNamespace(
+        requested_target=np.radians(
+            np.asarray([[-120.0, 0.0], [-40.0, 60.0]], dtype=np.float64)
+        ).astype(np.float32),
+        joint_ids=np.asarray([1, 0], dtype=np.intp),
+    )
+    robot = SimpleNamespace(joint_names=["head_pitch", "neck_pitch"])
+    env = cast(
+        ManagerBasedRlEnv,
+        SimpleNamespace(
+            action_manager=SimpleNamespace(get_term=lambda name: term),
+            scene={"robot": robot},
+        ),
+    )
+    cost = action_target_band_cost(
+        RewardTermCfg(
+            func=action_target_band_cost,
+            weight=-1.0,
+            params={
+                "action_name": "joint_pos",
+                "joint_names": ["neck_pitch", "head_pitch"],
+                "band_deg": [[-50.0, 45.0], [-50.0, 50.0]],
+            },
+        ),
+        env,
+    )
+    # Column 0 drives neck_pitch: -120 is 70 deg below its band; head_pitch at
+    # 60 is 10 deg above its band. Row means of the overshoot, in radians.
+    np.testing.assert_allclose(
+        cost(env), np.radians([35.0, 5.0]), atol=1e-5
     )
 
 

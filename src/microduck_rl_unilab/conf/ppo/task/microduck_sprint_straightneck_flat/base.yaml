@@ -1,0 +1,46 @@
+# @package _global_
+# Bring the head back over the trunk on the clamped speed-command gait.
+#
+# Every straight sprint since the head-upright repair parks neck_pitch on its
+# -90 deg stop (home is +20 deg) and counter-bends head_pitch to about -51 deg,
+# so the crown points up while the head rides about 8 cm ahead of and 4 cm
+# below its home position over trunk_base. Under the goal-position clamp the
+# hip requests came back inside their range, but the neck request still sits
+# about 0.37 rad past the stop, where the clamp pins it. Ramping the
+# joint-space head_pitch_band to -12 did not move the neck at all, because
+# nothing the policy asks for past the stop changes the joint. This owner
+# applies the same band to the request instead, so the gradient reaches back
+# through the clamp, and leaves the joint-space band at its old weight.
+defaults:
+  - /task/microduck_sprint_straightclip_flat/base
+  - _self_
+
+env:
+  actions:
+    joint_pos:
+      clip_target_margin: 0.0
+  curriculum:
+    # The clamp is already at the soft limits; a restarted margin ramp would
+    # hand back the stops.
+    action_clip_margin: null
+    head_pitch_target_band_weight:
+      func: unilab.envs.mdp.reward_curriculum
+      params:
+        reward_name: head_pitch_target_band
+        stages:
+          - {step: 0, weight: -1.5}
+          - {step: 12000, weight: -3.0}
+          - {step: 24000, weight: -6.0}
+          - {step: 36000, weight: -9.0}
+          - {step: 48000, weight: -12.0}
+
+reward:
+  head_pitch_band:
+    weight: -1.5
+  head_pitch_target_band:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.action_target_band_cost
+    weight: -1.5
+    params:
+      action_name: joint_pos
+      joint_names: [neck_pitch, head_pitch]
+      band_deg: [[-50.0, 45.0], [-50.0, 50.0]]

@@ -52,6 +52,15 @@ Raw numbers: [`metrics.json`](metrics.json). Clips:
 - Training pushed at up to 0.10 m/s, the same magnitude as the stress
   battery, so the stress numbers are held out for CoM and tilt but not for
   push size.
+- The policy commands position targets far past the joint stops (about
+  −102 / +23 rad on the two `hip_yaw` joints and −19 rad on `neck_pitch`).
+  The BAM action does not clip `q_des`, so those joints sit on the stop at
+  full voltage, and `neck_pitch` stays at −90° with the head about 8 cm ahead
+  of the trunk. A real servo clamps the goal position. With the clamp on
+  (`--clip-targets`), this checkpoint survives a 60 s run 18.8% of the time
+  at 0.3 m/s and 0% at 1.2 m/s, with half the falls within about 2 s. The
+  clamp-trained follow-up is
+  [`../sprint_straight_head/`](../sprint_straight_head/).
 
 ## What changed
 

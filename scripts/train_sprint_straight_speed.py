@@ -37,6 +37,8 @@ DEFAULT_RESULTS = REPO_ROOT / "results" / "sprint_straight_speed.jsonl"
 # on the same battery, whichever owner trained it.
 OWNER = "microduck_sprint_straightspeed_flat/mujoco"
 STRESS_OWNER = "microduck_sprint_straighthold_flat/mujoco"
+# Extra eval_sprint_speed.py flags shared by every battery of one run.
+EVAL_FLAGS: list[str] = []
 DEFAULT_TASK = "microduck_sprint_straightspeed_flat"
 
 
@@ -101,6 +103,7 @@ def _battery(
             "uv", "run", "--no-sync", "scripts/eval_sprint_speed.py", str(checkpoint),
             "--owner", STRESS_OWNER if stress else OWNER,
             *(["--stress"] if stress else []),
+            *EVAL_FLAGS,
             "--speed", str(speed),
             "--num-envs", str(num_envs),
             "--warmup", "1",
@@ -127,6 +130,9 @@ def _battery(
         "straight_pose_horizon_s": horizon.get("mean"),
         "head_inverted_time_fraction": battery.get("head_inverted_time_fraction"),
         "head_up_tilt_deg": battery.get("head_up_tilt_deg"),
+        "neck_pitch_deg": battery.get("neck_pitch_deg"),
+        "head_forward_in_trunk_m": battery.get("head_forward_in_trunk_m"),
+        "action_target_overshoot_rad": battery.get("action_target_overshoot_rad"),
     }
 
 
@@ -178,6 +184,9 @@ def _score_checkpoint(
         "heading_error_deg": worst("heading_error_deg", max),
         "straight_pose_survival_fraction": worst("straight_pose_survival_fraction", min),
         "head_inverted_time_fraction": worst("head_inverted_time_fraction", max),
+        "head_forward_in_trunk_m": worst("head_forward_in_trunk_m", max),
+        "neck_pitch_deg": worst("neck_pitch_deg", min),
+        "action_target_overshoot_rad": worst("action_target_overshoot_rad", max),
     }
     if len(per_speed) == 1:
         record.update({key: value for key, value in per_speed[0].items() if key not in record})
@@ -209,9 +218,19 @@ def _passes(record: dict[str, Any], args: argparse.Namespace) -> bool:
         speed_ok = error <= args.max_speed_error
     stress = record.get("stress_survival_fraction")
     stress_ok = stress is None or float(stress) >= args.min_stress_survival
+    head_forward = record.get("head_forward_in_trunk_m")
+    head_ok = args.max_head_forward is None or (
+        head_forward is not None and float(head_forward) <= args.max_head_forward
+    )
+    overshoot = record.get("action_target_overshoot_rad")
+    range_ok = args.max_target_overshoot is None or (
+        overshoot is not None and float(overshoot) <= args.max_target_overshoot
+    )
     return (
         speed_ok
         and stress_ok
+        and head_ok
+        and range_ok
         and survival >= args.min_survival
         and heading <= args.max_heading
         and straight >= args.min_straight
@@ -280,6 +299,23 @@ def main() -> None:
     )
     parser.add_argument("--stress-duration", type=float, default=60.0)
     parser.add_argument("--min-stress-survival", type=float, default=0.95)
+    parser.add_argument(
+        "--eval-clip",
+        action="store_true",
+        help="Score with BAM targets clamped to the joint limits; use with clipped owners.",
+    )
+    parser.add_argument(
+        "--max-target-overshoot",
+        type=float,
+        default=None,
+        help="Gate on the worst summed position-target overshoot past the joint limits, rad.",
+    )
+    parser.add_argument(
+        "--max-head-forward",
+        type=float,
+        default=None,
+        help="Gate on the worst head offset ahead of trunk_base, in meters.",
+    )
     parser.add_argument("--min-speed", type=float, default=0.95)
     parser.add_argument("--min-survival", type=float, default=0.95)
     parser.add_argument("--max-heading", type=float, default=6.0)
@@ -293,6 +329,8 @@ def main() -> None:
         help="Extra Hydra override passed to training, e.g. reward.tracking_lin_vel.weight=3.0",
     )
     args = parser.parse_args()
+    if args.eval_clip:
+        EVAL_FLAGS.append("--clip-targets")
 
     results_path = Path(args.results_jsonl)
     results_path.parent.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,28 @@
+# @package _global_
+# Head-over-trunk straight gait under the goal-position clamp, 0.3-1.0 m/s.
+#
+# With the clamp on and the neck back near its +20 deg home, the gait tops
+# out at about 1.04 m/s. Asking for 1.2 m/s keeps the policy at that limit,
+# where 300 s survival fell to about 87% on 512 environments, while every
+# command it can reach stayed near 100%. This owner pins the head contract
+# the last neck round converged on (request band lower edge -15 deg on
+# neck_pitch at weight -12) and caps the command band at what the clamped,
+# head-back gait can track.
+defaults:
+  - /task/microduck_sprint_straightneck_flat/base
+  - _self_
+
+env:
+  commands:
+    twist:
+      ranges:
+        lin_vel_x: [0.3, 1.0]
+      high_speed_range: [0.75, 1.0]
+  curriculum:
+    head_pitch_target_band_weight: null
+
+reward:
+  head_pitch_target_band:
+    weight: -12.0
+    params:
+      band_deg: [[-15.0, 45.0], [-50.0, 50.0]]

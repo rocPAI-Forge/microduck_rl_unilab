@@ -58,7 +58,9 @@ FOLLOW_ELEVATION = -14.0
 FOLLOW_DISTANCE = 1.15
 
 
-def _compose_owner(*, duration_s: float, seed: int, speed: float) -> Any:
+def _compose_owner(
+    *, duration_s: float, seed: int, speed: float, clip_targets: bool = False
+) -> Any:
     register_conf_search_path()
     GlobalHydra.instance().clear()
     with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
@@ -81,6 +83,8 @@ def _compose_owner(*, duration_s: float, seed: int, speed: float) -> Any:
         pose.z = [0.0, 0.0]
         pose.yaw = [0.0, 0.0]
         cfg.env.events.push_robot = None
+        if clip_targets:
+            cfg.env.actions.joint_pos.clip_target_to_joint_limits = True
     return cfg
 
 
@@ -242,6 +246,7 @@ def _run_clip(
     stride: int,
     kind: str,
     speed: float = SPEED_M_S,
+    clip_targets: bool = False,
     low_camera: bool = False,
     follow_camera: tuple[float, float, float] = (
         FOLLOW_AZIMUTH,
@@ -249,7 +254,9 @@ def _run_clip(
         FOLLOW_DISTANCE,
     ),
 ) -> None:
-    cfg = _compose_owner(duration_s=duration_s, seed=seed, speed=speed)
+    cfg = _compose_owner(
+        duration_s=duration_s, seed=seed, speed=speed, clip_targets=clip_targets
+    )
     # algo cfg is the hydra cfg, not stored on the env. Load the policy with it.
     raw_env = _make_env(cfg, num_envs)
     wrapped: RslRlVecEnvWrapper | None = None
@@ -302,6 +309,11 @@ def main() -> None:
     parser.add_argument("--radial-seconds", type=float, default=10.0)
     parser.add_argument("--stride", type=int, default=2, help="Keep every Nth control step.")
     parser.add_argument("--speed", type=float, default=SPEED_M_S, help="Forward command, m/s.")
+    parser.add_argument(
+        "--clip-targets",
+        action="store_true",
+        help="Clamp BAM position targets to the joint limits; use for clamp-trained policies.",
+    )
     parser.add_argument("--device", default=None)
     parser.add_argument("--only", choices=("follow", "radial", "both"), default="both")
     parser.add_argument(
@@ -326,6 +338,7 @@ def main() -> None:
             stride=args.stride,
             kind="follow",
             speed=args.speed,
+            clip_targets=args.clip_targets,
             follow_camera=(args.follow_azimuth, args.follow_elevation, args.follow_distance),
         )
     if args.only in ("radial", "both"):
@@ -342,6 +355,7 @@ def main() -> None:
             stride=args.stride,
             kind="radial",
             speed=args.speed,
+            clip_targets=args.clip_targets,
             low_camera=args.low_camera,
         )
 

@@ -337,6 +337,39 @@ def test_reset_clears_episode_state_and_resamples_friction_scale() -> None:
     np.testing.assert_allclose(term._delay_read()[0], 0.7, rtol=1e-6)
 
 
+def test_target_clip_clamps_q_des_but_keeps_the_request() -> None:
+    env, entity = _make_env()
+    entity.data.soft_joint_pos_limits = np.asarray(
+        [[-0.5, 0.5], [-1.0, 0.2]], dtype=np.float32
+    )
+    term = BamVoltageAction(_frictionless_cfg(clip_target_to_joint_limits=True), env)
+    term.process_actions(np.asarray([[3.0, -4.0], [0.1, 0.1]], dtype=np.float32))
+    np.testing.assert_allclose(term.requested_target, [[3.0, -4.0], [0.1, 0.1]])
+    np.testing.assert_allclose(term.processed_action, [[0.5, -1.0], [0.1, 0.1]])
+
+    unclipped, _ = _make_term()
+    unclipped.process_actions(np.asarray([[3.0, -4.0], [0.1, 0.1]], dtype=np.float32))
+    np.testing.assert_allclose(unclipped.processed_action, [[3.0, -4.0], [0.1, 0.1]])
+
+
+def test_target_clip_margin_widens_the_clamp() -> None:
+    env, entity = _make_env()
+    entity.data.soft_joint_pos_limits = np.asarray(
+        [[-0.5, 0.5], [-1.0, 0.2]], dtype=np.float32
+    )
+    term = BamVoltageAction(
+        _frictionless_cfg(clip_target_to_joint_limits=True, clip_target_margin=0.3), env
+    )
+    actions = np.asarray([[3.0, -4.0], [0.1, 0.1]], dtype=np.float32)
+    term.process_actions(actions)
+    np.testing.assert_allclose(term.processed_action, [[0.8, -1.3], [0.1, 0.1]], atol=1e-6)
+    term.set_target_clip_margin(0.0)
+    term.process_actions(actions)
+    np.testing.assert_allclose(term.processed_action, [[0.5, -1.0], [0.1, 0.1]], atol=1e-6)
+    with pytest.raises(ValueError):
+        term.set_target_clip_margin(-0.1)
+
+
 def test_process_actions_rejects_bad_input() -> None:
     term, _ = _make_term()
     with pytest.raises(ValueError, match="NaN or Inf"):
