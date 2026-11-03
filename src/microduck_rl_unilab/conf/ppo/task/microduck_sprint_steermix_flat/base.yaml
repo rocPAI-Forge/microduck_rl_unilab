@@ -1,0 +1,48 @@
+# @package _global_
+# Steering plus loop-held straight lines in one run.
+#
+# The steer owner learned accurate, symmetric yaw-rate tracking, but with the
+# spawn-ray costs gone its loop-held straight line at 1.0 m/s weakened: on 512
+# environments over 300 s, survival fell from 96.5% to 91.2% and the
+# straight-pose pass from 94.7% to about 85%, mostly from single heading
+# excursions past 25 deg. Retuning the external loop at eval time did not
+# recover it. Here 30% of episodes run the spawn-heading loop, exactly as the
+# straight battery does, and the spawn-ray costs come back gated to those
+# episodes so they never fight a free turn.
+defaults:
+  - /task/microduck_sprint_steer_flat/base
+  - _self_
+
+env:
+  commands:
+    twist:
+      hold_spawn_heading: true
+      spawn_hold_fraction: 0.3
+
+reward:
+  heading_hold:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.heading_hold
+    weight: 2.0
+    params:
+      std: 0.4
+      gate_command: twist
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+  heading_abs:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.heading_abs_cost
+    weight: -0.75
+    params:
+      gate_command: twist
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+  cross_track:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.cross_track_abs_cost
+    weight: -0.8
+    params:
+      distance_cap: 0.40
+      gate_command: twist
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot

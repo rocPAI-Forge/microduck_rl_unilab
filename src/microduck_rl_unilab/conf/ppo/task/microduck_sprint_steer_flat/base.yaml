@@ -1,0 +1,32 @@
+# @package _global_
+# Yaw-rate steering on the head-over-trunk, servo-clamped gait.
+#
+# model_52250 already turns, because its spawn-heading loop fed it yaw
+# commands up to +-0.35 rad/s, but with the loop off it overshoots by 1.3-1.75x,
+# turns harder to the right than to the left, and at 1.0 m/s a 0.4 rad/s turn
+# drops survival to about 77%. This owner turns the loop off, samples yaw-rate
+# commands directly, and keeps the speed band, target clamp, and head contract
+# of the straighthead owner. Costs measured against the spawn ray would fight
+# every turn, so they are dropped; the straightness cost stays because it is
+# measured against the command. A narrow yaw-rate kernel joins the wide one so
+# overshooting a turn is not nearly free. Straight walking comes from the same
+# spawn-heading loop acting as an external yaw controller at eval time.
+defaults:
+  - /task/microduck_sprint_straighthead_flat/base
+  - _self_
+
+env:
+  commands:
+    twist:
+      hold_spawn_heading: false
+      ranges:
+        ang_vel_z: [-0.5, 0.5]
+
+reward:
+  heading_hold: null
+  heading_abs: null
+  cross_track: null
+  tracking_ang_vel_fine:
+    func: unilab.envs.mdp.track_angular_velocity
+    weight: 6.0
+    params: {std: 0.2, command_name: twist}

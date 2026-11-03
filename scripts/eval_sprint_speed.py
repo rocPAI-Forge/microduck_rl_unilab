@@ -53,6 +53,7 @@ def _compose_owner(
     heading_yaw_limit: float | None = None,
     cross_track_stiffness: float | None = None,
     clip_targets: bool = False,
+    yaw_rate: float = 0.0,
 ) -> Any:
     register_conf_search_path()
     GlobalHydra.instance().clear()
@@ -69,7 +70,11 @@ def _compose_owner(
         twist = cfg.env.commands.twist
         twist.ranges.lin_vel_x = [speed, speed]
         twist.ranges.lin_vel_y = [0.0, 0.0]
-        twist.ranges.ang_vel_z = [0.0, 0.0]
+        twist.ranges.ang_vel_z = [yaw_rate, yaw_rate]
+        if yaw_rate != 0.0:
+            # The spawn-heading loop writes the yaw command itself; a fixed
+            # turn command needs it off.
+            twist.hold_spawn_heading = False
         if heading_stiffness is not None:
             twist.spawn_heading_stiffness = heading_stiffness
         if heading_yaw_limit is not None:
@@ -126,6 +131,7 @@ def evaluate(
     heading_yaw_limit: float | None = None,
     cross_track_stiffness: float | None = None,
     clip_targets: bool = False,
+    yaw_rate: float = 0.0,
 ) -> dict[str, Any]:
     if not checkpoint.is_file():
         raise FileNotFoundError(f"checkpoint not found: {checkpoint}")
@@ -149,6 +155,7 @@ def evaluate(
         heading_yaw_limit=heading_yaw_limit,
         cross_track_stiffness=cross_track_stiffness,
         clip_targets=clip_targets,
+        yaw_rate=yaw_rate,
     )
     importlib.import_module("microduck_rl_unilab.tasks.microduck")
     registry.ensure_registries()
@@ -187,6 +194,7 @@ def evaluate(
         alive = np.ones(num_envs, dtype=np.bool_)
         speed_sum = np.zeros(num_envs, dtype=np.float64)
         lateral_sum = np.zeros(num_envs, dtype=np.float64)
+        yaw_rate_sum = np.zeros(num_envs, dtype=np.float64)
         heading_error_sum = np.zeros(num_envs, dtype=np.float64)
         head_error_sum = np.zeros(num_envs, dtype=np.float64)
         head_yaw_sum = np.zeros(num_envs, dtype=np.float64)
@@ -286,6 +294,7 @@ def evaluate(
             final_forward_displacement[alive] = forward_displacement[alive]
             speed_sum[alive] += velocity[alive, 0]
             lateral_sum[alive] += np.abs(velocity[alive, 1])
+            yaw_rate_sum[alive] += np.asarray(robot.data.root_link_ang_vel_w)[alive, 2]
             heading_error_sum[alive] += heading_error[alive]
             head_error_sum[alive] += head_error[alive]
             head_yaw_sum[alive] += np.abs(head_delta[alive, 2])
@@ -345,6 +354,12 @@ def evaluate(
                     else None
                 ),
             },
+            "command_yaw_rate_rad_s": yaw_rate,
+            "yaw_rate_rad_s": (
+                float(np.mean(yaw_rate_sum[sampled] / sample_count[sampled]))
+                if np.any(sampled)
+                else None
+            ),
             "mean_absolute_lateral_speed_m_s": (
                 float(np.mean(lateral_sum[sampled] / sample_count[sampled]))
                 if np.any(sampled)
@@ -515,6 +530,12 @@ def main() -> None:
         action="store_true",
         help="Clamp BAM position targets to the joint limits (real-servo behavior).",
     )
+    parser.add_argument(
+        "--yaw-rate",
+        type=float,
+        default=0.0,
+        help="Fixed yaw-rate command, rad/s. Nonzero turns the spawn-heading loop off.",
+    )
     parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args()
 
@@ -533,6 +554,7 @@ def main() -> None:
         heading_yaw_limit=args.heading_yaw_limit,
         cross_track_stiffness=args.cross_track_stiffness,
         clip_targets=args.clip_targets,
+        yaw_rate=args.yaw_rate,
     )
     result["clip_targets"] = args.clip_targets
     payload = json.dumps(result, ensure_ascii=False, indent=2)

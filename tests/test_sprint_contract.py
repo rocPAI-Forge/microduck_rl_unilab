@@ -585,6 +585,96 @@ def test_sprint_straighthead_owner_caps_the_band_and_pins_the_head() -> None:
     assert band.params["band_deg"] == [[-15.0, 45.0], [-50.0, 50.0]]
 
 
+def test_sprint_steer_owner_tracks_yaw_rate_without_the_spawn_ray() -> None:
+    GlobalHydra.instance().clear()
+    with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
+        cfg = compose("config", overrides=["task=microduck_sprint_steer_flat/mujoco"])
+    registry.ensure_registries()
+    env_cfg = registry.materialize_env_config("MicroduckSprintFlat")
+    apply_cfg_overrides(
+        env_cfg,
+        BackendAdapter(
+            cfg, root_dir=ROOT_DIR, algo_name="ppo"
+        ).build_task_env_cfg_override(),
+    )
+    env_cfg.validate()
+
+    twist = env_cfg.commands["twist"]
+    assert twist.hold_spawn_heading is False
+    assert twist.ranges.ang_vel_z == [-0.5, 0.5]
+    assert twist.ranges.lin_vel_x == [0.3, 1.0]
+    assert env_cfg.actions["joint_pos"].clip_target_to_joint_limits is True
+    rewards = env_cfg.rewards
+    assert rewards["heading_hold"] is None
+    assert rewards["heading_abs"] is None
+    assert rewards["cross_track"] is None
+    assert rewards["straightness"].params["command_name"] == "twist"
+    assert rewards["tracking_ang_vel"].weight == pytest.approx(12.0)
+    assert rewards["tracking_ang_vel_fine"].weight == pytest.approx(6.0)
+    assert rewards["tracking_ang_vel_fine"].params["std"] == pytest.approx(0.2)
+    assert rewards["head_pitch_target_band"].weight == pytest.approx(-12.0)
+
+
+def test_sprint_steermix_owner_gates_spawn_ray_terms_to_loop_episodes() -> None:
+    GlobalHydra.instance().clear()
+    with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
+        cfg = compose("config", overrides=["task=microduck_sprint_steermix_flat/mujoco"])
+    registry.ensure_registries()
+    env_cfg = registry.materialize_env_config("MicroduckSprintFlat")
+    apply_cfg_overrides(
+        env_cfg,
+        BackendAdapter(
+            cfg, root_dir=ROOT_DIR, algo_name="ppo"
+        ).build_task_env_cfg_override(),
+    )
+    env_cfg.validate()
+
+    twist = env_cfg.commands["twist"]
+    assert twist.hold_spawn_heading is True
+    assert twist.spawn_hold_fraction == pytest.approx(0.3)
+    assert twist.ranges.ang_vel_z == [-0.5, 0.5]
+    rewards = env_cfg.rewards
+    for name in ("heading_hold", "heading_abs", "cross_track"):
+        assert rewards[name].params["gate_command"] == "twist"
+    assert rewards["heading_hold"].func is heading_hold
+    assert rewards["heading_abs"].weight == pytest.approx(-0.75)
+    assert rewards["cross_track"].func is cross_track_abs_cost
+    assert rewards["tracking_ang_vel_fine"].weight == pytest.approx(6.0)
+
+
+def test_spawn_hold_gate_zeroes_free_yaw_rows() -> None:
+    entity = SimpleNamespace(
+        data=SimpleNamespace(
+            heading_w=np.zeros(2, dtype=np.float32),
+            root_link_pos_w=np.zeros((2, 3), dtype=np.float32),
+        )
+    )
+    command = SimpleNamespace(spawn_hold_mask=np.asarray([True, False]))
+    env = cast(
+        ManagerBasedRlEnv,
+        SimpleNamespace(
+            num_envs=2,
+            episode_length_buf=np.asarray([10, 10], dtype=np.int64),
+            scene={"robot": entity},
+            command_manager=SimpleNamespace(get_term=lambda name: command),
+        ),
+    )
+    term = cross_track_abs_cost(
+        RewardTermCfg(
+            func=cross_track_abs_cost,
+            weight=-1.0,
+            params={
+                "distance_cap": 0.4,
+                "gate_command": "twist",
+                "asset_cfg": SceneEntityCfg("robot"),
+            },
+        ),
+        env,
+    )
+    entity.data.root_link_pos_w[:, 1] = 0.2
+    np.testing.assert_allclose(term(env), [0.5, 0.0], atol=1e-6)
+
+
 def test_sprint_steerfix_owner_restores_bidirectional_yaw_lessons() -> None:
     GlobalHydra.instance().clear()
     with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
@@ -625,6 +715,8 @@ def test_timed_resample_keeps_the_spawn_ray(monkeypatch: pytest.MonkeyPatch) -> 
     term._hold_spawn_heading = True
     term._turn_fraction = 0.0
     term._high_speed_range = None
+    term._spawn_hold_fraction = 1.0
+    term._spawn_hold_mask = np.ones(3, dtype=np.bool_)
     term._capture_spawn_heading = np.zeros(3, dtype=np.bool_)
     # Row 0 was just reset; rows 1 and 2 hit their resampling timer mid-episode.
     term.command_counter = np.asarray([0, 1, 4], dtype=np.int64)
@@ -665,6 +757,49 @@ def test_high_speed_fraction_redraws_forward_speed_from_the_top_band(
     np.testing.assert_array_equal(term.vel_command_w[:, 0], speeds)
 
 
+def test_spawn_hold_fraction_splits_episodes_between_loop_and_free_yaw(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        UniformVelocityCommand, "_resample_command", lambda self, env_ids: None
+    )
+    monkeypatch.setattr(
+        UniformVelocityCommand, "_update_command", lambda self, env_ids=None: None
+    )
+    num_envs = 2000
+    term = object.__new__(MicroduckVelocityCommand)
+    term._hold_spawn_heading = True
+    term._turn_fraction = 0.0
+    term._high_speed_range = None
+    term._spawn_hold_fraction = 0.3
+    term._spawn_hold_mask = np.ones(num_envs, dtype=np.bool_)
+    term._spawn_heading_stiffness = 2.5
+    term._spawn_cross_track_stiffness = 0.0
+    term._spawn_heading_yaw_rate_limit = 0.35
+    term._spawn_heading = np.zeros(num_envs, dtype=np.float32)
+    term._spawn_position_xy = np.zeros((num_envs, 2), dtype=np.float32)
+    term._capture_spawn_heading = np.zeros(num_envs, dtype=np.bool_)
+    term._env = SimpleNamespace(rng=np.random.default_rng(0))
+    term.command_counter = np.zeros(num_envs, dtype=np.int64)
+    term.robot = SimpleNamespace(
+        data=SimpleNamespace(
+            heading_w=np.full(num_envs, 0.1, dtype=np.float32),
+            root_link_pos_w=np.zeros((num_envs, 3), dtype=np.float32),
+        )
+    )
+    term.vel_command_b = np.zeros((num_envs, 3), dtype=np.float32)
+    term.vel_command_b[:, 2] = 0.4
+
+    term._resample_command(np.arange(num_envs, dtype=np.intp))
+    hold = term.spawn_hold_mask.copy()
+    assert 0.25 < hold.mean() < 0.35
+    term._capture_spawn_heading[:] = False
+    term._update_command(None)
+    # Loop rows get -stiffness * 0.1 heading error; free rows keep their 0.4 command.
+    np.testing.assert_allclose(term.vel_command_b[hold, 2], -0.25, atol=1e-6)
+    np.testing.assert_allclose(term.vel_command_b[~hold, 2], 0.4, atol=1e-6)
+
+
 def test_spawn_heading_capture_is_deferred_until_committed_state(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -680,6 +815,7 @@ def test_spawn_heading_capture_is_deferred_until_committed_state(
     term._spawn_heading_yaw_rate_limit = 1.2
     term._spawn_heading = np.zeros(2, dtype=np.float32)
     term._spawn_position_xy = np.zeros((2, 2), dtype=np.float32)
+    term._spawn_hold_mask = np.ones(2, dtype=np.bool_)
     term._capture_spawn_heading = np.asarray([True, False])
     term.robot = SimpleNamespace(
         data=SimpleNamespace(
