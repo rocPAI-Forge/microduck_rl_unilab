@@ -26,7 +26,7 @@ and so on), owner configs, and robot XML assets.
 
 ## Version
 
-Current release: **0.0.1** (git tag `v0.0.1`). Release contents, checked
+Current release: **0.1.0** (git tag `v0.1.0`). Release contents, checked
 policies, and known limitations are in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Task × algorithm × backend matrix

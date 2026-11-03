@@ -4,7 +4,7 @@ Versions follow `project.version` in `pyproject.toml`. Each release is a git
 tag `v<version>` with a matching GitHub release. Checkpoints live in
 `examples/` and are versioned with the code that reproduces them.
 
-## 0.0.1
+## 0.1.0
 
 First tagged release. Depends on `unilab[mujoco]==1.0.0`, `unilab-rl==1.0.0`,
 and `unisim-core==1.0.0` from PyPI. The default install profile is ROCm with
