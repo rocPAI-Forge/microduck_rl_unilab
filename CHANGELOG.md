@@ -4,6 +4,15 @@ Versions follow `project.version` in `pyproject.toml`. Each release is a git
 tag `v<version>` with a matching GitHub release. Checkpoints live in
 `examples/` and are versioned with the code that reproduces them.
 
+## Unreleased
+
+- `scripts/audit_action_targets.py` reports how far a checkpoint's position
+  targets go past the joint limits under any task owner, with and without the
+  goal-position clamp. The audit in
+  [`docs/audits/position_targets.md`](docs/audits/position_targets.md) found
+  that only the sprint lineage leans on the stops; the walk, stand-up, and
+  get-up checkpoints finish their tasks with the clamp on.
+
 ## 0.1.0
 
 First tagged release. Depends on `unilab[mujoco]==1.0.0`, `unilab-rl==1.0.0`,
