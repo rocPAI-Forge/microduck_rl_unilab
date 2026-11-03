@@ -24,6 +24,54 @@ Train, eval, and runner/learner/collector all come from the `unilab` wheel.
 This repo only ships task code (manager terms / recovery terms / BAM action,
 and so on), owner configs, and robot XML assets.
 
+## Gaits at a glance
+
+Trained, checked policies with their weights in `examples/`. Click a clip for
+its metrics and reproduce commands.
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <a href="examples/velocity_flat_mujoco/"><img src="docs/media/walk_velocity.gif" width="260" alt="Velocity walk"></a><br>
+      <b>Walk</b> (<code>microduck_velocity_flat</code>)<br>
+      Tracks a 0.4 m/s forward command
+    </td>
+    <td align="center" width="33%">
+      <a href="examples/standup/"><img src="docs/media/standup.gif" width="260" alt="Stand up"></a><br>
+      <b>Stand up</b> (<code>microduck_standup_flat</code>)<br>
+      From face-down and face-up, also sit-to-stand
+    </td>
+    <td align="center" width="33%">
+      <a href="examples/velstand_getup/"><img src="docs/media/velstand_getup.gif" width="260" alt="Get up from a fall"></a><br>
+      <b>Walk and recover</b> (<code>microduck_velstand_flat</code>)<br>
+      Gets up from face-down (left) and face-up (right) within 8 s; half speed
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="examples/sprint_straight_fast/"><img src="docs/media/sprint_straight_fast.gif" width="260" alt="Straight sprint"></a><br>
+      <b>Straight sprint</b> (<code>sprint_straight_fast</code>)<br>
+      1.15 m/s, holds its line for 300 s
+    </td>
+    <td align="center">
+      <a href="examples/sprint_straight_cmd/"><img src="docs/media/sprint_straight_cmd.gif" width="260" alt="Speed-command sprint"></a><br>
+      <b>Speed-command sprint</b> (<code>sprint_straight_cmd</code>)<br>
+      Follows 0.3–1.2 m/s; clip at a 1.2 m/s command
+    </td>
+    <td align="center">
+      <a href="examples/sprint_straight_head/"><img src="docs/media/sprint_straight_head.gif" width="260" alt="Head-over-trunk sprint"></a><br>
+      <b>Head-over-trunk sprint</b> (<code>sprint_straight_head</code>)<br>
+      Follows 0.3–1.0 m/s with servo-clamped targets; start here for hardware
+    </td>
+  </tr>
+</table>
+
+The sprint gaits exist only in this repo; upstream microduck_rl has no sprint
+task. How the six sprint checkpoints differ is under
+[Sprint lineage](#sprint-lineage). What is not available yet (velocity SAC,
+the steering sprint, MJWarp-only tasks) is listed in
+[`CHANGELOG.md`](CHANGELOG.md#known-limitations).
+
 ## Version
 
 Current release: **0.1.0** (git tag `v0.1.0`). Release contents, checked
@@ -34,12 +82,13 @@ policies, and known limitations are in [`CHANGELOG.md`](CHANGELOG.md).
 | task | ppo | sac |
 |------|-----|-----|
 | `microduck_velocity_flat` | mujoco, motrix | mujoco, motrix |
-| `microduck_sprint_flat` | mujoco | — |
-| `microduck_sprint_robust_flat` | mujoco | — |
-| `microduck_sprint_gaitfix_flat` | mujoco | — |
-| `microduck_sprint_rollfix_flat` | mujoco | — |
 | `microduck_velstand_flat` | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
+| `microduck_sprint_flat` and its 12 continuation owners (`robust`, `gaitfix`, `rollfix`, `steerfix`, `straightfix`, `straightspeed`, `straighthold`, `straightcmd`, `straightrange`, `straightclip`, `straightneck`, `straighthead`) | mujoco | — |
+| `microduck_ground_pick_flat`, `microduck_sitstand_flat` | mjwarp | — |
+
+Each sprint continuation owner is `microduck_sprint_<name>_flat`; the example
+README that used it lists the exact commands.
 
 PPO for `microduck_velocity_flat` finished the owner budget on 2026-10-15 (2048 envs, 500 iterations, `algo.seed=42`). The MuJoCo 10 s tracking shot at a 0.4 m/s forward command was checked: the robot stays up and steps. Motrix has no inference video.
 
@@ -280,7 +329,7 @@ src/microduck_rl_unilab/
 ├── cli.py                          # microduck-train / microduck-eval: env var + --config-dir injection
 ├── conf_searchpath.py              # Hydra SearchPathPlugin (programmatic compose for tests/scripts)
 ├── conf/
-│   ├── ppo/task/microduck_{velocity_flat,sprint_flat,sprint_robust_flat,velstand_flat,standup_flat,ground_pick_flat,sitstand_flat}/
+│   ├── ppo/task/microduck_{velocity_flat,velstand_flat,standup_flat,ground_pick_flat,sitstand_flat,sprint_*_flat}/
 │   └── sac/task/microduck_velocity_flat/
 └── tasks/
     ├── __init__.py                 # __unilab_registry_modules__
@@ -295,6 +344,7 @@ src/microduck_rl_unilab/
         ├── alignment_contract.py   # upstream microduck_rl @ 29e887e alignment table
         └── sim2real_notes.py       # sim2real notes
 benchmark/                          # throughput notes (hardware, scale, comparison)
+docs/media/                         # README preview GIFs cut from the example clips
 tests/                              # contract/alignment suite migrated from UniLab
 scripts/                            # alignment audit / compare / rollout scripts
 ```

@@ -19,6 +19,49 @@ Pollen Robotics MicroDuck 机器人 RL 训练仓库，**只依赖 UniLab 的包�
 本仓库只携带任务代码（manager terms / recovery terms / BAM action 等）、
 owner 配置和机器人 XML 资产。
 
+## 步态一览
+
+以下策略都已训练并验证，权重在 `examples/` 里。点击动图可查看对应的指标和复现命令。
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <a href="examples/velocity_flat_mujoco/"><img src="docs/media/walk_velocity.gif" width="260" alt="平地行走"></a><br>
+      <b>平地行走</b>（<code>microduck_velocity_flat</code>）<br>
+      跟随 0.4 m/s 前进指令
+    </td>
+    <td align="center" width="33%">
+      <a href="examples/standup/"><img src="docs/media/standup.gif" width="260" alt="起身"></a><br>
+      <b>起身</b>（<code>microduck_standup_flat</code>）<br>
+      从趴下、仰躺起身，也能从坐姿站起
+    </td>
+    <td align="center" width="33%">
+      <a href="examples/velstand_getup/"><img src="docs/media/velstand_getup.gif" width="260" alt="跌倒起身"></a><br>
+      <b>行走与跌倒起身</b>（<code>microduck_velstand_flat</code>）<br>
+      趴下（左）和仰躺（右）都在 8 秒内站起；半速播放
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="examples/sprint_straight_fast/"><img src="docs/media/sprint_straight_fast.gif" width="260" alt="直线冲刺"></a><br>
+      <b>直线冲刺</b>（<code>sprint_straight_fast</code>）<br>
+      1.15 m/s，300 秒保持直线
+    </td>
+    <td align="center">
+      <a href="examples/sprint_straight_cmd/"><img src="docs/media/sprint_straight_cmd.gif" width="260" alt="速度可控冲刺"></a><br>
+      <b>速度可控冲刺</b>（<code>sprint_straight_cmd</code>）<br>
+      跟随 0.3–1.2 m/s；画面为 1.2 m/s 命令
+    </td>
+    <td align="center">
+      <a href="examples/sprint_straight_head/"><img src="docs/media/sprint_straight_head.gif" width="260" alt="收头冲刺"></a><br>
+      <b>收头冲刺</b>（<code>sprint_straight_head</code>）<br>
+      跟随 0.3–1.0 m/s，目标角按真实舵机裁剪；上实机从这里开始
+    </td>
+  </tr>
+</table>
+
+冲刺步态是本仓库独有的，上游 microduck_rl 没有冲刺任务。六个冲刺权重之间的区别见[冲刺系列对比](#冲刺系列对比)。尚未完成的部分（平地速度 SAC、转向冲刺、只支持 MJWarp 的任务）列在 [`CHANGELOG.md`](CHANGELOG.md#known-limitations) 里。
+
 ## 版本
 
 当前版本：**0.1.0**（git 标签 `v0.1.0`）。这一版包含哪些内容、哪些策略已验证、有哪些已知限制，见 [`CHANGELOG.md`](CHANGELOG.md)。
@@ -28,12 +71,12 @@ owner 配置和机器人 XML 资产。
 | task | ppo | sac |
 |------|-----|-----|
 | `microduck_velocity_flat` | mujoco, motrix | mujoco, motrix |
-| `microduck_sprint_flat` | mujoco | — |
-| `microduck_sprint_robust_flat` | mujoco | — |
-| `microduck_sprint_gaitfix_flat` | mujoco | — |
-| `microduck_sprint_rollfix_flat` | mujoco | — |
 | `microduck_velstand_flat` | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
+| `microduck_sprint_flat` 及其 12 个续训 owner（`robust`、`gaitfix`、`rollfix`、`steerfix`、`straightfix`、`straightspeed`、`straighthold`、`straightcmd`、`straightrange`、`straightclip`、`straightneck`、`straighthead`） | mujoco | — |
+| `microduck_ground_pick_flat`、`microduck_sitstand_flat` | mjwarp | — |
+
+每个冲刺续训 owner 的完整名字是 `microduck_sprint_<名字>_flat`，用到它的示例 README 里有具体命令。
 
 `microduck_velocity_flat` 的 PPO 已按 owner 预算训完（2026-10-15，2048 环境，500 轮，`algo.seed=42`）。MuJoCo 上 0.4 m/s 前进指令的 10 秒跟踪镜头已看过，能站住并迈步。Motrix 没有推理视频。
 
@@ -239,7 +282,7 @@ src/microduck_rl_unilab/
 ├── cli.py                          # microduck-train / microduck-eval：env var + --config-dir 注入
 ├── conf_searchpath.py              # Hydra SearchPathPlugin（测试/脚本的程序化 compose 用）
 ├── conf/
-│   ├── ppo/task/microduck_{velocity_flat,sprint_flat,sprint_robust_flat,velstand_flat,standup_flat,ground_pick_flat,sitstand_flat}/
+│   ├── ppo/task/microduck_{velocity_flat,velstand_flat,standup_flat,ground_pick_flat,sitstand_flat,sprint_*_flat}/
 │   └── sac/task/microduck_velocity_flat/
 └── tasks/
     ├── __init__.py                 # __unilab_registry_modules__
@@ -254,6 +297,7 @@ src/microduck_rl_unilab/
         ├── alignment_contract.py   # 上游 microduck_rl @ 29e887e 对齐契约表
         └── sim2real_notes.py       # sim2real 注意事项
 benchmark/                          # 吞吐实测（硬件、规模、对照）
+docs/media/                         # README 预览动图，从示例视频剪辑而来
 tests/                              # 迁移自 UniLab 的契约/对齐测试套件
 scripts/                            # 对齐审计 / 对比 / rollout 脚本
 ```
