@@ -147,6 +147,38 @@ uv run --no-sync scripts/train_sprint_robust.py \
 Each directory has `model_*.pt`, visualizations, `metrics.json`, and
 reproduce commands. `model.pt` is about 4.7 MB and is stored in git.
 
+### Sprint lineage
+
+The six sprint examples are one continuation chain: each one resumes the
+previous checkpoint.
+
+| Example | Checkpoint | Speed command | Measured speed | Head | Position targets | Long-horizon straight | Stress survival |
+|---|---|---|---|---|---|---|---|
+| `sprint_speed_1p68` | `model_11997` | fixed 2.2 m/s | 1.68 m/s | inverted ~91% of the time | far past the stops | does not hold a line (42° in 10 s) | — |
+| `sprint_head_upright` | `model_14500` | fixed 2.2 m/s | 1.32 m/s | crown up, neck on its stop | far past the stops | does not hold a line (42° in 10 s) | — |
+| `sprint_straight_long` | `model_19297` | fixed 2.2 m/s | 0.83 m/s | crown up, ~8 cm ahead of the trunk | far past the stops | 300 s pass 94–95% | 93–94% |
+| `sprint_straight_fast` | `model_27000` | fixed 2.2 m/s | 1.15 m/s | same | far past the stops | 300 s 93–99%, 600 s 94.5% | 96–97% |
+| `sprint_straight_cmd` | `model_32250` | 0.3–1.2 m/s, tracked | 0.31–1.12 m/s | crown up, ~8 cm ahead of the trunk | far past the stops | 300 s 90–99.6% (weakest at 1.2 m/s) | ≥ 95% |
+| `sprint_straight_head` | `model_52250` | 0.3–1.0 m/s, tracked | 0.30–0.93 m/s | over the trunk, ~3 cm ahead | clamped to the joint range | 300 s 93.6–100% (weakest at 1.0 m/s) | 97–100% |
+
+- **Speed command.** Only the last two follow a speed command; the first four
+  run their one speed whatever the command says.
+- **Position targets.** The first five command `hip_yaw` and `neck_pitch`
+  targets far past the joint stops and lean on the stops for balance. A real
+  servo clamps its goal position. With that clamp on, `model_32250` survives
+  a 60 s run 18.8% of the time at 0.3 m/s and 0% at 1.2 m/s. Only
+  `sprint_straight_head` was trained with the clamp.
+- **Head.** `sprint_head_upright` turned the crown up by folding `neck_pitch`
+  onto its −90° stop, which carries the head ahead of the trunk. That posture
+  lasts through `sprint_straight_cmd`; `sprint_straight_head` brings the neck
+  back near its home angle.
+- **Comparability.** The batteries differ: the first two are 10 s on 512
+  environments, the middle two 128 environments, the last two 512
+  environments at their own command speeds. See each `metrics.json`.
+
+For the fastest simulated straight run, use `sprint_straight_cmd`. For
+hardware, start from `sprint_straight_head`.
+
 Get-up example [`examples/velstand_getup/`](examples/velstand_getup/):
 
 | File | Contents |

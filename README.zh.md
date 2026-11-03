@@ -134,6 +134,26 @@ uv run --no-sync scripts/train_sprint_robust.py \
 每个目录含 `model_*.pt`、可视化、`metrics.json` 和复现命令。
 `model.pt` 约 4.7 MB，直接入 git。
 
+### 冲刺系列对比
+
+六个冲刺示例是一条续训链，后一个都从前一个的权重接着训。
+
+| 示例 | 权重 | 速度命令 | 实测速度 | 头部姿态 | 关节目标 | 长时直线 | 压力测试存活 |
+|---|---|---|---|---|---|---|---|
+| `sprint_speed_1p68` | `model_11997` | 固定 2.2 m/s | 1.68 m/s | 约 91% 时间头倒置 | 远超行程 | 不走直，10 s 偏 42° | — |
+| `sprint_head_upright` | `model_14500` | 固定 2.2 m/s | 1.32 m/s | 头顶朝上，颈部顶限位 | 远超行程 | 不走直，10 s 偏 42° | — |
+| `sprint_straight_long` | `model_19297` | 固定 2.2 m/s | 0.83 m/s | 头朝上，前伸约 8 cm | 远超行程 | 300 s 直线通过率 94–95% | 93–94% |
+| `sprint_straight_fast` | `model_27000` | 固定 2.2 m/s | 1.15 m/s | 同上 | 远超行程 | 300 s 93–99%，600 s 94.5% | 96–97% |
+| `sprint_straight_cmd` | `model_32250` | 0.3–1.2 m/s 可控 | 0.31–1.12 m/s | 头朝上，前伸约 8 cm | 远超行程 | 300 s 90–99.6%（1.2 m/s 最弱） | ≥ 95% |
+| `sprint_straight_head` | `model_52250` | 0.3–1.0 m/s 可控 | 0.30–0.93 m/s | 头在躯干上方，前伸约 3 cm | 裁剪在行程内 | 300 s 93.6–100%（1.0 m/s 最弱） | 97–100% |
+
+- **速度命令：**只有最后两个能按速度命令跑，前四个不管命令多少，都跑自己那一个速度。
+- **关节目标：**前五个的 `hip_yaw` 和 `neck_pitch` 目标角都远超关节行程，靠顶住限位维持平衡。真实舵机会把目标限制在行程内；打开这个裁剪后，`model_32250` 的 60 秒存活在 0.3 m/s 只有 18.8%，在 1.2 m/s 是 0%。只有 `sprint_straight_head` 是在裁剪条件下训练的。
+- **头部姿态：**`sprint_head_upright` 靠把 `neck_pitch` 折到 −90° 的限位来扶正头顶，头因此伸在躯干前方。这个姿态一直延续到 `sprint_straight_cmd`，`sprint_straight_head` 才把脖子抬回接近默认站姿。
+- **数据可比性：**各示例的评测条件不同。前两个是 10 秒、512 个环境；中间两个是 128 个环境；后两个是 512 个环境、按各自的速度档评测。详见各目录的 `metrics.json`。
+
+要在仿真里跑得最快，用 `sprint_straight_cmd`；要往实机部署，从 `sprint_straight_head` 开始。
+
 跌倒起身示例 [`examples/velstand_getup/`](examples/velstand_getup/)：
 
 | 文件 | 内容 |
