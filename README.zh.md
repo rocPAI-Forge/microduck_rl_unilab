@@ -19,6 +19,10 @@ Pollen Robotics MicroDuck 机器人 RL 训练仓库，**只依赖 UniLab 的包�
 本仓库只携带任务代码（manager terms / recovery terms / BAM action 等）、
 owner 配置和机器人 XML 资产。
 
+## 版本
+
+当前版本：**0.0.1**（git 标签 `v0.0.1`）。这一版包含哪些内容、哪些策略已验证、有哪些已知限制，见 [`CHANGELOG.md`](CHANGELOG.md)。
+
 ## 任务 × 算法 × 后端矩阵
 
 | task | ppo | sac |

@@ -1,0 +1,58 @@
+# Changelog
+
+Versions follow `project.version` in `pyproject.toml`. Each release is a git
+tag `v<version>` with a matching GitHub release. Checkpoints live in
+`examples/` and are versioned with the code that reproduces them.
+
+## 0.0.1
+
+First tagged release. Depends on `unilab[mujoco]==1.0.0`, `unilab-rl==1.0.0`,
+and `unisim-core==1.0.0` from PyPI. The default install profile is ROCm with
+`torch==2.11.0`; the CUDA profile is `make sync-cuda`.
+
+### Tasks and checked policies
+
+| Policy | Checkpoint | Status |
+|---|---|---|
+| `microduck_velocity_flat` PPO, MuJoCo | `examples/velocity_flat_mujoco/model_499.pt` | Checked: stands and steps at 0.4 m/s |
+| `microduck_velocity_flat` PPO, Motrix | `examples/velocity_flat_motrix/model_499.pt` | Trained; no inference video |
+| `microduck_standup_flat` PPO | `examples/standup/model_14999.pt` | Checked: prone, supine, and sit-to-stand |
+| `microduck_velstand_flat` PPO | `examples/velstand_getup/model_12498.pt` | Checked: gets up from face-down and face-up within 8 s |
+| Sprint lineage (repo only) | six checkpoints, see below | Checked |
+
+Sprint lineage, each resumed from the previous one:
+
+| Example | Speed command | Measured speed | Head | Position targets |
+|---|---|---|---|---|
+| `sprint_speed_1p68` | fixed 2.2 m/s | 1.68 m/s | inverted most of the time | far past the stops |
+| `sprint_head_upright` | fixed 2.2 m/s | 1.32 m/s | crown up, neck on its stop | far past the stops |
+| `sprint_straight_long` | fixed 2.2 m/s | 0.83 m/s, 300 s straight | ~8 cm ahead of the trunk | far past the stops |
+| `sprint_straight_fast` | fixed 2.2 m/s | 1.15 m/s, 300 s straight | ~8 cm ahead of the trunk | far past the stops |
+| `sprint_straight_cmd` | 0.3–1.2 m/s | 0.31–1.12 m/s | ~8 cm ahead of the trunk | far past the stops |
+| `sprint_straight_head` | 0.3–1.0 m/s | 0.30–0.93 m/s | over the trunk, ~3 cm ahead | clamped to the joint range |
+
+The full comparison is in the README under "Sprint lineage", and each
+example directory has its `metrics.json` and reproduce commands.
+
+### Notable behavior
+
+- `BamVoltageActionCfg.clip_target_to_joint_limits` clamps position targets
+  to the soft joint limits, like a servo's goal-position limits. It is off by
+  default, so the earlier checkpoints evaluate exactly as they were trained.
+- `sprint_straight_head` was trained with that clamp on. Its eval, diagnose,
+  and render commands need `--clip-targets`.
+- Earlier sprint checkpoints command `hip_yaw` and `neck_pitch` targets far
+  past their stops and do not survive with the clamp on. Treat
+  `sprint_straight_head` as the starting point for hardware.
+
+### Known limitations
+
+- `microduck_velocity_flat` SAC finished training but falls repeatedly at
+  inference; no checkpoint is published.
+- `microduck_sprint_steerfix_flat` has a config but no published weights.
+- `microduck_ground_pick_flat` and `microduck_sitstand_flat` are registered
+  for MJWarp only. `mujoco-warp` is not in the default install, so the two
+  MJWarp tests (`test_manager_api_minimal_slice` on these owners and
+  `test_mjwarp_dr_smoke`) fail without it. All other tests pass.
+- Sprint policies are checked on MuJoCo only; there is no Motrix owner for
+  the sprint task.

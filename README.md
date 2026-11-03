@@ -24,6 +24,11 @@ Train, eval, and runner/learner/collector all come from the `unilab` wheel.
 This repo only ships task code (manager terms / recovery terms / BAM action,
 and so on), owner configs, and robot XML assets.
 
+## Version
+
+Current release: **0.0.1** (git tag `v0.0.1`). Release contents, checked
+policies, and known limitations are in [`CHANGELOG.md`](CHANGELOG.md).
+
 ## Task × algorithm × backend matrix
 
 | task | ppo | sac |
