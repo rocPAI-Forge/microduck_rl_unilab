@@ -44,10 +44,21 @@ The MuJoCo collapse of `model_60499` is the same with and without the extra
 randomization, so it comes from simulator dynamics, not from the narrower
 randomization set.
 
+## Alternating checkpoint at low speed and under stress
+
+| Test | `model_59000` Motrix | MuJoCo | `model_60592` Motrix | MuJoCo |
+|---|---|---|---|---|
+| Stand, 300 s | 98.6% (98.6%) | 99.8% (80.1%) | 99.2% (99.2%) | 100% (92.2%) |
+| 0.6 m/s, 300 s | 99.6% (99.4%) | 99.8% (99.8%) | 100% (100%) | 99.6% (99.6%) |
+| MuJoCo stress, 1.0 m/s, 60 s | — | 97.9% (33.4%) | — | 96.1% (34.6%) |
+
+The stress battery uses the `microduck_sprint_standturn_flat/mujoco` owner,
+since it rescales the interval push that the straightspeed owners drop. The
+straight-pose pass under stress is low for both because pushes knock the
+trunk off the line.
+
 ## Open
 
-- The alternating checkpoint has not been scored at 0–0.6 m/s or under the
-  MuJoCo stress battery.
 - Longer or finer alternation (shorter phases, more of them) may close the
   MuJoCo gap. Mixing both backends inside one rollout batch is not supported
   by the current UniLab runner.
