@@ -1,0 +1,29 @@
+# @package _global_
+# Turn in place, bridged from walking turns.
+#
+# sprint_stand/model_59000 tracks a 0.4 rad/s yaw command down to 0.2 m/s
+# forward (0.41 rad/s measured), but at 0.1 m/s it turns at 0.18 rad/s and at
+# a standstill at 0.13 rad/s, and about 5% of rows fall within 20 s. The
+# standturn owner jumps straight from walking turns to a zero-speed pivot.
+# Here a quarter of resamples are turn commands whose forward speed is drawn
+# from [0, lin_max], and the curriculum lowers lin_max from 0.2 m/s to 0 so
+# the turning gait is carried down to a pivot.
+defaults:
+  - /task/microduck_sprint_standturn_flat/base
+  - _self_
+
+env:
+  commands:
+    twist:
+      turn_in_place_fraction: 0.25
+      turn_in_place_lin_max: 0.2
+  curriculum:
+    turn_in_place:
+      func: microduck_rl_unilab.tasks.microduck.sprint_terms.turn_in_place_curriculum
+      params:
+        command_name: twist
+        stages:
+          - {step: 0, fraction: 0.25, lin_max: 0.2}
+          - {step: 18000, fraction: 0.25, lin_max: 0.12}
+          - {step: 36000, fraction: 0.25, lin_max: 0.06}
+          - {step: 54000, fraction: 0.25, lin_max: 0.0}

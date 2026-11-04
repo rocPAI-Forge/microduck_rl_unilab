@@ -1026,6 +1026,56 @@ class action_clip_margin_curriculum:
         return {"margin": margin}
 
 
+class turn_in_place_curriculum:
+    """Step the turn-in-place share and its forward-speed ceiling down to a pivot."""
+
+    def __init__(self, cfg: ManagerTermBaseCfg, env: ManagerBasedRlEnv):
+        command_name = cfg.params.get("command_name", "twist")
+        term = env.command_manager.get_term(command_name)
+        if not hasattr(term, "set_turn_in_place"):
+            raise TypeError(
+                f"turn_in_place_curriculum needs a MicroduckVelocityCommand, got {type(term).__name__}"
+            )
+        raw_stages = cfg.params.get("stages")
+        if not isinstance(raw_stages, list) or not raw_stages:
+            raise ValueError("turn_in_place_curriculum stages must be a non-empty list")
+        stages: list[tuple[int, float, float]] = []
+        previous_step = -1
+        for index, stage in enumerate(raw_stages):
+            if not isinstance(stage, dict) or set(stage) != {"step", "fraction", "lin_max"}:
+                raise ValueError(
+                    f"turn_in_place_curriculum stage {index} must contain step, fraction, and lin_max"
+                )
+            step = stage["step"]
+            if isinstance(step, bool) or not isinstance(step, int) or step < previous_step:
+                raise ValueError("turn_in_place_curriculum steps must be ordered integers")
+            fraction = float(stage["fraction"])
+            lin_max = float(stage["lin_max"])
+            if not (math.isfinite(fraction) and 0.0 <= fraction <= 1.0):
+                raise ValueError("turn_in_place_curriculum fractions must be in [0, 1]")
+            if not math.isfinite(lin_max) or lin_max < 0.0:
+                raise ValueError("turn_in_place_curriculum lin_max must be finite and >= 0")
+            stages.append((step, fraction, lin_max))
+            previous_step = step
+        self._term = term
+        self._stages = tuple(stages)
+
+    def __call__(
+        self,
+        env: ManagerBasedRlEnv,
+        env_ids: np.ndarray | slice,
+        command_name: str = "twist",
+        stages: list[dict[str, Any]] | None = None,
+    ) -> dict[str, float]:
+        del env_ids, command_name, stages
+        _, fraction, lin_max = self._stages[0]
+        for step, stage_fraction, stage_lin_max in self._stages:
+            if env.common_step_counter >= step:
+                fraction, lin_max = stage_fraction, stage_lin_max
+        self._term.set_turn_in_place(fraction, lin_max)
+        return {"fraction": fraction, "lin_max": lin_max}
+
+
 __all__ = [
     "action_clip_margin_curriculum",
     "action_target_band_cost",
@@ -1038,4 +1088,5 @@ __all__ = [
     "running_forward_progress",
     "running_planar_drift_cost",
     "running_spawn_progress",
+    "turn_in_place_curriculum",
 ]
