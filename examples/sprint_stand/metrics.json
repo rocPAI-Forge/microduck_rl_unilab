@@ -1,0 +1,246 @@
+{
+  "label": "sprint_stand",
+  "task": "MicroduckSprintFlat",
+  "train_owner": "microduck_sprint_stand_flat then microduck_sprint_standturn_flat",
+  "resume_from": "examples/sprint_steer/model_55999.pt",
+  "checkpoint": "examples/sprint_stand/model_59000.pt",
+  "source_run": "2026-11-04_09-41-05_mujoco",
+  "source_iteration": 59000,
+  "command_band": {
+    "lin_vel_x_m_s": [
+      0.0,
+      1.0
+    ],
+    "ang_vel_z_rad_s": [
+      -0.5,
+      0.5
+    ],
+    "rel_standing_envs": 0.1,
+    "turn_in_place_fraction": 0.1
+  },
+  "action": {
+    "clip_target_to_joint_limits": true,
+    "clip_target_margin": 0.0
+  },
+  "eval": {
+    "backend": "mujoco",
+    "num_envs": 512,
+    "seed": 777,
+    "warmup_s": 1.0,
+    "clip_targets": true
+  },
+  "straight_300s": {
+    "0.0": {
+      "body_forward_speed_m_s": -0.0,
+      "yaw_rate_rad_s": -0.001,
+      "survival_fraction": 0.998,
+      "mean_absolute_heading_error_deg": 6.55,
+      "straight_pose_survival_fraction": 0.801,
+      "spawn_forward_displacement_m": -0.01,
+      "cross_track_p90_m": 0.09,
+      "head_forward_in_trunk_m": 0.046,
+      "falls": 1
+    },
+    "0.15": {
+      "body_forward_speed_m_s": 0.114,
+      "yaw_rate_rad_s": 0.001,
+      "survival_fraction": 0.994,
+      "mean_absolute_heading_error_deg": 1.75,
+      "straight_pose_survival_fraction": 0.975,
+      "spawn_forward_displacement_m": 34.2,
+      "cross_track_p90_m": 1.99,
+      "head_forward_in_trunk_m": 0.039,
+      "falls": 3
+    },
+    "0.3": {
+      "body_forward_speed_m_s": 0.291,
+      "yaw_rate_rad_s": 0.0,
+      "survival_fraction": 1.0,
+      "mean_absolute_heading_error_deg": 1.33,
+      "straight_pose_survival_fraction": 1.0,
+      "spawn_forward_displacement_m": 87.65,
+      "cross_track_p90_m": 1.84,
+      "head_forward_in_trunk_m": 0.03,
+      "falls": 0
+    },
+    "0.6": {
+      "body_forward_speed_m_s": 0.573,
+      "yaw_rate_rad_s": 0.0,
+      "survival_fraction": 0.998,
+      "mean_absolute_heading_error_deg": 1.31,
+      "straight_pose_survival_fraction": 0.998,
+      "spawn_forward_displacement_m": 172.14,
+      "cross_track_p90_m": 1.56,
+      "head_forward_in_trunk_m": 0.027,
+      "falls": 1
+    },
+    "1.0": {
+      "body_forward_speed_m_s": 0.877,
+      "yaw_rate_rad_s": 0.0,
+      "survival_fraction": 0.951,
+      "mean_absolute_heading_error_deg": 1.69,
+      "straight_pose_survival_fraction": 0.939,
+      "spawn_forward_displacement_m": 256.36,
+      "cross_track_p90_m": 2.11,
+      "head_forward_in_trunk_m": 0.026,
+      "falls": 25
+    }
+  },
+  "stress_60s": {
+    "0.0": {
+      "body_forward_speed_m_s": -0.003,
+      "yaw_rate_rad_s": 0.005,
+      "survival_fraction": 0.984,
+      "mean_absolute_heading_error_deg": 1.34,
+      "straight_pose_survival_fraction": 0.984,
+      "spawn_forward_displacement_m": 0.0,
+      "cross_track_p90_m": 0.02,
+      "head_forward_in_trunk_m": 0.052,
+      "falls": 8
+    },
+    "0.3": {
+      "body_forward_speed_m_s": 0.29,
+      "yaw_rate_rad_s": 0.0,
+      "survival_fraction": 0.998,
+      "mean_absolute_heading_error_deg": 1.19,
+      "straight_pose_survival_fraction": 0.998,
+      "spawn_forward_displacement_m": 17.61,
+      "cross_track_p90_m": 1.29,
+      "head_forward_in_trunk_m": 0.03,
+      "falls": 1
+    },
+    "1.0": {
+      "body_forward_speed_m_s": 0.875,
+      "yaw_rate_rad_s": 0.0,
+      "survival_fraction": 0.979,
+      "mean_absolute_heading_error_deg": 1.73,
+      "straight_pose_survival_fraction": 0.971,
+      "spawn_forward_displacement_m": 52.41,
+      "cross_track_p90_m": 2.14,
+      "head_forward_in_trunk_m": 0.027,
+      "falls": 11
+    }
+  },
+  "turn_60s": {
+    "v0.0_yaw-0.4": {
+      "body_forward_speed_m_s": -0.0,
+      "yaw_rate_rad_s": -0.005,
+      "survival_fraction": 1.0,
+      "mean_absolute_heading_error_deg": 40.68,
+      "straight_pose_survival_fraction": 0.006,
+      "spawn_forward_displacement_m": -0.01,
+      "cross_track_p90_m": 0.02,
+      "head_forward_in_trunk_m": 0.06,
+      "falls": 0
+    },
+    "v0.0_yaw0.4": {
+      "body_forward_speed_m_s": -0.001,
+      "yaw_rate_rad_s": 0.007,
+      "survival_fraction": 0.992,
+      "mean_absolute_heading_error_deg": 42.18,
+      "straight_pose_survival_fraction": 0.016,
+      "spawn_forward_displacement_m": 0.02,
+      "cross_track_p90_m": 0.02,
+      "head_forward_in_trunk_m": 0.035,
+      "falls": 4
+    },
+    "v0.5_yaw-0.4": {
+      "body_forward_speed_m_s": 0.484,
+      "yaw_rate_rad_s": -0.401,
+      "survival_fraction": 1.0,
+      "mean_absolute_heading_error_deg": 91.35,
+      "straight_pose_survival_fraction": 0.0,
+      "spawn_forward_displacement_m": -0.15,
+      "cross_track_p90_m": 2.49,
+      "head_forward_in_trunk_m": 0.029,
+      "falls": 0
+    },
+    "v0.5_yaw-0.2": {
+      "body_forward_speed_m_s": 0.48,
+      "yaw_rate_rad_s": -0.215,
+      "survival_fraction": 1.0,
+      "mean_absolute_heading_error_deg": 91.03,
+      "straight_pose_survival_fraction": 0.0,
+      "spawn_forward_displacement_m": -0.02,
+      "cross_track_p90_m": 4.01,
+      "head_forward_in_trunk_m": 0.028,
+      "falls": 0
+    },
+    "v0.5_yaw0.2": {
+      "body_forward_speed_m_s": 0.47,
+      "yaw_rate_rad_s": 0.17,
+      "survival_fraction": 1.0,
+      "mean_absolute_heading_error_deg": 92.52,
+      "straight_pose_survival_fraction": 0.0,
+      "spawn_forward_displacement_m": -0.57,
+      "cross_track_p90_m": 6.14,
+      "head_forward_in_trunk_m": 0.028,
+      "falls": 0
+    },
+    "v0.5_yaw0.4": {
+      "body_forward_speed_m_s": 0.465,
+      "yaw_rate_rad_s": 0.37,
+      "survival_fraction": 1.0,
+      "mean_absolute_heading_error_deg": 91.36,
+      "straight_pose_survival_fraction": 0.0,
+      "spawn_forward_displacement_m": -0.15,
+      "cross_track_p90_m": 2.65,
+      "head_forward_in_trunk_m": 0.027,
+      "falls": 0
+    },
+    "v1.0_yaw-0.4": {
+      "body_forward_speed_m_s": 0.881,
+      "yaw_rate_rad_s": -0.403,
+      "survival_fraction": 0.984,
+      "mean_absolute_heading_error_deg": 90.89,
+      "straight_pose_survival_fraction": 0.0,
+      "spawn_forward_displacement_m": -0.2,
+      "cross_track_p90_m": 4.35,
+      "head_forward_in_trunk_m": 0.027,
+      "falls": 8
+    },
+    "v1.0_yaw-0.2": {
+      "body_forward_speed_m_s": 0.881,
+      "yaw_rate_rad_s": -0.224,
+      "survival_fraction": 0.982,
+      "mean_absolute_heading_error_deg": 90.26,
+      "straight_pose_survival_fraction": 0.0,
+      "spawn_forward_displacement_m": 0.34,
+      "cross_track_p90_m": 7.91,
+      "head_forward_in_trunk_m": 0.027,
+      "falls": 9
+    },
+    "v1.0_yaw0.2": {
+      "body_forward_speed_m_s": 0.873,
+      "yaw_rate_rad_s": 0.146,
+      "survival_fraction": 0.984,
+      "mean_absolute_heading_error_deg": 89.67,
+      "straight_pose_survival_fraction": 0.0,
+      "spawn_forward_displacement_m": 0.88,
+      "cross_track_p90_m": 12.07,
+      "head_forward_in_trunk_m": 0.026,
+      "falls": 8
+    },
+    "v1.0_yaw0.4": {
+      "body_forward_speed_m_s": 0.867,
+      "yaw_rate_rad_s": 0.336,
+      "survival_fraction": 0.98,
+      "mean_absolute_heading_error_deg": 90.73,
+      "straight_pose_survival_fraction": 0.0,
+      "spawn_forward_displacement_m": 0.16,
+      "cross_track_p90_m": 4.98,
+      "head_forward_in_trunk_m": 0.026,
+      "falls": 10
+    }
+  },
+  "before": {
+    "checkpoint": "examples/sprint_steer/model_55999.pt",
+    "zero_command_60s": {
+      "body_forward_speed_m_s": -0.199,
+      "survival_fraction": 0.0
+    }
+  },
+  "known_limits": {
+    "note": "Does not turn in place: a yaw command at zero forward speed measures about 0 rad/s, so the spawn-heading loop cannot hold heading while standing (6.5 deg mean drift over 300 s, straight-pose pass 80%). Left turns under-track by up to about 0.06 rad/s. A 0.15 m/s command runs 0.11 m/s and a 1.0 m/s command 0.88 m/s."
+  }
+}

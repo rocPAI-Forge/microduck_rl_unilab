@@ -1,0 +1,19 @@
+# @package _global_
+# Turn in place on the standing steering gait.
+#
+# The stand owner taught a zero command to hold position (99.4% survival over
+# 300 s, about 9 cm of drift), but the standing policy ignores yaw commands:
+# at a zero forward command a +-0.4 rad/s yaw command measures about 0 rad/s.
+# The spawn-heading loop then cannot hold heading while standing, which drifts
+# by about 23 deg on average over 300 s, and left turns while walking slipped
+# to about 85% of the command. Here 10% of resamples are turn-in-place
+# commands (zero forward speed, |yaw| 0.2-0.5 rad/s, random sign). A nonzero
+# yaw command keeps the gait terms on, so stepping while turning is paid for.
+defaults:
+  - /task/microduck_sprint_stand_flat/base
+  - _self_
+
+env:
+  commands:
+    twist:
+      turn_in_place_fraction: 0.1
