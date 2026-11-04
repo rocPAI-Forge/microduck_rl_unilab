@@ -4,7 +4,32 @@ Versions follow `project.version` in `pyproject.toml`. Each release is a git
 tag `v<version>` with a matching GitHub release. Checkpoints live in
 `examples/` and are versioned with the code that reproduces them.
 
-## Unreleased
+## 0.2.0
+
+Completes the motion interface of the servo-clamped sprint except for turning
+in place, cross-checks it on MotrixSim, and exports it for onboard inference.
+Dependencies are unchanged from 0.1.0.
+
+### Checked policies
+
+| Example | Command | Result |
+|---|---|---|
+| `sprint_steer/model_55999` | 0.3–1.0 m/s forward, ±0.4 rad/s yaw | yaw tracked within about 0.05 rad/s, 97–100% survival while turning |
+| `sprint_stand/model_59000` | 0–1.0 m/s forward, ±0.4 rad/s yaw | 99.8% survival standing for 300 s; does not turn in place |
+
+Both were trained with the goal-position clamp on; their eval, diagnose, and
+render commands need `--clip-targets`. `sprint_stand` supersedes
+`sprint_straight_head` as the starting point for hardware.
+
+### Known limitations
+
+- On MotrixSim the sprint checkpoints hold at 0–0.6 m/s but lose 16–36 points
+  of 300 s survival at 1.0 m/s. Start hardware near 0.6 m/s.
+- Turning in place is not learned.
+- The hardware side of deployment (servo calibration, first on-robot run) is
+  open. MJWarp training still needs an NVIDIA GPU.
+
+### Changes
 
 - `scripts/audit_action_targets.py` reports how far a checkpoint's position
   targets go past the joint limits under any task owner, with and without the
