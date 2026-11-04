@@ -1,0 +1,24 @@
+# @package _global_
+# Hold the turn-in-place curriculum near a standstill.
+#
+# The pivot owner carried yaw tracking at 0.1 m/s forward from 0.18 to
+# 0.34 rad/s for a 0.4 rad/s command, but its zero-speed stage ran for only
+# 750 iterations and a standstill turn stayed near 0.14 rad/s. This owner
+# resumes there, starts the forward ceiling at 0.06 m/s, and spends half the
+# round at exactly zero, with a larger turn share.
+defaults:
+  - /task/microduck_sprint_pivot_flat/base
+  - _self_
+
+env:
+  commands:
+    twist:
+      turn_in_place_fraction: 0.35
+      turn_in_place_lin_max: 0.06
+  curriculum:
+    turn_in_place:
+      params:
+        stages:
+          - {step: 0, fraction: 0.35, lin_max: 0.06}
+          - {step: 24000, fraction: 0.35, lin_max: 0.03}
+          - {step: 48000, fraction: 0.35, lin_max: 0.0}
