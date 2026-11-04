@@ -44,10 +44,14 @@ Standstill heading drift on Motrix is 1.4°, against 6.5° on MuJoCo.
 
 ## Follow-up
 
-Train with Motrix in the loop (alternating or mixed backends) to make the
-1.0 m/s gait simulator-independent, or cap the hardware command band near
-0.6 m/s until then. The stress battery was not run on Motrix because it
-relies on the interval push that Motrix cannot apply.
+Cap the hardware command band near 0.6 m/s. Training with Motrix in the loop
+was tried and moved the overfit instead of removing it
+([`motrix_training.md`](motrix_training.md) on
+[PR #11](https://github.com/rocPAI-Forge/microduck_rl_unilab/pull/11)), so the
+project now trains on MuJoCo only and keeps Motrix as the held-out sim2sim
+check: `scripts/sim2sim_check.py` gates the 0–0.6 m/s band and reports
+1.0 m/s (see the README section "Simulators"). The stress battery was not run
+on Motrix because it relies on the interval push that Motrix cannot apply.
 
 ## Reproduce
 

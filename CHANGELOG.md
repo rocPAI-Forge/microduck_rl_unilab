@@ -4,6 +4,15 @@ Versions follow `project.version` in `pyproject.toml`. Each release is a git
 tag `v<version>` with a matching GitHub release. Checkpoints live in
 `examples/` and are versioned with the code that reproduces them.
 
+## Unreleased
+
+- Simulator roles are fixed: sprint policies train on MuJoCo only, and
+  MotrixSim is the held-out sim2sim check. `scripts/sim2sim_check.py` runs the
+  Motrix gate (300 s straight at 0, 0.3, and 0.6 m/s; 60 s turns at 0.5 m/s
+  and ±0.4 rad/s; at least 95% survival and at most 0.10 rad/s yaw error) and
+  reports 1.0 m/s without gating it. A checkpoint is published only after it
+  passes. See the README section "Simulators".
+
 ## 0.2.0
 
 Completes the motion interface of the servo-clamped sprint except for turning
