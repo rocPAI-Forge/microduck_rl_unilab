@@ -77,6 +77,22 @@ owner 配置和机器人 XML 资产。
 
 当前版本：**0.2.0**（git 标签 `v0.2.0`）。这一版包含哪些内容、哪些策略已验证、有哪些已知限制，见 [`CHANGELOG.md`](CHANGELOG.md)。
 
+## 仿真器分工：MuJoCo 训练，MotrixSim 验证
+
+冲刺策略**只在 MuJoCo 上训练**。**MotrixSim 留作 sim2sim 验证**，不参与训练，这样它的结论才独立于策略拟合过的仿真器。
+
+- MuJoCo 支持步态依赖的全部随机化（定时推力、关节电枢、脚底摩擦、刚体惯量），Motrix 不支持这四项。
+- Motrix 的接触模型和 MuJoCo 不同，能发现依赖 MuJoCo 特有细节的步态。[`docs/audits/motrix_crosscheck.md`](docs/audits/motrix_crosscheck.md) 里的交叉验证发现，1.0 m/s 步态在 Motrix 上存活率掉 16–36 个点。
+- 把 Motrix 也拿来训练只会转移过拟合、不会消除它（见 [PR #11](https://github.com/rocPAI-Forge/microduck_rl_unilab/pull/11)），还会用掉唯一一个留作验证的仿真器。
+
+模型必须先通过 Motrix 验证门槛才能发布：
+
+```bash
+uv run --no-sync scripts/sim2sim_check.py examples/sprint_stand/model_59000.pt
+```
+
+门槛内容：开启目标裁剪，512 个环境，0、0.3、0.6 m/s 直线各跑 300 秒，0.5 m/s 下 ±0.4 rad/s 转弯各跑 60 秒。每项存活率至少 95%，转弯的转向速率误差不超过 0.10 rad/s。1.0 m/s 只测量和报告，不作为门槛。没通过时，在 MuJoCo 这边修（加宽随机化、调奖励、降低指令范围），不要拿 Motrix 去训练。真机是最终标准，有了真机数据后再回头调整这个门槛。
+
 ## 任务 × 算法 × 后端矩阵
 
 | task | ppo | sac |

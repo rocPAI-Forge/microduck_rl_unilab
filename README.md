@@ -91,6 +91,36 @@ known sim-to-real limits.
 Current release: **0.2.0** (git tag `v0.2.0`). Release contents, checked
 policies, and known limitations are in [`CHANGELOG.md`](CHANGELOG.md).
 
+## Simulators: train on MuJoCo, check on MotrixSim
+
+Sprint policies are trained on **MuJoCo only**. **MotrixSim is held out** for
+the sim2sim check and is never used for training, so its verdict stays
+independent of what the policy was fitted to.
+
+- MuJoCo applies every randomization the gaits rely on (interval push,
+  joint armature, foot friction, body inertia). Motrix cannot apply those four.
+- Motrix uses a different contact model, so it catches gaits that lean on
+  MuJoCo-specific detail: the cross-check in
+  [`docs/audits/motrix_crosscheck.md`](docs/audits/motrix_crosscheck.md) found
+  the 1.0 m/s gait loses 16–36 points of survival there.
+- Training on Motrix as well moves the overfit instead of removing it (see
+  [PR #11](https://github.com/rocPAI-Forge/microduck_rl_unilab/pull/11)), and
+  would spend the only held-out simulator.
+
+A checkpoint is published only after it passes the Motrix gate:
+
+```bash
+uv run --no-sync scripts/sim2sim_check.py examples/sprint_stand/model_59000.pt
+```
+
+The gate runs 300 s straight at 0, 0.3, and 0.6 m/s and 60 s turns at
+0.5 m/s, ±0.4 rad/s, on 512 environments with the target clamp on. Every case
+must keep at least 95% survival, and turns must track within 0.10 rad/s.
+1.0 m/s is scored and reported but not gated. When a checkpoint fails, fix it
+on the MuJoCo side (wider randomization, reward changes, a lower command band),
+not by training on Motrix. The real robot is the final judge; the gate is
+revisited once on-robot data exists.
+
 ## Task × algorithm × backend matrix
 
 | task | ppo | sac |

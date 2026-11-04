@@ -75,6 +75,9 @@ added 3–6 physics substeps of command delay and a 6.5–8.2 V supply.
   same on MuJoCo and MotrixSim. At 1.0 m/s, 300 s survival drops from about
   95% on MuJoCo to about 67% on MotrixSim
   ([`audits/motrix_crosscheck.md`](audits/motrix_crosscheck.md)).
+- **Every deployable checkpoint passes the MotrixSim gate first.** Policies
+  are trained on MuJoCo only; `scripts/sim2sim_check.py` checks them on the
+  held-out MotrixSim over the 0–0.6 m/s band before they are published.
 - **Only clamp-trained checkpoints are deployable.** `sprint_straight_head`,
   `sprint_steer`, and `sprint_stand` were trained with the clamp. The earlier
   sprint checkpoints command targets tens of radians past the `hip_yaw` and
