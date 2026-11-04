@@ -1,0 +1,37 @@
+# @package _global_
+# MotrixSim evaluation owner for the clamp-trained straight and steering
+# checkpoints. The manager contract matches the MuJoCo owner. Motrix cannot
+# apply the interval root-velocity push, joint-armature randomization,
+# geom-friction override, or body-inertia randomization, so those events are
+# dropped, as in microduck_velocity_flat/motrix. The sprint checkpoints are
+# trained on MuJoCo; this owner is for cross-simulator checks only.
+defaults:
+  - /task/microduck_sprint_straightspeed_flat/base
+  - _self_
+
+training:
+  task_name: MicroduckSprintFlat
+  sim_backend: motrix
+  play_render_mode: none
+  play_steps: 1000
+
+algo:
+  num_envs: 2048
+  max_iterations: 3000
+  save_interval: 250
+  empirical_normalization: true
+  obs_groups:
+    actor: [policy]
+    critic: [critic]
+  policy:
+    init_noise_std: 1.0
+  algorithm:
+    learning_rate: 1.0e-4
+    entropy_coef: 0.005
+
+env:
+  events:
+    push_robot: null
+    randomize_armature: null
+    foot_friction: null
+    randomize_mass_inertia: null

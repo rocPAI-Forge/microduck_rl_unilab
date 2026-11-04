@@ -24,6 +24,12 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
   gait: 0–1.0 m/s forward, 99.8% survival standing for 300 s with about 9 cm
   of drift. It does not turn in place. New owners
   `microduck_sprint_stand_flat` and `microduck_sprint_standturn_flat`.
+- `MicroduckSprintFlat` is registered on Motrix for evaluation, with a
+  `microduck_sprint_straightspeed_flat/motrix` owner, and
+  `eval_sprint_speed.py` follows the owner's `sim_backend`. The cross-check in
+  [`docs/audits/motrix_crosscheck.md`](docs/audits/motrix_crosscheck.md) found
+  the clamp-trained sprint checkpoints transfer at 0–0.6 m/s but lose 16–36
+  points of 300 s survival at 1.0 m/s.
 - `eval_sprint_speed.py` and `render_straight_demos.py` take `--yaw-rate`, and
   the training driver scores a turning battery (`--turn-speeds`,
   `--turn-yaw-rates`, `--max-yaw-error`).

@@ -139,11 +139,11 @@ def test_sprint_robust_owner_pins_speed_and_restores_disturbances() -> None:
     assert pose["pitch"][1] == pytest.approx(math.radians(1.0))
 
 
-def test_sprint_registry_is_mujoco_only() -> None:
+def test_sprint_registry_trains_on_mujoco_and_evaluates_on_motrix() -> None:
     registry.ensure_registries()
     assert registry.list_registered_envs()["MicroduckSprintFlat"] == {
         "config_factory": "ManagerBasedRlEnvCfg",
-        "available_backends": ["mujoco"],
+        "available_backends": ["mujoco", "motrix"],
     }
 
 
