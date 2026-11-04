@@ -63,6 +63,13 @@ render commands need `--clip-targets`. `sprint_stand` supersedes
   policy. `examples/sprint_stand/deploy/` holds the export of `model_59000`
   (largest action difference 2.4e-6 over 8000 observations), and
   [`docs/DEPLOY.md`](docs/DEPLOY.md) documents the onboard contract.
+- `microduck_sprint_standturn_flat/motrix` fine-tunes the standing sprint on
+  Motrix, and `scripts/alt_backend_finetune.sh` alternates Motrix and MuJoCo
+  phases. The experiment in
+  [`docs/audits/motrix_training.md`](docs/audits/motrix_training.md) found
+  that Motrix-only training moves the overfit to Motrix, while alternating
+  holds 84–88% of 300 s survival at 1.0 m/s on both simulators. No checkpoint
+  is published.
 
 ## 0.1.0
 
