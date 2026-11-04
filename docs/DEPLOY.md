@@ -126,6 +126,8 @@ uv run --no-sync scripts/deploy_sim_loop.py examples/sprint_stand/deploy --sim m
 The test proves the runtime reproduces the training contract. It cannot check
 the robot side: the IMU axes and sign convention, servo IDs and zero offsets,
 and the direction of each joint have to match the manifest on the hardware.
+[`HARDWARE_BRINGUP.md`](HARDWARE_BRINGUP.md) and `scripts/hardware_bringup.py`
+check those before the first policy step.
 
 ## Known limits
 
