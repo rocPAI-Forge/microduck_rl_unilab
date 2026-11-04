@@ -642,6 +642,51 @@ def test_sprint_steermix_owner_gates_spawn_ray_terms_to_loop_episodes() -> None:
     assert rewards["tracking_ang_vel_fine"].weight == pytest.approx(6.0)
 
 
+def test_sprint_stand_owner_extends_the_band_to_a_standstill() -> None:
+    GlobalHydra.instance().clear()
+    with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
+        cfg = compose("config", overrides=["task=microduck_sprint_stand_flat/mujoco"])
+    registry.ensure_registries()
+    env_cfg = registry.materialize_env_config("MicroduckSprintFlat")
+    apply_cfg_overrides(
+        env_cfg,
+        BackendAdapter(
+            cfg, root_dir=ROOT_DIR, algo_name="ppo"
+        ).build_task_env_cfg_override(),
+    )
+    env_cfg.validate()
+
+    twist = env_cfg.commands["twist"]
+    assert twist.ranges.lin_vel_x == [0.0, 1.0]
+    assert twist.ranges.ang_vel_z == [-0.5, 0.5]
+    assert twist.rel_standing_envs == pytest.approx(0.1)
+    assert twist.high_speed_fraction == pytest.approx(0.3)
+    assert twist.spawn_hold_fraction == pytest.approx(0.3)
+    assert env_cfg.actions["joint_pos"].clip_target_to_joint_limits is True
+    assert env_cfg.rewards["cross_track"].params["gate_command"] == "twist"
+
+
+def test_sprint_standturn_owner_adds_turn_in_place() -> None:
+    GlobalHydra.instance().clear()
+    with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
+        cfg = compose("config", overrides=["task=microduck_sprint_standturn_flat/mujoco"])
+    registry.ensure_registries()
+    env_cfg = registry.materialize_env_config("MicroduckSprintFlat")
+    apply_cfg_overrides(
+        env_cfg,
+        BackendAdapter(
+            cfg, root_dir=ROOT_DIR, algo_name="ppo"
+        ).build_task_env_cfg_override(),
+    )
+    env_cfg.validate()
+
+    twist = env_cfg.commands["twist"]
+    assert twist.turn_in_place_fraction == pytest.approx(0.1)
+    assert twist.ranges.lin_vel_x == [0.0, 1.0]
+    assert twist.ranges.ang_vel_z == [-0.5, 0.5]
+    assert twist.rel_standing_envs == pytest.approx(0.1)
+
+
 def test_spawn_hold_gate_zeroes_free_yaw_rows() -> None:
     entity = SimpleNamespace(
         data=SimpleNamespace(

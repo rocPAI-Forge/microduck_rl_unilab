@@ -1,0 +1,22 @@
+# @package _global_
+# Standing still and slow walking on the steering gait.
+#
+# sprint_steer tracks 0.3-1.0 m/s forward and yaw rate, but has never been
+# asked to go slower than 0.3 m/s or to stop. This owner extends the forward
+# band down to 0, makes 10% of resamples a stand-still command, and trims the
+# high-speed bias so the slow end gets practice too. Commands resample every
+# 6-12 s, so episodes include starts and stops. The gait-shaping terms
+# (alternation, stride, alternate steps, contact symmetry) already switch off
+# when the command is below their threshold, so a zero command does not pay
+# for stepping in place.
+defaults:
+  - /task/microduck_sprint_steermix_flat/base
+  - _self_
+
+env:
+  commands:
+    twist:
+      rel_standing_envs: 0.1
+      high_speed_fraction: 0.3
+      ranges:
+        lin_vel_x: [0.0, 1.0]

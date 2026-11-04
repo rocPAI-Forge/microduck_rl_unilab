@@ -62,7 +62,7 @@ owner 配置和机器人 XML 资产。
     <td align="center">
       <a href="examples/sprint_steer/"><img src="docs/media/sprint_steer.gif" width="260" alt="转向冲刺"></a><br>
       <b>转向</b>（<code>sprint_steer</code>）<br>
-      前进速度和偏航角速度都可控；画面为 0.5 m/s、+0.4 rad/s。上实机从这里开始
+      前进速度和偏航角速度都可控；画面为 0.5 m/s、+0.4 rad/s。<a href="examples/sprint_stand/"><code>sprint_stand</code></a> 在此基础上加了原地站立，上实机从它开始
     </td>
     <td></td>
     <td></td>
@@ -82,7 +82,7 @@ owner 配置和机器人 XML 资产。
 | `microduck_velocity_flat` | mujoco, motrix | mujoco, motrix |
 | `microduck_velstand_flat` | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
-| `microduck_sprint_flat` 及其 14 个续训 owner（`robust`、`gaitfix`、`rollfix`、`steerfix`、`straightfix`、`straightspeed`、`straighthold`、`straightcmd`、`straightrange`、`straightclip`、`straightneck`、`straighthead`、`steer`、`steermix`） | mujoco | — |
+| `microduck_sprint_flat` 及其 16 个续训 owner（`robust`、`gaitfix`、`rollfix`、`steerfix`、`straightfix`、`straightspeed`、`straighthold`、`straightcmd`、`straightrange`、`straightclip`、`straightneck`、`straighthead`、`steer`、`steermix`、`stand`、`standturn`） | mujoco | — |
 | `microduck_ground_pick_flat`、`microduck_sitstand_flat` | mjwarp | — |
 
 每个冲刺续训 owner 的完整名字是 `microduck_sprint_<名字>_flat`，用到它的示例 README 里有具体命令。
@@ -108,6 +108,7 @@ owner 配置和机器人 XML 资产。
 | `sprint_straight_cmd` PPO | 完成，跟随 0.3–1.2 m/s 前进速度命令（实测 0.31–1.12 m/s），各档 300 秒直线通过率 90–99.6%。同上，本仓库独有 | [`examples/sprint_straight_cmd/model_32250.pt`](examples/sprint_straight_cmd/model_32250.pt) / [`play_video_side_v0.6.mp4`](examples/sprint_straight_cmd/play_video_side_v0.6.mp4) |
 | `sprint_straight_head` PPO | 完成，0.3–1.0 m/s 速度命令，位置目标裁剪到关节行程内，头回到躯干上方（前伸约 3 cm，原来约 9 cm）。300 秒直线通过率 93.6–100%。同上，本仓库独有 | [`examples/sprint_straight_head/model_52250.pt`](examples/sprint_straight_head/model_52250.pt) / [`play_video_side_v0.5.mp4`](examples/sprint_straight_head/play_video_side_v0.5.mp4) |
 | `sprint_steer` PPO | 完成。前进速度 0.3–1.0 m/s 和偏航角速度都可控，目标角按舵机裁剪，头在躯干上方。±0.2、±0.4 rad/s 的偏航误差 ≤ 0.05 rad/s，转弯存活 97–100%。同上，本仓库独有 | [`examples/sprint_steer/model_55999.pt`](examples/sprint_steer/model_55999.pt) / [`play_video_turn_left_v0.5.mp4`](examples/sprint_steer/play_video_turn_left_v0.5.mp4) |
+| `sprint_stand` PPO | 完成。在 `sprint_steer` 基础上加原地站立：前进 0–1.0 m/s、偏航角速度都可控，目标角按舵机裁剪。站立 300 秒存活 99.8%，位置漂移 9 cm。不会原地转向。同上，本仓库独有 | [`examples/sprint_stand/model_59000.pt`](examples/sprint_stand/model_59000.pt) / [`play_video_stand.mp4`](examples/sprint_stand/play_video_stand.mp4) |
 | `sprint_steerfix_flat` PPO | 未训练，已被 `sprint_steer` 取代。同上，本仓库独有；配置在，没有权重 | — |
 
 任务与上游 microduck_rl 保持 1:1：BAM（bam xl330-m6 电压伺服模型，
@@ -188,13 +189,14 @@ uv run --no-sync scripts/train_sprint_robust.py \
 | [`examples/sprint_straight_cmd/`](examples/sprint_straight_cmd/) | 0.3–1.2 m/s 命令 | 300 s 94.7–99.6% | ≤ 0.4% | 速度跟随命令。0.3 / 0.6 / 0.9 / 1.2 m/s 的直线通过率 97.5 / 99.6 / 96.9 / 90.0%；压测存活 ≥ 95%。慢速跌倒只发生在开场 6 秒内。目标不裁剪，头顶在限位上。 |
 | [`examples/sprint_straight_head/`](examples/sprint_straight_head/) | 0.3–1.0 m/s 命令 | 300 s 94.9–100% | ≤ 0.01% | 目标裁剪到关节行程内（接近真实舵机），头回到躯干上方。0.3–0.75 m/s 在 300 秒内无跌倒；1.0 m/s 命令实测 0.93 m/s。评测和回放需加 `--clip-targets`。 |
 | [`examples/sprint_steer/`](examples/sprint_steer/) | 0.3–1.0 m/s 和 ±0.4 rad/s | 直行 300 s 93.4–100%；转弯 96.7–100% | ≤ 0.01% | 在 `sprint_straight_head` 基础上加偏航转向。直行由出生航向闭环充当外部偏航控制器。评测和回放需加 `--clip-targets`。 |
+| [`examples/sprint_stand/`](examples/sprint_stand/) | 0–1.0 m/s 和 ±0.4 rad/s | 直行 300 s 95.1–100%；转弯 98–100% | ≤ 0.01% | 在 `sprint_steer` 基础上加原地站立。不会原地转向；站立时 300 秒内航向平均漂移约 6.5°。评测和回放需加 `--clip-targets`。 |
 
 每个目录含 `model_*.pt`、可视化、`metrics.json` 和复现命令。
 `model.pt` 约 4.7 MB，直接入 git。
 
 ### 冲刺系列对比
 
-七个冲刺示例是一条续训链，后一个都从前一个的权重接着训。
+八个冲刺示例是一条续训链，后一个都从前一个的权重接着训。
 
 | 示例 | 权重 | 速度命令 | 实测速度 | 头部姿态 | 关节目标 | 长时直线 | 压力测试存活 |
 |---|---|---|---|---|---|---|---|
@@ -205,13 +207,14 @@ uv run --no-sync scripts/train_sprint_robust.py \
 | `sprint_straight_cmd` | `model_32250` | 0.3–1.2 m/s 可控 | 0.31–1.12 m/s | 头朝上，前伸约 8 cm | 远超行程 | 300 s 90–99.6%（1.2 m/s 最弱） | ≥ 95% |
 | `sprint_straight_head` | `model_52250` | 0.3–1.0 m/s 可控 | 0.30–0.93 m/s | 头在躯干上方，前伸约 3 cm | 裁剪在行程内 | 300 s 93.6–100%（1.0 m/s 最弱） | 97–100% |
 | `sprint_steer` | `model_55999` | 0.3–1.0 m/s 和 ±0.4 rad/s 偏航，均可控 | 0.29–0.90 m/s；偏航误差 ≤ 0.05 rad/s | 头在躯干上方，前伸 2–3 cm | 裁剪在行程内 | 300 s 92–100%（1.0 m/s 最弱） | 96.5–100% |
+| `sprint_stand` | `model_59000` | 0–1.0 m/s 和 ±0.4 rad/s 偏航，均可控；零速时站立 | 0–0.88 m/s；偏航误差 ≤ 0.06 rad/s | 头在躯干上方，前伸 3–5 cm | 裁剪在行程内 | 行走 300 s 93.9–100%；站立存活 99.8% | 97.9–99.8% |
 
-- **速度命令：**只有最后三个能按速度命令跑，前四个不管命令多少，都跑自己那一个速度。只有 `sprint_steer` 还能按偏航角速度命令转弯。
-- **关节目标：**前五个的 `hip_yaw` 和 `neck_pitch` 目标角都远超关节行程，靠顶住限位维持平衡。真实舵机会把目标限制在行程内；打开这个裁剪后，`model_32250` 的 60 秒存活在 0.3 m/s 只有 18.8%，在 1.2 m/s 是 0%。只有 `sprint_straight_head` 和 `sprint_steer` 是在裁剪条件下训练的。
+- **速度命令：**只有最后四个能按速度命令跑，前四个不管命令多少，都跑自己那一个速度。`sprint_steer` 和 `sprint_stand` 还能按偏航角速度命令转弯，只有 `sprint_stand` 能在零速命令下站住。
+- **关节目标：**前五个的 `hip_yaw` 和 `neck_pitch` 目标角都远超关节行程，靠顶住限位维持平衡。真实舵机会把目标限制在行程内；打开这个裁剪后，`model_32250` 的 60 秒存活在 0.3 m/s 只有 18.8%，在 1.2 m/s 是 0%。只有 `sprint_straight_head`、`sprint_steer` 和 `sprint_stand` 是在裁剪条件下训练的。
 - **头部姿态：**`sprint_head_upright` 靠把 `neck_pitch` 折到 −90° 的限位来扶正头顶，头因此伸在躯干前方。这个姿态一直延续到 `sprint_straight_cmd`，`sprint_straight_head` 才把脖子抬回接近默认站姿。
 - **数据可比性：**各示例的评测条件不同。前两个是 10 秒、512 个环境；中间两个是 128 个环境；后两个是 512 个环境、按各自的速度档评测。详见各目录的 `metrics.json`。
 
-要在仿真里跑得最快，用 `sprint_straight_cmd`；要往实机部署，从 `sprint_steer` 开始。`sprint_straight_head` 只在 1.0 m/s 的长时直行上略稳一些。
+要在仿真里跑得最快，用 `sprint_straight_cmd`；要往实机部署，从 `sprint_stand` 开始：它在舵机裁剪条件下同时覆盖站立、行走和转向。
 
 跌倒起身示例 [`examples/velstand_getup/`](examples/velstand_getup/)：
 
