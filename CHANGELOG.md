@@ -20,6 +20,9 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
   loop on a random share of episodes. `heading_hold`, `heading_abs_cost`, and
   `cross_track_abs_cost` take `gate_command` to score only those episodes.
   Both default to the previous behavior.
+- `eval_sprint_speed.py` and `render_straight_demos.py` take `--yaw-rate`, and
+  the training driver scores a turning battery (`--turn-speeds`,
+  `--turn-yaw-rates`, `--max-yaw-error`).
 - `examples/sprint_stand/model_59000.pt` adds standing still to the steering
   gait: 0–1.0 m/s forward, 99.8% survival standing for 300 s with about 9 cm
   of drift. It does not turn in place. New owners
@@ -30,9 +33,11 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
   [`docs/audits/motrix_crosscheck.md`](docs/audits/motrix_crosscheck.md) found
   the clamp-trained sprint checkpoints transfer at 0–0.6 m/s but lose 16–36
   points of 300 s survival at 1.0 m/s.
-- `eval_sprint_speed.py` and `render_straight_demos.py` take `--yaw-rate`, and
-  the training driver scores a turning battery (`--turn-speeds`,
-  `--turn-yaw-rates`, `--max-yaw-error`).
+- `scripts/export_policy.py` writes a single-file ONNX, a TorchScript copy,
+  and a `deploy_manifest.json`, and checks the ONNX against the PyTorch
+  policy. `examples/sprint_stand/deploy/` holds the export of `model_59000`
+  (largest action difference 2.4e-6 over 8000 observations), and
+  [`docs/DEPLOY.md`](docs/DEPLOY.md) documents the onboard contract.
 
 ## 0.1.0
 
