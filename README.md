@@ -81,6 +81,11 @@ task. How the sprint checkpoints differ is under
 MJWarp-only tasks) is listed in
 [`CHANGELOG.md`](CHANGELOG.md#known-limitations).
 
+To run a policy on the robot, see [`docs/DEPLOY.md`](docs/DEPLOY.md): the
+observation and action contract, the exported ONNX in
+[`examples/sprint_stand/deploy/`](examples/sprint_stand/deploy/), and the
+known sim-to-real limits.
+
 ## Version
 
 Current release: **0.1.0** (git tag `v0.1.0`). Release contents, checked

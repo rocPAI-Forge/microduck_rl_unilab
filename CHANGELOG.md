@@ -24,6 +24,11 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
   gait: 0–1.0 m/s forward, 99.8% survival standing for 300 s with about 9 cm
   of drift. It does not turn in place. New owners
   `microduck_sprint_stand_flat` and `microduck_sprint_standturn_flat`.
+- `scripts/export_policy.py` writes a single-file ONNX, a TorchScript copy,
+  and a `deploy_manifest.json`, and checks the ONNX against the PyTorch
+  policy. `examples/sprint_stand/deploy/` holds the export of `model_59000`
+  (largest action difference 2.4e-6 over 8000 observations), and
+  [`docs/DEPLOY.md`](docs/DEPLOY.md) documents the onboard contract.
 - `MicroduckSprintFlat` is registered on Motrix for evaluation, with a
   `microduck_sprint_straightspeed_flat/motrix` owner, and
   `eval_sprint_speed.py` follows the owner's `sim_backend`. The cross-check in

@@ -1,0 +1,216 @@
+{
+  "checkpoint": "examples/sprint_stand/model_59000.pt",
+  "owner": "microduck_sprint_standturn_flat/mujoco",
+  "onnx": "policy.onnx",
+  "onnx_input": {
+    "name": "obs",
+    "shape": [
+      "1",
+      "61"
+    ]
+  },
+  "observation_dim": 61,
+  "observation_segments": [
+    {
+      "name": "gyro",
+      "dim": 3
+    },
+    {
+      "name": "gravity",
+      "dim": 3
+    },
+    {
+      "name": "joint_pos",
+      "dim": 14
+    },
+    {
+      "name": "joint_vel",
+      "dim": 14
+    },
+    {
+      "name": "last_action",
+      "dim": 14
+    },
+    {
+      "name": "twist_cmd",
+      "dim": 3
+    },
+    {
+      "name": "head_pose_cmd",
+      "dim": 4
+    },
+    {
+      "name": "body_pose_cmd",
+      "dim": 6
+    }
+  ],
+  "observation_training_noise_and_delay": {
+    "base_ang_vel": {
+      "noise_uniform": [
+        -0.03,
+        0.03
+      ],
+      "delay_steps": [
+        0,
+        1
+      ]
+    },
+    "projected_gravity": {
+      "noise_uniform": [
+        -0.01,
+        0.01
+      ],
+      "delay_steps": [
+        0,
+        1
+      ]
+    },
+    "joint_pos": {
+      "noise_uniform": [
+        -0.001,
+        0.001
+      ],
+      "delay_steps": [
+        0,
+        0
+      ]
+    },
+    "joint_vel": {
+      "noise_uniform": [
+        -0.25,
+        0.25
+      ],
+      "delay_steps": [
+        1,
+        1
+      ]
+    },
+    "actions": {
+      "noise_uniform": null,
+      "delay_steps": [
+        0,
+        0
+      ]
+    },
+    "twist_command": {
+      "noise_uniform": null,
+      "delay_steps": [
+        0,
+        0
+      ]
+    },
+    "head_pose_command": {
+      "noise_uniform": null,
+      "delay_steps": [
+        0,
+        0
+      ]
+    },
+    "body_pose_command": {
+      "noise_uniform": null,
+      "delay_steps": [
+        0,
+        0
+      ]
+    }
+  },
+  "action_dim": 14,
+  "action_joint_order": [
+    "left_hip_yaw",
+    "left_hip_roll",
+    "left_hip_pitch",
+    "left_knee",
+    "left_ankle",
+    "neck_pitch",
+    "head_pitch",
+    "head_yaw",
+    "head_roll",
+    "right_hip_yaw",
+    "right_hip_roll",
+    "right_hip_pitch",
+    "right_knee",
+    "right_ankle"
+  ],
+  "action_to_target": "q_des = action * scale + default_joint_pos",
+  "action_scale": 1.0,
+  "default_joint_pos_rad": {
+    "left_hip_yaw": 0.0,
+    "left_hip_roll": -0.087266,
+    "left_hip_pitch": -0.457924,
+    "left_knee": -0.00494,
+    "left_ankle": 0.452984,
+    "neck_pitch": 0.349066,
+    "head_pitch": 0.349066,
+    "head_yaw": 0.0,
+    "head_roll": 0.0,
+    "right_hip_yaw": 0.0,
+    "right_hip_roll": 0.087266,
+    "right_hip_pitch": 0.457924,
+    "right_knee": 0.00494,
+    "right_ankle": -0.452984
+  },
+  "goal_position_clamp": true,
+  "soft_joint_limits_rad": {
+    "left_hip_yaw": [
+      -0.436332,
+      0.523599
+    ],
+    "left_hip_roll": [
+      -0.383972,
+      0.383972
+    ],
+    "left_hip_pitch": [
+      -1.5708,
+      1.5708
+    ],
+    "left_knee": [
+      -1.5708,
+      1.5708
+    ],
+    "left_ankle": [
+      -1.5708,
+      1.5708
+    ],
+    "neck_pitch": [
+      -1.5708,
+      1.0472
+    ],
+    "head_pitch": [
+      -1.5708,
+      1.5708
+    ],
+    "head_yaw": [
+      -2.96706,
+      2.96706
+    ],
+    "head_roll": [
+      -0.436332,
+      0.436332
+    ],
+    "right_hip_yaw": [
+      -0.523599,
+      0.436332
+    ],
+    "right_hip_roll": [
+      -0.383972,
+      0.383972
+    ],
+    "right_hip_pitch": [
+      -1.5708,
+      1.5708
+    ],
+    "right_knee": [
+      -1.5708,
+      1.5708
+    ],
+    "right_ankle": [
+      -1.5708,
+      1.5708
+    ]
+  },
+  "control_period_s": 0.02,
+  "export_check": {
+    "samples": 8000,
+    "max_abs_action_difference": 2.384185791015625e-06
+  }
+}
