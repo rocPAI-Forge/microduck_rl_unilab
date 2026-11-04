@@ -73,6 +73,60 @@ added 3–6 physics substeps of command delay and a 6.5–8.2 V supply.
   with `heading_ref` and `cross_track` measured from where the straight run
   started (cross-track positive to the left of that ray).
 
+## Reference runtime
+
+[`src/microduck_rl_unilab/deploy/runtime.py`](../src/microduck_rl_unilab/deploy/runtime.py)
+implements this contract with numpy and onnxruntime only. Copy it next to the
+`deploy/` folder on the robot; it does not import torch, UniLab, or MuJoCo.
+
+```python
+import numpy as np
+from runtime import Command, Controller, SensorReading
+
+controller = Controller("deploy")          # policy.onnx + deploy_manifest.json
+controller.set_command(Command.straight(0.6), heading=imu_yaw)
+while True:                                 # every 20 ms
+    reading = SensorReading(
+        gyro_b=imu_gyro,                    # rad/s, body frame
+        gravity_b=imu_gravity,              # unit vector, body frame
+        joint_pos=servo_angles,             # rad, absolute, manifest joint order
+        joint_vel=servo_velocities,         # rad/s
+    )
+    goals = controller.step(reading, heading=imu_yaw)   # clamped, rad
+    write_goal_positions(goals)
+```
+
+`Command.stand()`, `Command.walk(v, yaw)`, `Command.straight(v)` (heading
+hold), and `Command.turn_around(±1)` cover the commands above. `position_xy`
+is optional; without it the heading hold runs without its cross-track term.
+
+`scripts/deploy_sim_loop.py` runs the runtime closed-loop with the simulator as
+the plant. The runtime reads raw sensor values and drives the robot by itself;
+each step its observation is compared with the training policy observation
+(noise, delay, IMU misalignment, and encoder bias off) and its goal positions
+with the simulator's clamped targets. For `examples/sprint_stand/deploy/`,
+32 environments, 30 s each:
+
+| Scenario | MuJoCo forward / yaw | MotrixSim forward / yaw | Survival |
+|---|---|---|---|
+| Stand | 0.00 m/s / −0.01 rad/s | 0.00 / +0.00 | 100% / 100% |
+| Straight 0.6 m/s, heading hold | 0.59 / 0.00 | 0.59 / 0.00 | 100% / 100% |
+| Turn around left | 0.22 / +0.35 | 0.25 / +0.33 | 100% / 100% |
+| Turn around right | 0.22 / −0.42 | 0.23 / −0.42 | 100% / 100% |
+
+The observation matches to within 1e-6 and the goal positions to within
+4e-6 on both simulators, and the runtime's heading-hold yaw matches the
+training loop to 3e-7. Results are in `examples/sprint_stand/deploy/sim_loop_*.json`.
+
+```bash
+uv run --no-sync scripts/deploy_sim_loop.py examples/sprint_stand/deploy --sim mujoco
+uv run --no-sync scripts/deploy_sim_loop.py examples/sprint_stand/deploy --sim motrix
+```
+
+The test proves the runtime reproduces the training contract. It cannot check
+the robot side: the IMU axes and sign convention, servo IDs and zero offsets,
+and the direction of each joint have to match the manifest on the hardware.
+
 ## Known limits
 
 - **Top speed is simulator-dependent.** At 0–0.6 m/s the policy behaves the
