@@ -15,18 +15,15 @@ Decisions between close checkpoints use 512-environment batteries.
 
 | Item | State | PR |
 |---|---|---|
-| 1. Steering | Done | #7 |
-| 2. Standing and low speed | Done | #8 (stacked on #7) |
-| 3. Cross-simulator check | Done | #9 (stacked on #8) |
-| 4. Position-target audit | Done | #6 |
-| 5. Deployment path | Software side done; hardware side open | #10 (stacked on #9) |
+| 1. Steering | Merged | #7 |
+| 2. Standing and low speed | Merged | #8 |
+| 3. Cross-simulator check | Merged | #9 |
+| 4. Position-target audit | Merged | #6 |
+| 5. Deployment path | Software side merged; hardware side open | #10 |
 | 6. MJWarp | Blocked: needs an NVIDIA GPU | — |
 | 7. Leftovers | Open | — |
 | 8. Turning in place (new) | Open | — |
-| 9. Motrix in the training loop (new) | Open | — |
-
-Merge order for the stacked PRs: #6, #7, #8, #9, #10. The CHANGELOG
-"Unreleased" sections in #6 and #7 conflict trivially.
+| 9. Motrix in the training loop (new) | Exploratory: alternating backends holds 84–88% at 1.0 m/s on both simulators; no checkpoint published | #11 (draft) |
 
 ## Priority 1: complete the motion interface
 
