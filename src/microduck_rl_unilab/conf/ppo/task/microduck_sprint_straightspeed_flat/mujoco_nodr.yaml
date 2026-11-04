@@ -1,0 +1,13 @@
+# @package _global_
+# MuJoCo evaluation owner with the same four events dropped as the Motrix
+# owner, so MuJoCo and Motrix scores share one randomization set.
+defaults:
+  - /task/microduck_sprint_straightspeed_flat/mujoco
+  - _self_
+
+env:
+  events:
+    push_robot: null
+    randomize_armature: null
+    foot_friction: null
+    randomize_mass_inertia: null

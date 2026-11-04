@@ -1,0 +1,35 @@
+# @package _global_
+# MotrixSim training owner for the standing steering gait (experiment for
+# roadmap item 9). Same task as the MuJoCo owner, minus the four events Motrix
+# cannot apply: interval push, joint-armature, foot-friction, and body-inertia
+# randomization.
+defaults:
+  - /task/microduck_sprint_standturn_flat/base
+  - _self_
+
+training:
+  task_name: MicroduckSprintFlat
+  sim_backend: motrix
+  play_render_mode: none
+  play_steps: 1000
+
+algo:
+  num_envs: 2048
+  max_iterations: 1500
+  save_interval: 500
+  empirical_normalization: true
+  obs_groups:
+    actor: [policy]
+    critic: [critic]
+  policy:
+    init_noise_std: 1.0
+  algorithm:
+    learning_rate: 1.0e-4
+    entropy_coef: 0.005
+
+env:
+  events:
+    push_robot: null
+    randomize_armature: null
+    foot_friction: null
+    randomize_mass_inertia: null
