@@ -41,6 +41,13 @@ registry.register_env(
     make_microduck_velocity_env,
     sim_backend="mujoco",
 )
+# Motrix is registered for cross-simulator evaluation of the sprint
+# checkpoints; they are trained on MuJoCo.
+registry.register_env(
+    "MicroduckSprintFlat",
+    make_microduck_velocity_env,
+    sim_backend="motrix",
+)
 
 # VelStand (walking + fall recovery) on the ground-contact BAM model.
 registry.register_env_config("MicroduckVelstandFlat", ManagerBasedRlEnvCfg)

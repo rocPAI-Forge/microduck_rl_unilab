@@ -168,7 +168,7 @@ def evaluate(
         Any,
         registry.make(
             "MicroduckSprintFlat",
-            sim_backend="mujoco",
+            sim_backend=str(cfg.training.sim_backend),
             num_envs=num_envs,
             env_cfg_override=override,
         ),
@@ -324,7 +324,7 @@ def evaluate(
             "schema_version": 1,
             "task": "MicroduckSprintFlat",
             "checkpoint": str(checkpoint.resolve()),
-            "backend": "mujoco",
+            "backend": str(cfg.training.sim_backend),
             "device": device,
             "seed": seed,
             "num_envs": num_envs,
