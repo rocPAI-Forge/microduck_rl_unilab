@@ -22,7 +22,7 @@ Decisions between close checkpoints use 512-environment batteries.
 | 5. Deployment path | Software side merged; hardware side open | #10 |
 | 6. MJWarp | Blocked: needs an NVIDIA GPU | — |
 | 7. Leftovers | Open | — |
-| 8. Turning in place (new) | In progress: left pivot partly learned, right not | `feat/turn-in-place` |
+| 8. Turning in place (new) | Parked: no pivot after three rounds; use the 0.5 m radius turn | #14 |
 | 9. Motrix in the training loop (new) | Closed: train on MuJoCo only, Motrix is the held-out gate | #11 (record), #13 (rule) |
 
 **Simulator rule.** Sprint policies train on MuJoCo only. MotrixSim is held
@@ -44,9 +44,12 @@ published only after it passes. Failures are fixed on the MuJoCo side.
 - [ ] **8. Turning in place (new).** `model_59000` measures about 0 rad/s for
   a yaw command at zero forward speed, so the heading loop cannot hold heading
   while standing (6.5° mean drift over 300 s on MuJoCo). Ten percent
-  turn-in-place commands for 2000 iterations did not teach a pivot. Next try:
-  a larger share and a pivot-specific reward, or a separate stand-and-turn
-  stage.
+  turn-in-place commands for 2000 iterations did not teach a pivot.
+  **Parked (#14).** Three more rounds (a forward-speed curriculum down to a
+  pivot, a longer stay at zero, then mirror symmetry) did not teach a pivot
+  either. Turning around uses `[0.2, 0, ±0.4]`, a 0.5 m radius turn at 100%
+  survival on MuJoCo and MotrixSim. Revisit after the first hardware run,
+  with a separate stand-and-turn policy or a foot-yaw reward.
 
 ## Priority 2: validate for hardware
 
