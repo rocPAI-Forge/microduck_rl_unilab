@@ -45,7 +45,9 @@ the clamp on:
 - **No turning in place.** A yaw command at zero forward speed measures about
   0 rad/s. The policy turns by stepping unevenly while walking and has no
   pivot. That is also why the spawn-heading loop cannot hold heading while
-  standing.
+  standing. To turn around, command 0.2 m/s with ±0.4 rad/s: a 0.5 m radius
+  turn that survives 100% over 60 s on MuJoCo and MotrixSim
+  ([`docs/DEPLOY.md`](../../docs/DEPLOY.md#commands)).
 - Left turns under-track by up to about 0.06 rad/s (+0.4 rad/s measures +0.34
   at 1.0 m/s); right turns are on target.
 - A 0.15 m/s command runs 0.11 m/s, and a 1.0 m/s command 0.88 m/s.

@@ -63,6 +63,10 @@ added 3–6 physics substeps of command delay and a 6.5–8.2 V supply.
   limits below.
 - **Turn:** yaw rate up to ±0.4 rad/s while walking. The policy does not
   turn in place.
+- **Turn around:** send `[0.2, 0, ±0.4]`, a 0.5 m radius turn, instead of a
+  pivot. Over 60 s on 512 environments it survives 100% on both MuJoCo and
+  MotrixSim, turning at 0.38–0.42 rad/s and walking 0.19–0.21 m/s. A yaw
+  command at a zero forward command turns at about 0.02 rad/s.
 - **Hold a straight line:** run the same heading controller the policy was
   trained and scored with, and send its output as the yaw-rate command:
   `yaw = clip(2.5 * (heading_ref - heading) - 0.08 * cross_track, -0.35, 0.35)`,
@@ -89,7 +93,9 @@ added 3–6 physics substeps of command delay and a 6.5–8.2 V supply.
 - Backlash is not modeled, and the noise and delay envelopes above have not
   been calibrated against hardware.
 - No turning in place; heading drifts about 6.5° over 300 s while standing
-  on MuJoCo (1.4° on MotrixSim).
+  on MuJoCo (1.4° on MotrixSim). Three training rounds did not teach a pivot
+  ([`audits/turn_in_place.md`](audits/turn_in_place.md)); use the 0.5 m
+  radius turn above.
 
 ## Re-export
 

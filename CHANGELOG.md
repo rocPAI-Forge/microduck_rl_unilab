@@ -12,6 +12,14 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
   and ±0.4 rad/s; at least 95% survival and at most 0.10 rad/s yaw error) and
   reports 1.0 m/s without gating it. A checkpoint is published only after it
   passes. See the README section "Simulators".
+- Turning in place is parked. `MicroduckVelocityCommandCfg.turn_in_place_lin_max`
+  and `turn_in_place_curriculum` bridge turn commands from walking turns down
+  to a pivot (both off by default), with owners `microduck_sprint_pivot_flat`,
+  `microduck_sprint_pivothold_flat`, and `microduck_sprint_pivotsym_flat`
+  (mirror augmentation). Three rounds did not teach a pivot
+  ([`docs/audits/turn_in_place.md`](docs/audits/turn_in_place.md)), so
+  `docs/DEPLOY.md` documents a 0.5 m radius turn (`[0.2, 0, ±0.4]`) instead:
+  100% survival over 60 s on MuJoCo and MotrixSim.
 
 ## 0.2.0
 
