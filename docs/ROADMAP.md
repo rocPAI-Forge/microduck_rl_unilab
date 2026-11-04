@@ -1,79 +1,88 @@
 # Roadmap after 0.1.0
 
-The policy closest to hardware is
-[`sprint_straight_head`](../examples/sprint_straight_head/): it was trained
-with servo-clamped position targets and keeps the head over the trunk. It
-only walks forward, its speed command starts at 0.3 m/s, and it has been
-checked on MuJoCo only. The items below close those gaps first, then
-validate for hardware, then clean up infrastructure.
+The policy closest to hardware at 0.1.0 was
+[`sprint_straight_head`](../examples/sprint_straight_head/): servo-clamped
+position targets and the head over the trunk, but forward-only, with a speed
+command that started at 0.3 m/s, checked on MuJoCo only. The items below close
+those gaps first, then validate for hardware, then clean up infrastructure.
 
 Each item lists what "done" means. Training rounds use 2048 environments:
 on the current 8-core, 59 GB machine, 2048 environments already take about
 26 GB, 3072 ran slower (27.3k vs 29.8k steps/s), and 4096 ran out of memory.
 Decisions between close checkpoints use 512-environment batteries.
 
-## Priority 1: complete the motion interface (on `sprint_straight_head`)
+## Status
 
-- [ ] **1. Steering.** Turn off the spawn-heading loop and train the policy
-  to track a yaw-rate command of about ±0.5 rad/s, keeping the forward-speed
-  command and the target clamp.
-  - Done when: left and right yaw-rate tracking error is small across the
-    speed band, and straight-line survival, straight-pose pass, and head
-    posture do not regress against `model_52250`.
-  - Estimate: 2–4 rounds, about 4–8 hours of training.
-  - `microduck_sprint_steerfix_flat` was written for the unclamped gait; this
-    item replaces it rather than reusing its weights.
-- [ ] **2. Standing and low speed.** Extend the forward command from
-  0.3–1.0 m/s down to 0, so the policy stands still at a zero command and can
-  start and stop.
-  - Done when: 0–1.0 m/s is tracked across the band, and a zero command holds
-    position without drift.
-  - Estimate: 1–2 rounds, about 2–4 hours.
+| Item | State | PR |
+|---|---|---|
+| 1. Steering | Done | #7 |
+| 2. Standing and low speed | Done | #8 (stacked on #7) |
+| 3. Cross-simulator check | Done | #9 (stacked on #8) |
+| 4. Position-target audit | Done | #6 |
+| 5. Deployment path | Software side done; hardware side open | #10 (stacked on #9) |
+| 6. MJWarp | Blocked: needs an NVIDIA GPU | — |
+| 7. Leftovers | Open | — |
+| 8. Turning in place (new) | Open | — |
+| 9. Motrix in the training loop (new) | Open | — |
 
-Together these give one policy with forward speed and yaw rate both
-commandable, servo-clamped targets, and a normal head posture.
+Merge order for the stacked PRs: #6, #7, #8, #9, #10. The CHANGELOG
+"Unreleased" sections in #6 and #7 conflict trivially.
+
+## Priority 1: complete the motion interface
+
+- [x] **1. Steering** (#7). `sprint_steer/model_55999` tracks ±0.2 and
+  ±0.4 rad/s yaw within about 0.05 rad/s at 0.3–1.0 m/s, with 97–100%
+  survival while turning. Turning was learned with the spawn-heading loop off
+  (`microduck_sprint_steer_flat`); mixing 30% loop-held episodes back in, with
+  the spawn-ray costs gated to those episodes (`microduck_sprint_steermix_flat`),
+  recovered most of the 1.0 m/s straight-line margin.
+- [x] **2. Standing and low speed** (#8). `sprint_stand/model_59000` holds a
+  zero command for 300 s at 99.8% survival with about 9 cm of drift and walks
+  0.15–1.0 m/s, keeping the steering. A 1.0 m/s command runs 0.88 m/s. It is
+  now the recommended starting point for hardware.
+- [ ] **8. Turning in place (new).** `model_59000` measures about 0 rad/s for
+  a yaw command at zero forward speed, so the heading loop cannot hold heading
+  while standing (6.5° mean drift over 300 s on MuJoCo). Ten percent
+  turn-in-place commands for 2000 iterations did not teach a pivot. Next try:
+  a larger share and a pivot-specific reward, or a separate stand-and-turn
+  stage.
 
 ## Priority 2: validate for hardware
 
-- [ ] **3. Cross-simulator check.** Install `unilab[motrix]`, add a Motrix
-  owner for the sprint task, and run the same batteries on `model_52250` to
-  confirm the policy is not tuned to MuJoCo alone.
-  - Estimate: half a day.
-- [ ] **4. Position-target audit of the other tasks.** Check whether the walk,
-  stand-up, and get-up policies also command targets far past the joint
-  stops. The walk policy (`velocity_flat_mujoco/model_499`) does not; stand-up
-  and get-up have not been checked. Retrain any that do under the clamp.
-  - Estimate: about 1 hour to check; retraining is extra.
-  - Do this first: its result can change the order of everything else.
-- [ ] **5. Deployment path.** Export ONNX, check observation and action
-  dimensions and order against `deploy_contract.py`, and write down the known
-  sim-to-real gaps (observation noise, delay, backlash) already listed in
-  `sim2real_notes.py`.
-  - Estimate: half a day to a day.
-  - Timing depends on when a MicroDuck is available for testing.
+- [x] **3. Cross-simulator check** (#9). The clamp-trained checkpoints
+  transfer to MotrixSim at 0–0.6 m/s (98.6–100% over 300 s), but not at
+  1.0 m/s (57–80%, against 93–97% on MuJoCo). Cap hardware commands near
+  0.6 m/s at first.
+- [ ] **9. Motrix in the training loop (new).** Train on both backends, or
+  alternate, so the 1.0 m/s gait does not depend on MuJoCo-specific contact or
+  servo detail. Motrix lacks the push, armature, friction, and inertia events,
+  so the MuJoCo share keeps those.
+- [x] **4. Position-target audit** (#6). Only the sprint lineage leans on the
+  joint stops; the walk, stand-up, and get-up checkpoints finish their tasks
+  with the goal-position clamp on. None needs retraining.
+- [ ] **5. Deployment path** (#10 for the software side).
+  - [x] ONNX export with an onnxruntime check: largest action difference
+    2.4e-6 over 8000 observations.
+  - [x] `deploy_manifest.json` and `docs/DEPLOY.md`: observation and action
+    order, units, clamp, rate, commands, training noise and delay, known
+    limits.
+  - [ ] Calibrate the IMU and servo noise and delay envelopes on hardware.
+  - [ ] First on-robot run.
 
 ## Priority 3: infrastructure and leftovers
 
-- [ ] **6. MJWarp (GPU physics).** About 83% of each training iteration is
-  CPU physics. Moving it to the GPU needs `mujoco-warp` installed and the BAM
-  per-substep torque path validated on MJWarp.
+- [ ] **6. MJWarp (GPU physics).** Blocked on this machine. `warp-lang`
+  1.19 sees only the CPU next to the Radeon AI PRO R9700; Warp's GPU backend
+  is CUDA-only. Both MJWarp tests require "an active CUDA Warp device". This
+  needs an NVIDIA machine.
 - [ ] **7. Leftovers.**
   - Velocity SAC trains but falls repeatedly at inference.
   - `microduck_sprint_steerfix_flat` has no weights (superseded by item 1).
   - `microduck_ground_pick_flat` and `microduck_sitstand_flat` are
     MJWarp-only (depends on item 6).
 
-## Suggested order
-
-1. Item 4 check (about 1 hour).
-2. Item 1, steering.
-3. Item 2, standing and low speed.
-4. Item 3 in the gaps between training runs.
-5. Item 5 once hardware timing is known.
-
 ## Open questions
 
-- Is a MicroDuck available for testing, and when? This decides whether item 5
-  moves up.
-- Should MJWarp (item 6) move ahead of the motion items to shorten every
-  later training round?
+- Is a MicroDuck available for testing, and when? Item 5's hardware side
+  waits on it.
+- Next training item: turning in place (8) or Motrix in the loop (9)?
