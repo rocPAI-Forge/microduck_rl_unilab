@@ -123,6 +123,9 @@ class MicroduckVelocityCommandCfg(UniformVelocityCommandCfg):
 
     turn_in_place_fraction: float = 0.0
     turn_in_place_ang_min: float = 0.4
+    # Forward speed of turn-in-place resamples is drawn from [0, this]. A
+    # nonzero ceiling bridges from walking turns to a pivot.
+    turn_in_place_lin_max: float = 0.0
     hold_spawn_heading: bool = False
     spawn_heading_stiffness: float = 1.5
     spawn_cross_track_stiffness: float = 0.0
@@ -151,6 +154,11 @@ class MicroduckVelocityCommand(UniformVelocityCommand):
             label="MicroduckVelocityCommand turn_in_place_ang_min",
         )
         self._turn_ang_max = max(abs(value) for value in cfg.ranges.ang_vel_z)
+        self._turn_lin_max = _finite_real(
+            cfg.turn_in_place_lin_max,
+            label="MicroduckVelocityCommand turn_in_place_lin_max",
+            minimum=0.0,
+        )
         if not isinstance(cfg.hold_spawn_heading, bool):
             raise TypeError(
                 "MicroduckVelocityCommand hold_spawn_heading must be bool"
@@ -212,6 +220,25 @@ class MicroduckVelocityCommand(UniformVelocityCommand):
         """Rows whose yaw command comes from the spawn-heading loop this episode."""
         return self._spawn_hold_mask
 
+    @property
+    def turn_in_place_fraction(self) -> float:
+        return self._turn_fraction
+
+    @property
+    def turn_in_place_lin_max(self) -> float:
+        return self._turn_lin_max
+
+    def set_turn_in_place(self, fraction: float, lin_max: float) -> None:
+        """Set the turn-in-place share and forward-speed ceiling for later resamples."""
+        self._turn_fraction = _ratio(
+            fraction, label="MicroduckVelocityCommand turn_in_place_fraction"
+        )
+        self._turn_lin_max = _finite_real(
+            lin_max,
+            label="MicroduckVelocityCommand turn_in_place_lin_max",
+            minimum=0.0,
+        )
+
     def _resample_command(self, env_ids: np.ndarray) -> None:
         super()._resample_command(env_ids)
         if self._hold_spawn_heading:
@@ -242,6 +269,10 @@ class MicroduckVelocityCommand(UniformVelocityCommand):
         if len(turn_ids) == 0:
             return
         self.vel_command_b[turn_ids, :2] = 0.0
+        if self._turn_lin_max > 0.0:
+            self.vel_command_b[turn_ids, 0] = self._env.rng.uniform(
+                0.0, self._turn_lin_max, len(turn_ids)
+            )
         min_abs = self._turn_ang_min * self._turn_ang_max
         signs = np.where(self._env.rng.uniform(0.0, 1.0, len(turn_ids)) < 0.5, -1.0, 1.0)
         self.vel_command_b[turn_ids, 2] = signs * self._env.rng.uniform(

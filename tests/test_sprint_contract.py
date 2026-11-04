@@ -37,6 +37,7 @@ from microduck_rl_unilab.tasks.microduck.sprint_terms import (
     running_spawn_progress,
     running_straightness_cost,
     running_stride_length,
+    turn_in_place_curriculum,
 )
 from microduck_rl_unilab.tasks.microduck.manager_terms import (
     MicroduckVelocityCommand,
@@ -687,6 +688,65 @@ def test_sprint_standturn_owner_adds_turn_in_place() -> None:
     assert twist.rel_standing_envs == pytest.approx(0.1)
 
 
+def test_sprint_pivot_owner_bridges_turns_down_to_a_pivot() -> None:
+    GlobalHydra.instance().clear()
+    with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
+        cfg = compose("config", overrides=["task=microduck_sprint_pivot_flat/mujoco"])
+    registry.ensure_registries()
+    env_cfg = registry.materialize_env_config("MicroduckSprintFlat")
+    apply_cfg_overrides(
+        env_cfg,
+        BackendAdapter(
+            cfg, root_dir=ROOT_DIR, algo_name="ppo"
+        ).build_task_env_cfg_override(),
+    )
+    env_cfg.validate()
+
+    twist = env_cfg.commands["twist"]
+    assert twist.turn_in_place_fraction == pytest.approx(0.25)
+    assert twist.turn_in_place_lin_max == pytest.approx(0.2)
+    stages = env_cfg.curriculum["turn_in_place"].params["stages"]
+    assert env_cfg.curriculum["turn_in_place"].func is turn_in_place_curriculum
+    assert stages[0] == {"step": 0, "fraction": 0.25, "lin_max": 0.2}
+    assert stages[-1]["lin_max"] == pytest.approx(0.0)
+    assert env_cfg.actions["joint_pos"].clip_target_to_joint_limits is True
+
+
+def test_turn_in_place_bucket_draws_forward_speed_below_the_ceiling(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        UniformVelocityCommand,
+        "_resample_command",
+        lambda self, env_ids: None,
+    )
+    num_envs = 2000
+    term = object.__new__(MicroduckVelocityCommand)
+    term._hold_spawn_heading = False
+    term._high_speed_range = None
+    term._turn_fraction = 1.0
+    term._turn_lin_max = 0.2
+    term._turn_ang_min = 0.4
+    term._turn_ang_max = 0.5
+    term._env = SimpleNamespace(rng=np.random.default_rng(0))
+    term.vel_command_b = np.full((num_envs, 3), 0.7, dtype=np.float32)
+    term.vel_command_w = term.vel_command_b.copy()
+    term.is_standing_env = np.ones(num_envs, dtype=np.bool_)
+
+    term._resample_command(np.arange(num_envs, dtype=np.intp))
+
+    forward = term.vel_command_b[:, 0]
+    assert forward.min() >= 0.0 and forward.max() <= 0.2
+    assert forward.max() > 0.15
+    np.testing.assert_array_equal(term.vel_command_b[:, 1], 0.0)
+    assert np.all(np.abs(term.vel_command_b[:, 2]) >= 0.2)
+    assert not term.is_standing_env.any()
+
+    term.set_turn_in_place(1.0, 0.0)
+    term._resample_command(np.arange(num_envs, dtype=np.intp))
+    np.testing.assert_array_equal(term.vel_command_b[:, 0], 0.0)
+
+
 def test_spawn_hold_gate_zeroes_free_yaw_rows() -> None:
     entity = SimpleNamespace(
         data=SimpleNamespace(
@@ -1040,6 +1100,36 @@ def test_action_clip_margin_curriculum_steps_the_margin_down() -> None:
         env.common_step_counter = step
         curriculum(cast(ManagerBasedRlEnv, env), slice(None), stages=stages)
     assert margins == [0.5, 0.2, 0.0]
+
+
+def test_turn_in_place_curriculum_lowers_the_forward_ceiling() -> None:
+    calls: list[tuple[float, float]] = []
+    term = SimpleNamespace(set_turn_in_place=lambda f, v: calls.append((f, v)))
+    env = SimpleNamespace(
+        command_manager=SimpleNamespace(get_term=lambda name: term),
+        common_step_counter=0,
+    )
+    stages = [
+        {"step": 0, "fraction": 0.25, "lin_max": 0.2},
+        {"step": 100, "fraction": 0.25, "lin_max": 0.1},
+        {"step": 200, "fraction": 0.3, "lin_max": 0.0},
+    ]
+    curriculum = turn_in_place_curriculum(
+        CurriculumTermCfg(func=turn_in_place_curriculum, params={"stages": stages}),
+        cast(ManagerBasedRlEnv, env),
+    )
+    for step in (0, 150, 250):
+        env.common_step_counter = step
+        curriculum(cast(ManagerBasedRlEnv, env), slice(None), stages=stages)
+    assert calls == [(0.25, 0.2), (0.25, 0.1), (0.3, 0.0)]
+
+    with pytest.raises(ValueError, match="step, fraction, and lin_max"):
+        turn_in_place_curriculum(
+            CurriculumTermCfg(
+                func=turn_in_place_curriculum, params={"stages": [{"step": 0, "lin_max": 0.1}]}
+            ),
+            cast(ManagerBasedRlEnv, env),
+        )
 
 
 def test_action_target_band_cost_reads_the_request_behind_the_clamp() -> None:
