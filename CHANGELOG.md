@@ -12,6 +12,17 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
   [`docs/audits/position_targets.md`](docs/audits/position_targets.md) found
   that only the sprint lineage leans on the stops; the walk, stand-up, and
   get-up checkpoints finish their tasks with the clamp on.
+- `examples/sprint_steer/model_55999.pt` adds yaw-rate steering to the
+  head-over-trunk, servo-clamped gait: 0.3–1.0 m/s forward and ±0.4 rad/s
+  yaw tracked within about 0.05 rad/s, 97–100% survival while turning. New
+  owners `microduck_sprint_steer_flat` and `microduck_sprint_steermix_flat`.
+- `MicroduckVelocityCommandCfg.spawn_hold_fraction` runs the spawn-heading
+  loop on a random share of episodes. `heading_hold`, `heading_abs_cost`, and
+  `cross_track_abs_cost` take `gate_command` to score only those episodes.
+  Both default to the previous behavior.
+- `eval_sprint_speed.py` and `render_straight_demos.py` take `--yaw-rate`, and
+  the training driver scores a turning battery (`--turn-speeds`,
+  `--turn-yaw-rates`, `--max-yaw-error`).
 
 ## 0.1.0
 

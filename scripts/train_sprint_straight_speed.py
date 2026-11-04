@@ -93,10 +93,12 @@ def _battery(
     duration: float,
     seed: int,
     stress: bool = False,
+    yaw_rate: float = 0.0,
 ) -> dict[str, Any] | None:
     tag = "stress_" if stress else ""
+    yaw_tag = f"_y{yaw_rate:g}" if yaw_rate else ""
     battery_out = checkpoint.with_name(
-        f"battery_{tag}{checkpoint.stem}_{int(duration)}s_seed{seed}_v{speed:g}.json"
+        f"battery_{tag}{checkpoint.stem}_{int(duration)}s_seed{seed}_v{speed:g}{yaw_tag}.json"
     )
     battery = _run_json(
         [
@@ -104,6 +106,7 @@ def _battery(
             "--owner", STRESS_OWNER if stress else OWNER,
             *(["--stress"] if stress else []),
             *EVAL_FLAGS,
+            "--yaw-rate", str(yaw_rate),
             "--speed", str(speed),
             "--num-envs", str(num_envs),
             "--warmup", "1",
@@ -119,7 +122,13 @@ def _battery(
     speed_block = battery.get("body_forward_speed_m_s") or {}
     horizon = battery.get("straight_pose_horizon_s") or {}
     measured = speed_block.get("mean")
+    measured_yaw = battery.get("yaw_rate_rad_s")
     return {
+        "command_yaw_rate_rad_s": yaw_rate,
+        "yaw_rate_rad_s": measured_yaw,
+        "yaw_rate_error_rad_s": (
+            None if measured_yaw is None else abs(float(measured_yaw) - yaw_rate)
+        ),
         "command_m_s": speed,
         "speed_m_s": measured,
         "speed_error_m_s": None if measured is None else abs(float(measured) - speed),
@@ -145,6 +154,8 @@ def _score_checkpoint(
     seed: int,
     stress_speeds: list[float] | None = None,
     stress_duration: float = 60.0,
+    turn_cases: list[tuple[float, float]] | None = None,
+    turn_duration: float = 30.0,
 ) -> dict[str, Any] | None:
     """Run one battery per command speed and keep the worst case of each gate."""
     per_speed = []
@@ -168,6 +179,19 @@ def _score_checkpoint(
         if battery is None or battery["survival_fraction"] is None:
             return None
         stress_rows.append(battery)
+    turn_rows = []
+    for speed, yaw_rate in turn_cases or []:
+        battery = _battery(
+            checkpoint,
+            speed=speed,
+            num_envs=num_envs,
+            duration=turn_duration,
+            seed=seed,
+            yaw_rate=yaw_rate,
+        )
+        if battery is None or battery["yaw_rate_error_rad_s"] is None:
+            return None
+        turn_rows.append(battery)
 
     def worst(key: str, pick: Any) -> Any:
         values = [row[key] for row in per_speed]
@@ -197,6 +221,19 @@ def _score_checkpoint(
         record["stress_survival_fraction"] = min(
             float(row["survival_fraction"]) for row in stress_rows
         )
+    if turn_rows:
+        record["turn_per_case"] = turn_rows
+        record["yaw_rate_error_rad_s"] = max(
+            float(row["yaw_rate_error_rad_s"]) for row in turn_rows
+        )
+        record["turn_survival_fraction"] = min(
+            float(row["survival_fraction"]) for row in turn_rows
+        )
+        turn_head = [row["head_forward_in_trunk_m"] for row in turn_rows]
+        if record.get("head_forward_in_trunk_m") is not None and None not in turn_head:
+            record["head_forward_in_trunk_m"] = max(
+                record["head_forward_in_trunk_m"], *turn_head
+            )
     return record
 
 
@@ -226,11 +263,18 @@ def _passes(record: dict[str, Any], args: argparse.Namespace) -> bool:
     range_ok = args.max_target_overshoot is None or (
         overshoot is not None and float(overshoot) <= args.max_target_overshoot
     )
+    yaw_error = record.get("yaw_rate_error_rad_s")
+    turn_survival = record.get("turn_survival_fraction")
+    turn_ok = yaw_error is None or (
+        float(yaw_error) <= args.max_yaw_error
+        and float(turn_survival) >= args.min_turn_survival
+    )
     return (
         speed_ok
         and stress_ok
         and head_ok
         and range_ok
+        and turn_ok
         and survival >= args.min_survival
         and heading <= args.max_heading
         and straight >= args.min_straight
@@ -255,7 +299,15 @@ def _score(record: dict[str, Any], args: argparse.Namespace) -> float:
     inverted = _value(record, "head_inverted_time_fraction", 1.0)
     heading_quality = max(0.0, 1.0 - heading / 25.0)
     stress = _value(record, "stress_survival_fraction", 1.0)
-    return speed_term * survival * straight * heading_quality * (1.0 - inverted) * stress
+    turn = 1.0
+    if record.get("yaw_rate_error_rad_s") is not None:
+        yaw_error = _value(record, "yaw_rate_error_rad_s", 1.0)
+        turn = max(0.0, 1.0 - yaw_error / (3.0 * args.max_yaw_error)) * _value(
+            record, "turn_survival_fraction", 0.0
+        )
+    return (
+        speed_term * survival * straight * heading_quality * (1.0 - inverted) * stress * turn
+    )
 
 
 def _append(results_path: Path, record: dict[str, Any]) -> None:
@@ -300,6 +352,21 @@ def main() -> None:
     parser.add_argument("--stress-duration", type=float, default=60.0)
     parser.add_argument("--min-stress-survival", type=float, default=0.95)
     parser.add_argument(
+        "--turn-speeds",
+        type=lambda text: [float(value) for value in text.split(",")],
+        default=[],
+        help="Forward commands for the turning battery (spawn-heading loop off).",
+    )
+    parser.add_argument(
+        "--turn-yaw-rates",
+        type=lambda text: [float(value) for value in text.split(",")],
+        default=[],
+        help="Yaw-rate commands, rad/s; every speed is run with every yaw rate.",
+    )
+    parser.add_argument("--turn-duration", type=float, default=30.0)
+    parser.add_argument("--max-yaw-error", type=float, default=0.1)
+    parser.add_argument("--min-turn-survival", type=float, default=0.95)
+    parser.add_argument(
         "--eval-clip",
         action="store_true",
         help="Score with BAM targets clamped to the joint limits; use with clipped owners.",
@@ -331,6 +398,7 @@ def main() -> None:
     args = parser.parse_args()
     if args.eval_clip:
         EVAL_FLAGS.append("--clip-targets")
+    turn_cases = [(speed, yaw) for speed in args.turn_speeds for yaw in args.turn_yaw_rates]
 
     results_path = Path(args.results_jsonl)
     results_path.parent.mkdir(parents=True, exist_ok=True)
@@ -401,6 +469,8 @@ def main() -> None:
             seed=args.seed,
             stress_speeds=args.stress_speeds,
             stress_duration=args.stress_duration,
+            turn_cases=turn_cases,
+            turn_duration=args.turn_duration,
         )
         if record is None:
             continue
@@ -426,6 +496,8 @@ def main() -> None:
         seed=123,
         stress_speeds=args.stress_speeds,
         stress_duration=args.stress_duration,
+        turn_cases=turn_cases,
+        turn_duration=args.turn_duration,
     )
     if final is None:
         raise SystemExit("300 s battery failed")

@@ -59,7 +59,12 @@ FOLLOW_DISTANCE = 1.15
 
 
 def _compose_owner(
-    *, duration_s: float, seed: int, speed: float, clip_targets: bool = False
+    *,
+    duration_s: float,
+    seed: int,
+    speed: float,
+    clip_targets: bool = False,
+    yaw_rate: float = 0.0,
 ) -> Any:
     register_conf_search_path()
     GlobalHydra.instance().clear()
@@ -71,8 +76,9 @@ def _compose_owner(
         twist = cfg.env.commands.twist
         twist.ranges.lin_vel_x = [speed, speed]
         twist.ranges.lin_vel_y = [0.0, 0.0]
-        twist.ranges.ang_vel_z = [0.0, 0.0]
-        twist.hold_spawn_heading = True
+        twist.ranges.ang_vel_z = [yaw_rate, yaw_rate]
+        # A fixed turn command replaces the spawn-heading loop.
+        twist.hold_spawn_heading = yaw_rate == 0.0
         twist.rel_standing_envs = 0.0
         twist.rel_forward_envs = 0.0
         twist.turn_in_place_fraction = 0.0
@@ -100,7 +106,9 @@ def _make_env(cfg: Any, num_envs: int) -> Any:
     )
 
 
-def _place_robots(raw_env: Any, *, yaws: np.ndarray, xy: np.ndarray, speed: float) -> None:
+def _place_robots(
+    raw_env: Any, *, yaws: np.ndarray, xy: np.ndarray, speed: float, yaw_rate: float = 0.0
+) -> None:
     """Teleport roots onto the requested rays and retarget spawn-heading hold."""
     backend = raw_env._backend
     snap = np.asarray(raw_env.get_physics_state_snapshot(), dtype=np.float64)
@@ -126,6 +134,9 @@ def _place_robots(raw_env: Any, *, yaws: np.ndarray, xy: np.ndarray, speed: floa
         twist.vel_command_b[:, 1] = 0.0
         twist.vel_command_w[:, 0] = speed
         twist.vel_command_w[:, 1] = 0.0
+        if yaw_rate != 0.0:
+            twist.vel_command_b[:, 2] = yaw_rate
+            twist.vel_command_w[:, 2] = yaw_rate
         twist.is_standing_env[:] = False
         manager_obs = raw_env.observation_manager.compute(update_history=True)
     mapped = raw_env._map_observations(manager_obs, num_rows=raw_env.num_envs)
@@ -142,9 +153,10 @@ def _rollout(
     xy: np.ndarray,
     steps: int,
     speed: float,
+    yaw_rate: float = 0.0,
 ) -> list[np.ndarray]:
     obs = wrapped.get_observations()
-    _place_robots(raw_env, yaws=yaws, xy=xy, speed=speed)
+    _place_robots(raw_env, yaws=yaws, xy=xy, speed=speed, yaw_rate=yaw_rate)
     obs = wrapped.get_observations()
     states = [np.asarray(raw_env.get_physics_state_snapshot(), dtype=np.float32).copy()]
     for _ in range(steps):
@@ -209,7 +221,8 @@ def _far_camera(radius_m: float, *, low: bool = False) -> tuple[float, float, fl
 def _render_radial(
     states: list[np.ndarray], model_file: str, output: Path, fps: int, *, low: bool = False
 ) -> None:
-    radius = float(np.max(np.linalg.norm(states[-1][:, 1:3], axis=1)))
+    # Farthest point over the whole clip: a turning robot can end near its start.
+    radius = float(max(np.max(np.linalg.norm(state[:, 1:3], axis=1)) for state in states))
     distance, elevation, azimuth, lookat = _far_camera(radius, low=low)
     print(
         f"radial radius={radius:.2f} m camera distance={distance:.1f} "
@@ -247,6 +260,7 @@ def _run_clip(
     kind: str,
     speed: float = SPEED_M_S,
     clip_targets: bool = False,
+    yaw_rate: float = 0.0,
     low_camera: bool = False,
     follow_camera: tuple[float, float, float] = (
         FOLLOW_AZIMUTH,
@@ -255,7 +269,11 @@ def _run_clip(
     ),
 ) -> None:
     cfg = _compose_owner(
-        duration_s=duration_s, seed=seed, speed=speed, clip_targets=clip_targets
+        duration_s=duration_s,
+        seed=seed,
+        speed=speed,
+        clip_targets=clip_targets,
+        yaw_rate=yaw_rate,
     )
     # algo cfg is the hydra cfg, not stored on the env. Load the policy with it.
     raw_env = _make_env(cfg, num_envs)
@@ -274,7 +292,14 @@ def _run_clip(
         steps = int(round(duration_s / float(raw_env.cfg.ctrl_dt)))
         xy = np.zeros((num_envs, 2), dtype=np.float64)
         states = _rollout(
-            raw_env, wrapped, policy, yaws=yaws, xy=xy, steps=steps, speed=speed
+            raw_env,
+            wrapped,
+            policy,
+            yaws=yaws,
+            xy=xy,
+            steps=steps,
+            speed=speed,
+            yaw_rate=yaw_rate,
         )
         travel = _travel(states)
         print(
@@ -310,6 +335,13 @@ def main() -> None:
     parser.add_argument("--stride", type=int, default=2, help="Keep every Nth control step.")
     parser.add_argument("--speed", type=float, default=SPEED_M_S, help="Forward command, m/s.")
     parser.add_argument(
+        "--yaw-rate",
+        type=float,
+        default=0.0,
+        help="Fixed yaw-rate command, rad/s. Nonzero turns the spawn-heading loop off.",
+    )
+    parser.add_argument("--radial-name", default=None, help="Output file for the radial clip.")
+    parser.add_argument(
         "--clip-targets",
         action="store_true",
         help="Clamp BAM position targets to the joint limits; use for clamp-trained policies.",
@@ -339,11 +371,14 @@ def main() -> None:
             kind="follow",
             speed=args.speed,
             clip_targets=args.clip_targets,
+            yaw_rate=args.yaw_rate,
             follow_camera=(args.follow_azimuth, args.follow_elevation, args.follow_distance),
         )
     if args.only in ("radial", "both"):
         yaws = np.arange(8, dtype=np.float64) * (np.pi / 4.0)
-        radial_name = "play_video_radial_low.mp4" if args.low_camera else "play_video_radial.mp4"
+        radial_name = args.radial_name or (
+            "play_video_radial_low.mp4" if args.low_camera else "play_video_radial.mp4"
+        )
         _run_clip(
             checkpoint=args.checkpoint,
             num_envs=8,
@@ -356,6 +391,7 @@ def main() -> None:
             kind="radial",
             speed=args.speed,
             clip_targets=args.clip_targets,
+            yaw_rate=args.yaw_rate,
             low_camera=args.low_camera,
         )
 

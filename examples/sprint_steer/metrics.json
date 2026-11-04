@@ -1,0 +1,277 @@
+{
+  "label": "sprint_steer",
+  "task": "MicroduckSprintFlat",
+  "train_owner": "microduck_sprint_steer_flat then microduck_sprint_steermix_flat",
+  "resume_from": "examples/sprint_straight_head/model_52250.pt",
+  "checkpoint": "examples/sprint_steer/model_55999.pt",
+  "source_run": "2026-11-04_04-33-53_mujoco",
+  "source_iteration": 55999,
+  "command_band": {
+    "lin_vel_x_m_s": [
+      0.3,
+      1.0
+    ],
+    "ang_vel_z_rad_s": [
+      -0.5,
+      0.5
+    ]
+  },
+  "action": {
+    "clip_target_to_joint_limits": true,
+    "clip_target_margin": 0.0
+  },
+  "eval": {
+    "backend": "mujoco",
+    "num_envs": 512,
+    "seed": 777,
+    "warmup_s": 1.0,
+    "clip_targets": true,
+    "straight": "microduck_sprint_straightspeed_flat/mujoco with the spawn-heading loop as the yaw controller (stiffness 2.5, cross-track 0.08, limit 0.35 rad/s), 300 s",
+    "turn": "same owner with the loop off and a fixed yaw-rate command, 60 s",
+    "stress": "microduck_sprint_straighthold_flat/mujoco --stress (push 0.10 m/s, trunk CoM 10 mm, head CoM 6 mm, 2 deg reset tilt), 60 s, loop on"
+  },
+  "straight_300s": {
+    "0.3": {
+      "body_forward_speed_m_s": 0.294,
+      "yaw_rate_rad_s": -0.0,
+      "survival_fraction": 1.0,
+      "mean_absolute_heading_error_deg": 1.52,
+      "straight_pose_survival_fraction": 1.0,
+      "head_forward_in_trunk_m": 0.033,
+      "neck_pitch_deg": 5.1,
+      "head_inverted_time_fraction": 0.0,
+      "falls": 0
+    },
+    "0.5": {
+      "body_forward_speed_m_s": 0.488,
+      "yaw_rate_rad_s": -0.0,
+      "survival_fraction": 1.0,
+      "mean_absolute_heading_error_deg": 1.18,
+      "straight_pose_survival_fraction": 1.0,
+      "head_forward_in_trunk_m": 0.028,
+      "neck_pitch_deg": 6.3,
+      "head_inverted_time_fraction": 0.0,
+      "falls": 0
+    },
+    "0.75": {
+      "body_forward_speed_m_s": 0.719,
+      "yaw_rate_rad_s": -0.0,
+      "survival_fraction": 1.0,
+      "mean_absolute_heading_error_deg": 1.25,
+      "straight_pose_survival_fraction": 1.0,
+      "head_forward_in_trunk_m": 0.021,
+      "neck_pitch_deg": 9.3,
+      "head_inverted_time_fraction": 0.0,
+      "falls": 0
+    },
+    "1.0": {
+      "body_forward_speed_m_s": 0.896,
+      "yaw_rate_rad_s": 0.0,
+      "survival_fraction": 0.934,
+      "mean_absolute_heading_error_deg": 1.64,
+      "straight_pose_survival_fraction": 0.92,
+      "head_forward_in_trunk_m": 0.023,
+      "neck_pitch_deg": 8.1,
+      "head_inverted_time_fraction": 0.0,
+      "falls": 34
+    }
+  },
+  "stress_60s": {
+    "0.3": {
+      "body_forward_speed_m_s": 0.292,
+      "yaw_rate_rad_s": -0.0,
+      "survival_fraction": 0.996,
+      "mean_absolute_heading_error_deg": 1.19,
+      "straight_pose_survival_fraction": 0.996,
+      "head_forward_in_trunk_m": 0.033,
+      "neck_pitch_deg": 5.0,
+      "head_inverted_time_fraction": 0.0,
+      "falls": 2
+    },
+    "0.5": {
+      "body_forward_speed_m_s": 0.485,
+      "yaw_rate_rad_s": -0.0,
+      "survival_fraction": 1.0,
+      "mean_absolute_heading_error_deg": 1.26,
+      "straight_pose_survival_fraction": 1.0,
+      "head_forward_in_trunk_m": 0.028,
+      "neck_pitch_deg": 6.4,
+      "head_inverted_time_fraction": 0.0,
+      "falls": 0
+    },
+    "0.75": {
+      "body_forward_speed_m_s": 0.715,
+      "yaw_rate_rad_s": -0.0,
+      "survival_fraction": 0.998,
+      "mean_absolute_heading_error_deg": 1.3,
+      "straight_pose_survival_fraction": 0.998,
+      "head_forward_in_trunk_m": 0.021,
+      "neck_pitch_deg": 9.1,
+      "head_inverted_time_fraction": 0.0,
+      "falls": 1
+    },
+    "1.0": {
+      "body_forward_speed_m_s": 0.896,
+      "yaw_rate_rad_s": -0.001,
+      "survival_fraction": 0.965,
+      "mean_absolute_heading_error_deg": 1.76,
+      "straight_pose_survival_fraction": 0.955,
+      "head_forward_in_trunk_m": 0.023,
+      "neck_pitch_deg": 7.9,
+      "head_inverted_time_fraction": 0.0001,
+      "falls": 18
+    }
+  },
+  "turn_60s": {
+    "v0.3_yaw-0.4": {
+      "body_forward_speed_m_s": 0.28,
+      "yaw_rate_rad_s": -0.41,
+      "survival_fraction": 1.0,
+      "mean_absolute_heading_error_deg": 91.03,
+      "straight_pose_survival_fraction": 0.0,
+      "head_forward_in_trunk_m": 0.033,
+      "neck_pitch_deg": 5.3,
+      "head_inverted_time_fraction": 0.0,
+      "falls": 0
+    },
+    "v0.3_yaw-0.2": {
+      "body_forward_speed_m_s": 0.287,
+      "yaw_rate_rad_s": -0.2,
+      "survival_fraction": 1.0,
+      "mean_absolute_heading_error_deg": 91.78,
+      "straight_pose_survival_fraction": 0.0,
+      "head_forward_in_trunk_m": 0.033,
+      "neck_pitch_deg": 5.3,
+      "head_inverted_time_fraction": 0.0,
+      "falls": 0
+    },
+    "v0.3_yaw0.2": {
+      "body_forward_speed_m_s": 0.301,
+      "yaw_rate_rad_s": 0.199,
+      "survival_fraction": 1.0,
+      "mean_absolute_heading_error_deg": 92.54,
+      "straight_pose_survival_fraction": 0.0,
+      "head_forward_in_trunk_m": 0.033,
+      "neck_pitch_deg": 4.8,
+      "head_inverted_time_fraction": 0.0,
+      "falls": 0
+    },
+    "v0.3_yaw0.4": {
+      "body_forward_speed_m_s": 0.309,
+      "yaw_rate_rad_s": 0.391,
+      "survival_fraction": 1.0,
+      "mean_absolute_heading_error_deg": 92.15,
+      "straight_pose_survival_fraction": 0.0,
+      "head_forward_in_trunk_m": 0.033,
+      "neck_pitch_deg": 4.4,
+      "head_inverted_time_fraction": 0.0,
+      "falls": 0
+    },
+    "v0.5_yaw-0.4": {
+      "body_forward_speed_m_s": 0.479,
+      "yaw_rate_rad_s": -0.376,
+      "survival_fraction": 1.0,
+      "mean_absolute_heading_error_deg": 91.73,
+      "straight_pose_survival_fraction": 0.0,
+      "head_forward_in_trunk_m": 0.027,
+      "neck_pitch_deg": 6.6,
+      "head_inverted_time_fraction": 0.0,
+      "falls": 0
+    },
+    "v0.5_yaw-0.2": {
+      "body_forward_speed_m_s": 0.483,
+      "yaw_rate_rad_s": -0.175,
+      "survival_fraction": 1.0,
+      "mean_absolute_heading_error_deg": 92.74,
+      "straight_pose_survival_fraction": 0.0,
+      "head_forward_in_trunk_m": 0.027,
+      "neck_pitch_deg": 6.5,
+      "head_inverted_time_fraction": 0.0,
+      "falls": 0
+    },
+    "v0.5_yaw0.2": {
+      "body_forward_speed_m_s": 0.492,
+      "yaw_rate_rad_s": 0.219,
+      "survival_fraction": 1.0,
+      "mean_absolute_heading_error_deg": 90.31,
+      "straight_pose_survival_fraction": 0.0,
+      "head_forward_in_trunk_m": 0.028,
+      "neck_pitch_deg": 6.1,
+      "head_inverted_time_fraction": 0.0,
+      "falls": 0
+    },
+    "v0.5_yaw0.4": {
+      "body_forward_speed_m_s": 0.495,
+      "yaw_rate_rad_s": 0.411,
+      "survival_fraction": 1.0,
+      "mean_absolute_heading_error_deg": 91.48,
+      "straight_pose_survival_fraction": 0.0,
+      "head_forward_in_trunk_m": 0.028,
+      "neck_pitch_deg": 6.2,
+      "head_inverted_time_fraction": 0.0,
+      "falls": 0
+    },
+    "v1.0_yaw-0.4": {
+      "body_forward_speed_m_s": 0.891,
+      "yaw_rate_rad_s": -0.352,
+      "survival_fraction": 0.977,
+      "mean_absolute_heading_error_deg": 90.77,
+      "straight_pose_survival_fraction": 0.0,
+      "head_forward_in_trunk_m": 0.022,
+      "neck_pitch_deg": 8.2,
+      "head_inverted_time_fraction": 0.0001,
+      "falls": 12
+    },
+    "v1.0_yaw-0.2": {
+      "body_forward_speed_m_s": 0.897,
+      "yaw_rate_rad_s": -0.17,
+      "survival_fraction": 0.984,
+      "mean_absolute_heading_error_deg": 91.75,
+      "straight_pose_survival_fraction": 0.0,
+      "head_forward_in_trunk_m": 0.022,
+      "neck_pitch_deg": 8.2,
+      "head_inverted_time_fraction": 0.0,
+      "falls": 8
+    },
+    "v1.0_yaw0.2": {
+      "body_forward_speed_m_s": 0.898,
+      "yaw_rate_rad_s": 0.204,
+      "survival_fraction": 0.967,
+      "mean_absolute_heading_error_deg": 91.17,
+      "straight_pose_survival_fraction": 0.0,
+      "head_forward_in_trunk_m": 0.023,
+      "neck_pitch_deg": 8.0,
+      "head_inverted_time_fraction": 0.0001,
+      "falls": 17
+    },
+    "v1.0_yaw0.4": {
+      "body_forward_speed_m_s": 0.899,
+      "yaw_rate_rad_s": 0.396,
+      "survival_fraction": 0.973,
+      "mean_absolute_heading_error_deg": 91.77,
+      "straight_pose_survival_fraction": 0.0,
+      "head_forward_in_trunk_m": 0.023,
+      "neck_pitch_deg": 8.0,
+      "head_inverted_time_fraction": 0.0001,
+      "falls": 14
+    }
+  },
+  "before_steering": {
+    "checkpoint": "examples/sprint_straight_head/model_52250.pt",
+    "turn_v1.0_yaw+0.4": {
+      "yaw_rate_rad_s": 0.588,
+      "survival_fraction": 0.857
+    },
+    "turn_v1.0_yaw-0.4": {
+      "yaw_rate_rad_s": -0.576,
+      "survival_fraction": 0.633
+    },
+    "straight_v1.0_300s": {
+      "survival_fraction": 0.965,
+      "straight_pose_survival_fraction": 0.947
+    }
+  },
+  "known_limits": {
+    "note": "The loop-held straight line at 1.0 m/s over 300 s is about 3 points below model_52250 (93.4% vs 96.5% survival, 92.0% vs 94.7% straight-pose pass). At 0.3-0.75 m/s straight and at every tested turn the policy matches or beats it. Training pushed at up to 0.10 m/s, the same magnitude as the stress battery."
+  }
+}

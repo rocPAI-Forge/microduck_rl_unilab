@@ -105,6 +105,21 @@ def _bind_heading_asset(cfg: ManagerTermBaseCfg, env: ManagerBasedRlEnv, *, labe
     return entity, heading_ref
 
 
+def _spawn_hold_gate(env: ManagerBasedRlEnv, command_name: str | None) -> np.ndarray | None:
+    """1.0 for rows whose yaw comes from the spawn-heading loop, else 0.0.
+
+    Spawn-ray terms fight a free turn command, so in runs that mix loop-held
+    and free-yaw episodes they only score the loop-held rows.
+    """
+    if command_name is None:
+        return None
+    term = env.command_manager.get_term(command_name)
+    mask = getattr(term, "spawn_hold_mask", None)
+    if mask is None:
+        raise TypeError(f"command '{command_name}' does not expose spawn_hold_mask")
+    return np.asarray(mask, dtype=get_global_dtype())
+
+
 def _refresh_heading_ref(
     env: ManagerBasedRlEnv,
     entity: "Entity",
@@ -121,11 +136,12 @@ class heading_hold(ManagerTermBase):
 
     def __init__(self, cfg: ManagerTermBaseCfg, env: ManagerBasedRlEnv):
         super().__init__(env)
-        allowed = {"std", "asset_cfg"}
+        allowed = {"std", "asset_cfg", "gate_command"}
         unexpected = set(cfg.params) - allowed
         if unexpected:
             raise TypeError(f"heading_hold received unsupported parameters: {sorted(unexpected)}")
         self._std = _positive_real(cfg.params.get("std", 0.4), label="heading_hold std")
+        self._gate_command = cfg.params.get("gate_command")
         self._entity, self._heading_ref = _bind_heading_asset(cfg, env, label="heading_hold")
 
     def reset(self, env_ids: np.ndarray | slice | None) -> None:
@@ -135,7 +151,11 @@ class heading_hold(ManagerTermBase):
     def __call__(self, env: ManagerBasedRlEnv, **params: Any) -> np.ndarray:
         del params
         _, error = _refresh_heading_ref(env, self._entity, self._heading_ref)
-        return np.asarray(np.exp(-np.square(error) / self._std**2), dtype=get_global_dtype())
+        reward = np.exp(-np.square(error) / self._std**2)
+        gate = _spawn_hold_gate(env, self._gate_command)
+        if gate is not None:
+            reward = reward * gate
+        return np.asarray(reward, dtype=get_global_dtype())
 
 
 class heading_abs_cost(ManagerTermBase):
@@ -143,9 +163,10 @@ class heading_abs_cost(ManagerTermBase):
 
     def __init__(self, cfg: ManagerTermBaseCfg, env: ManagerBasedRlEnv):
         super().__init__(env)
-        unexpected = set(cfg.params) - {"asset_cfg"}
+        unexpected = set(cfg.params) - {"asset_cfg", "gate_command"}
         if unexpected:
             raise TypeError(f"heading_abs_cost received unsupported parameters: {sorted(unexpected)}")
+        self._gate_command = cfg.params.get("gate_command")
         self._entity, self._heading_ref = _bind_heading_asset(cfg, env, label="heading_abs_cost")
 
     def reset(self, env_ids: np.ndarray | slice | None) -> None:
@@ -155,7 +176,11 @@ class heading_abs_cost(ManagerTermBase):
     def __call__(self, env: ManagerBasedRlEnv, **params: Any) -> np.ndarray:
         del params
         _, error = _refresh_heading_ref(env, self._entity, self._heading_ref)
-        return np.asarray(np.abs(error), dtype=get_global_dtype())
+        cost = np.abs(error)
+        gate = _spawn_hold_gate(env, self._gate_command)
+        if gate is not None:
+            cost = cost * gate
+        return np.asarray(cost, dtype=get_global_dtype())
 
 
 def running_straightness_cost(
@@ -214,12 +239,13 @@ class cross_track_abs_cost(ManagerTermBase):
 
     def __init__(self, cfg: ManagerTermBaseCfg, env: ManagerBasedRlEnv):
         super().__init__(env)
-        allowed = {"distance_cap", "asset_cfg"}
+        allowed = {"distance_cap", "asset_cfg", "gate_command"}
         unexpected = set(cfg.params) - allowed
         if unexpected:
             raise TypeError(
                 f"cross_track_abs_cost received unsupported parameters: {sorted(unexpected)}"
             )
+        self._gate_command = cfg.params.get("gate_command")
         self._cap = _positive_real(
             cfg.params.get("distance_cap", 0.30),
             label="cross_track_abs_cost distance_cap",
@@ -250,10 +276,11 @@ class cross_track_abs_cost(ManagerTermBase):
         lateral = -delta[:, 0] * np.sin(self._heading_ref) + delta[
             :, 1
         ] * np.cos(self._heading_ref)
-        return np.asarray(
-            np.clip(np.abs(lateral) / self._cap, 0.0, 1.0),
-            dtype=get_global_dtype(),
-        )
+        cost = np.clip(np.abs(lateral) / self._cap, 0.0, 1.0)
+        gate = _spawn_hold_gate(env, self._gate_command)
+        if gate is not None:
+            cost = cost * gate
+        return np.asarray(cost, dtype=get_global_dtype())
 
 
 class head_facing_hold(ManagerTermBase):

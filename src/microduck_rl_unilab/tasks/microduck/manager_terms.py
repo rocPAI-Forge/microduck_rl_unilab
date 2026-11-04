@@ -127,6 +127,10 @@ class MicroduckVelocityCommandCfg(UniformVelocityCommandCfg):
     spawn_heading_stiffness: float = 1.5
     spawn_cross_track_stiffness: float = 0.0
     spawn_heading_yaw_rate_limit: float = 0.5
+    # With hold_spawn_heading, the share of episodes that run the loop. The
+    # rest keep their sampled yaw-rate command, so one run can practice both
+    # loop-held straight lines and free turns.
+    spawn_hold_fraction: float = 1.0
     # Share of resamples whose forward speed is drawn from high_speed_range
     # instead of ranges.lin_vel_x, so the top of a wide band keeps practice.
     high_speed_fraction: float = 0.0
@@ -168,6 +172,10 @@ class MicroduckVelocityCommand(UniformVelocityCommand):
             minimum=0.0,
             strict_minimum=True,
         )
+        self._spawn_hold_fraction = _ratio(
+            cfg.spawn_hold_fraction,
+            label="MicroduckVelocityCommand spawn_hold_fraction",
+        )
         self._high_speed_fraction = _ratio(
             cfg.high_speed_fraction,
             label="MicroduckVelocityCommand high_speed_fraction",
@@ -197,6 +205,12 @@ class MicroduckVelocityCommand(UniformVelocityCommand):
         # _resample_command would capture the pre-reset yaw. Defer the read to
         # _update_command, which the environment invokes after commit.
         self._capture_spawn_heading = np.zeros(self.num_envs, dtype=np.bool_)
+        self._spawn_hold_mask = np.full(self.num_envs, self._hold_spawn_heading, dtype=np.bool_)
+
+    @property
+    def spawn_hold_mask(self) -> np.ndarray:
+        """Rows whose yaw command comes from the spawn-heading loop this episode."""
+        return self._spawn_hold_mask
 
     def _resample_command(self, env_ids: np.ndarray) -> None:
         super()._resample_command(env_ids)
@@ -206,6 +220,10 @@ class MicroduckVelocityCommand(UniformVelocityCommand):
             # only and must keep the ray the rewards measure against.
             fresh = env_ids[self.command_counter[env_ids] == 0]
             self._capture_spawn_heading[fresh] = True
+            if self._spawn_hold_fraction < 1.0 and len(fresh) > 0:
+                self._spawn_hold_mask[fresh] = (
+                    self._env.rng.uniform(0.0, 1.0, len(fresh)) < self._spawn_hold_fraction
+                )
         if self._high_speed_range is not None and len(env_ids) > 0:
             biased = (
                 self._env.rng.uniform(0.0, 1.0, len(env_ids)) < self._high_speed_fraction
@@ -265,11 +283,14 @@ class MicroduckVelocityCommand(UniformVelocityCommand):
             [-np.sin(spawn_heading), np.cos(spawn_heading)], axis=1
         )
         cross_track_error = np.sum(displacement * lateral_axis, axis=1)
-        self.vel_command_b[ids, 2] = np.clip(
+        loop_yaw = np.clip(
             self._spawn_heading_stiffness * heading_error
             - self._spawn_cross_track_stiffness * cross_track_error,
             -self._spawn_heading_yaw_rate_limit,
             self._spawn_heading_yaw_rate_limit,
+        )
+        self.vel_command_b[ids, 2] = np.where(
+            self._spawn_hold_mask[ids], loop_yaw, self.vel_command_b[ids, 2]
         )
 
 

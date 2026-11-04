@@ -61,15 +61,24 @@ its metrics and reproduce commands.
     <td align="center">
       <a href="examples/sprint_straight_head/"><img src="docs/media/sprint_straight_head.gif" width="260" alt="Head-over-trunk sprint"></a><br>
       <b>Head-over-trunk sprint</b> (<code>sprint_straight_head</code>)<br>
-      Follows 0.3–1.0 m/s with servo-clamped targets; start here for hardware
+      Follows 0.3–1.0 m/s with servo-clamped targets
     </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="examples/sprint_steer/"><img src="docs/media/sprint_steer.gif" width="260" alt="Steering sprint"></a><br>
+      <b>Steering</b> (<code>sprint_steer</code>)<br>
+      Forward speed and yaw rate both commanded; clip at 0.5 m/s, +0.4 rad/s. Start here for hardware
+    </td>
+    <td></td>
+    <td></td>
   </tr>
 </table>
 
 The sprint gaits exist only in this repo; upstream microduck_rl has no sprint
-task. How the six sprint checkpoints differ is under
+task. How the sprint checkpoints differ is under
 [Sprint lineage](#sprint-lineage). What is not available yet (velocity SAC,
-the steering sprint, MJWarp-only tasks) is listed in
+MJWarp-only tasks) is listed in
 [`CHANGELOG.md`](CHANGELOG.md#known-limitations).
 
 ## Version
@@ -84,7 +93,7 @@ policies, and known limitations are in [`CHANGELOG.md`](CHANGELOG.md).
 | `microduck_velocity_flat` | mujoco, motrix | mujoco, motrix |
 | `microduck_velstand_flat` | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
-| `microduck_sprint_flat` and its 12 continuation owners (`robust`, `gaitfix`, `rollfix`, `steerfix`, `straightfix`, `straightspeed`, `straighthold`, `straightcmd`, `straightrange`, `straightclip`, `straightneck`, `straighthead`) | mujoco | — |
+| `microduck_sprint_flat` and its 14 continuation owners (`robust`, `gaitfix`, `rollfix`, `steerfix`, `straightfix`, `straightspeed`, `straighthold`, `straightcmd`, `straightrange`, `straightclip`, `straightneck`, `straighthead`, `steer`, `steermix`) | mujoco | — |
 | `microduck_ground_pick_flat`, `microduck_sitstand_flat` | mjwarp | — |
 
 Each sprint continuation owner is `microduck_sprint_<name>_flat`; the example
@@ -110,7 +119,8 @@ Training reproduction status (complete requires both metrics and inference video
 | `sprint_straight_fast` PPO | Complete, about 1.15 m/s, 300 s straight-pose pass 93–99% over three seeds. Same: this repo only | [`examples/sprint_straight_fast/model_27000.pt`](examples/sprint_straight_fast/model_27000.pt) / [`play_video_side.mp4`](examples/sprint_straight_fast/play_video_side.mp4) |
 | `sprint_straight_cmd` PPO | Complete, follows a 0.3–1.2 m/s forward command (measured 0.31–1.12 m/s), 300 s straight-pose pass 90–99.6% across speeds. Same: this repo only | [`examples/sprint_straight_cmd/model_32250.pt`](examples/sprint_straight_cmd/model_32250.pt) / [`play_video_side_v0.6.mp4`](examples/sprint_straight_cmd/play_video_side_v0.6.mp4) |
 | `sprint_straight_head` PPO | Complete, 0.3–1.0 m/s command with position targets clamped to the joint range and the head over the trunk (about 3 cm ahead instead of 9). 300 s straight-pose pass 93.6–100%. Same: this repo only | [`examples/sprint_straight_head/model_52250.pt`](examples/sprint_straight_head/model_52250.pt) / [`play_video_side_v0.5.mp4`](examples/sprint_straight_head/play_video_side_v0.5.mp4) |
-| `sprint_steerfix_flat` PPO | Not trained. Same: this repo only; the config exists and there are no weights | — |
+| `sprint_steer` PPO | Complete. Forward speed 0.3–1.0 m/s and yaw rate both commanded, servo-clamped targets, head over the trunk. Yaw-rate error ≤ 0.05 rad/s at ±0.2 and ±0.4 rad/s, 97–100% survival while turning. Same: this repo only | [`examples/sprint_steer/model_55999.pt`](examples/sprint_steer/model_55999.pt) / [`play_video_turn_left_v0.5.mp4`](examples/sprint_steer/play_video_turn_left_v0.5.mp4) |
+| `sprint_steerfix_flat` PPO | Not trained; superseded by `sprint_steer`. Same: this repo only; the config exists and there are no weights | — |
 
 Tasks stay 1:1 with upstream microduck_rl: BAM (bam xl330-m6 voltage servo,
 `BamVoltageAction` per-substep torque path) is the only upstream actuator
@@ -197,13 +207,14 @@ uv run --no-sync scripts/train_sprint_robust.py \
 | [`examples/sprint_straight_fast/`](examples/sprint_straight_fast/) | ~1.15 m/s long-horizon | 300 s 98.4–100% | ≤ 0.02% | Same closed loop, wider lin-vel kernel, fall penalty, head-flip cost, stress-level pushes. 300 s mean heading 1.7–1.8°, straight-pose pass 93–99%; 600 s pass 94.5%. |
 | [`examples/sprint_straight_cmd/`](examples/sprint_straight_cmd/) | 0.3–1.2 m/s command | 300 s 94.7–99.6% | ≤ 0.4% | Speed follows the command. Straight-pose pass 97.5 / 99.6 / 96.9 / 90.0% at 0.3 / 0.6 / 0.9 / 1.2 m/s; stress survival ≥ 95%. Slow falls happen only in the first 6 s. Unclamped targets; head on its stop. |
 | [`examples/sprint_straight_head/`](examples/sprint_straight_head/) | 0.3–1.0 m/s command | 300 s 94.9–100% | ≤ 0.01% | Targets clamped to the joint range (real-servo behavior), head back over the trunk. No falls in 300 s at 0.3–0.75 m/s; 1.0 m/s runs 0.93 m/s. Eval and play need `--clip-targets`. |
+| [`examples/sprint_steer/`](examples/sprint_steer/) | 0.3–1.0 m/s and ±0.4 rad/s | straight 300 s 93.4–100%; turns 96.7–100% | ≤ 0.01% | Adds yaw-rate steering to `sprint_straight_head`. Straight walking uses the spawn-heading loop as an external yaw controller. Eval and play need `--clip-targets`. |
 
 Each directory has `model_*.pt`, visualizations, `metrics.json`, and
 reproduce commands. `model.pt` is about 4.7 MB and is stored in git.
 
 ### Sprint lineage
 
-The six sprint examples are one continuation chain: each one resumes the
+The seven sprint examples are one continuation chain: each one resumes the
 previous checkpoint.
 
 | Example | Checkpoint | Speed command | Measured speed | Head | Position targets | Long-horizon straight | Stress survival |
@@ -214,14 +225,16 @@ previous checkpoint.
 | `sprint_straight_fast` | `model_27000` | fixed 2.2 m/s | 1.15 m/s | same | far past the stops | 300 s 93–99%, 600 s 94.5% | 96–97% |
 | `sprint_straight_cmd` | `model_32250` | 0.3–1.2 m/s, tracked | 0.31–1.12 m/s | crown up, ~8 cm ahead of the trunk | far past the stops | 300 s 90–99.6% (weakest at 1.2 m/s) | ≥ 95% |
 | `sprint_straight_head` | `model_52250` | 0.3–1.0 m/s, tracked | 0.30–0.93 m/s | over the trunk, ~3 cm ahead | clamped to the joint range | 300 s 93.6–100% (weakest at 1.0 m/s) | 97–100% |
+| `sprint_steer` | `model_55999` | 0.3–1.0 m/s and ±0.4 rad/s yaw, tracked | 0.29–0.90 m/s; yaw within 0.05 rad/s | over the trunk, 2–3 cm ahead | clamped to the joint range | 300 s 92–100% (weakest at 1.0 m/s) | 96.5–100% |
 
-- **Speed command.** Only the last two follow a speed command; the first four
-  run their one speed whatever the command says.
+- **Speed command.** Only the last three follow a speed command; the first
+  four run their one speed whatever the command says. Only `sprint_steer`
+  also follows a yaw-rate command.
 - **Position targets.** The first five command `hip_yaw` and `neck_pitch`
   targets far past the joint stops and lean on the stops for balance. A real
   servo clamps its goal position. With that clamp on, `model_32250` survives
   a 60 s run 18.8% of the time at 0.3 m/s and 0% at 1.2 m/s. Only
-  `sprint_straight_head` was trained with the clamp.
+  `sprint_straight_head` and `sprint_steer` were trained with the clamp.
 - **Head.** `sprint_head_upright` turned the crown up by folding `neck_pitch`
   onto its −90° stop, which carries the head ahead of the trunk. That posture
   lasts through `sprint_straight_cmd`; `sprint_straight_head` brings the neck
@@ -231,7 +244,8 @@ previous checkpoint.
   environments at their own command speeds. See each `metrics.json`.
 
 For the fastest simulated straight run, use `sprint_straight_cmd`. For
-hardware, start from `sprint_straight_head`.
+hardware, start from `sprint_steer`; `sprint_straight_head` is slightly
+steadier only on long straight runs at 1.0 m/s.
 
 Get-up example [`examples/velstand_getup/`](examples/velstand_getup/):
 

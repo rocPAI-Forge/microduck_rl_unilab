@@ -55,12 +55,21 @@ owner 配置和机器人 XML 资产。
     <td align="center">
       <a href="examples/sprint_straight_head/"><img src="docs/media/sprint_straight_head.gif" width="260" alt="收头冲刺"></a><br>
       <b>收头冲刺</b>（<code>sprint_straight_head</code>）<br>
-      跟随 0.3–1.0 m/s，目标角按真实舵机裁剪；上实机从这里开始
+      跟随 0.3–1.0 m/s，目标角按真实舵机裁剪
     </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="examples/sprint_steer/"><img src="docs/media/sprint_steer.gif" width="260" alt="转向冲刺"></a><br>
+      <b>转向</b>（<code>sprint_steer</code>）<br>
+      前进速度和偏航角速度都可控；画面为 0.5 m/s、+0.4 rad/s。上实机从这里开始
+    </td>
+    <td></td>
+    <td></td>
   </tr>
 </table>
 
-冲刺步态是本仓库独有的，上游 microduck_rl 没有冲刺任务。六个冲刺权重之间的区别见[冲刺系列对比](#冲刺系列对比)。尚未完成的部分（平地速度 SAC、转向冲刺、只支持 MJWarp 的任务）列在 [`CHANGELOG.md`](CHANGELOG.md#known-limitations) 里。
+冲刺步态是本仓库独有的，上游 microduck_rl 没有冲刺任务。各冲刺权重之间的区别见[冲刺系列对比](#冲刺系列对比)。尚未完成的部分（平地速度 SAC、只支持 MJWarp 的任务）列在 [`CHANGELOG.md`](CHANGELOG.md#known-limitations) 里。
 
 ## 版本
 
@@ -73,7 +82,7 @@ owner 配置和机器人 XML 资产。
 | `microduck_velocity_flat` | mujoco, motrix | mujoco, motrix |
 | `microduck_velstand_flat` | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
-| `microduck_sprint_flat` 及其 12 个续训 owner（`robust`、`gaitfix`、`rollfix`、`steerfix`、`straightfix`、`straightspeed`、`straighthold`、`straightcmd`、`straightrange`、`straightclip`、`straightneck`、`straighthead`） | mujoco | — |
+| `microduck_sprint_flat` 及其 14 个续训 owner（`robust`、`gaitfix`、`rollfix`、`steerfix`、`straightfix`、`straightspeed`、`straighthold`、`straightcmd`、`straightrange`、`straightclip`、`straightneck`、`straighthead`、`steer`、`steermix`） | mujoco | — |
 | `microduck_ground_pick_flat`、`microduck_sitstand_flat` | mjwarp | — |
 
 每个冲刺续训 owner 的完整名字是 `microduck_sprint_<名字>_flat`，用到它的示例 README 里有具体命令。
@@ -98,7 +107,8 @@ owner 配置和机器人 XML 资产。
 | `sprint_straight_fast` PPO | 完成，约 1.15 m/s，三个种子的 300 秒直线通过率 93–99%。同上，本仓库独有 | [`examples/sprint_straight_fast/model_27000.pt`](examples/sprint_straight_fast/model_27000.pt) / [`play_video_side.mp4`](examples/sprint_straight_fast/play_video_side.mp4) |
 | `sprint_straight_cmd` PPO | 完成，跟随 0.3–1.2 m/s 前进速度命令（实测 0.31–1.12 m/s），各档 300 秒直线通过率 90–99.6%。同上，本仓库独有 | [`examples/sprint_straight_cmd/model_32250.pt`](examples/sprint_straight_cmd/model_32250.pt) / [`play_video_side_v0.6.mp4`](examples/sprint_straight_cmd/play_video_side_v0.6.mp4) |
 | `sprint_straight_head` PPO | 完成，0.3–1.0 m/s 速度命令，位置目标裁剪到关节行程内，头回到躯干上方（前伸约 3 cm，原来约 9 cm）。300 秒直线通过率 93.6–100%。同上，本仓库独有 | [`examples/sprint_straight_head/model_52250.pt`](examples/sprint_straight_head/model_52250.pt) / [`play_video_side_v0.5.mp4`](examples/sprint_straight_head/play_video_side_v0.5.mp4) |
-| `sprint_steerfix_flat` PPO | 未训练。同上，本仓库独有；配置在，没有权重 | — |
+| `sprint_steer` PPO | 完成。前进速度 0.3–1.0 m/s 和偏航角速度都可控，目标角按舵机裁剪，头在躯干上方。±0.2、±0.4 rad/s 的偏航误差 ≤ 0.05 rad/s，转弯存活 97–100%。同上，本仓库独有 | [`examples/sprint_steer/model_55999.pt`](examples/sprint_steer/model_55999.pt) / [`play_video_turn_left_v0.5.mp4`](examples/sprint_steer/play_video_turn_left_v0.5.mp4) |
+| `sprint_steerfix_flat` PPO | 未训练，已被 `sprint_steer` 取代。同上，本仓库独有；配置在，没有权重 | — |
 
 任务与上游 microduck_rl 保持 1:1：BAM（bam xl330-m6 电压伺服模型，
 `BamVoltageAction` 逐 substep 力矩路径）是上游唯一的驱动器模型，因此本仓库
@@ -177,13 +187,14 @@ uv run --no-sync scripts/train_sprint_robust.py \
 | [`examples/sprint_straight_fast/`](examples/sprint_straight_fast/) | ~1.15 m/s 长时 | 300 s 98.4–100% | ≤ 0.02% | 同一闭环，放宽速度跟踪核，加跌倒惩罚、头翻转代价和压测级推力。300 s 平均航向 1.7–1.8°，直线通过率 93–99%；600 s 通过率 94.5%。 |
 | [`examples/sprint_straight_cmd/`](examples/sprint_straight_cmd/) | 0.3–1.2 m/s 命令 | 300 s 94.7–99.6% | ≤ 0.4% | 速度跟随命令。0.3 / 0.6 / 0.9 / 1.2 m/s 的直线通过率 97.5 / 99.6 / 96.9 / 90.0%；压测存活 ≥ 95%。慢速跌倒只发生在开场 6 秒内。目标不裁剪，头顶在限位上。 |
 | [`examples/sprint_straight_head/`](examples/sprint_straight_head/) | 0.3–1.0 m/s 命令 | 300 s 94.9–100% | ≤ 0.01% | 目标裁剪到关节行程内（接近真实舵机），头回到躯干上方。0.3–0.75 m/s 在 300 秒内无跌倒；1.0 m/s 命令实测 0.93 m/s。评测和回放需加 `--clip-targets`。 |
+| [`examples/sprint_steer/`](examples/sprint_steer/) | 0.3–1.0 m/s 和 ±0.4 rad/s | 直行 300 s 93.4–100%；转弯 96.7–100% | ≤ 0.01% | 在 `sprint_straight_head` 基础上加偏航转向。直行由出生航向闭环充当外部偏航控制器。评测和回放需加 `--clip-targets`。 |
 
 每个目录含 `model_*.pt`、可视化、`metrics.json` 和复现命令。
 `model.pt` 约 4.7 MB，直接入 git。
 
 ### 冲刺系列对比
 
-六个冲刺示例是一条续训链，后一个都从前一个的权重接着训。
+七个冲刺示例是一条续训链，后一个都从前一个的权重接着训。
 
 | 示例 | 权重 | 速度命令 | 实测速度 | 头部姿态 | 关节目标 | 长时直线 | 压力测试存活 |
 |---|---|---|---|---|---|---|---|
@@ -193,13 +204,14 @@ uv run --no-sync scripts/train_sprint_robust.py \
 | `sprint_straight_fast` | `model_27000` | 固定 2.2 m/s | 1.15 m/s | 同上 | 远超行程 | 300 s 93–99%，600 s 94.5% | 96–97% |
 | `sprint_straight_cmd` | `model_32250` | 0.3–1.2 m/s 可控 | 0.31–1.12 m/s | 头朝上，前伸约 8 cm | 远超行程 | 300 s 90–99.6%（1.2 m/s 最弱） | ≥ 95% |
 | `sprint_straight_head` | `model_52250` | 0.3–1.0 m/s 可控 | 0.30–0.93 m/s | 头在躯干上方，前伸约 3 cm | 裁剪在行程内 | 300 s 93.6–100%（1.0 m/s 最弱） | 97–100% |
+| `sprint_steer` | `model_55999` | 0.3–1.0 m/s 和 ±0.4 rad/s 偏航，均可控 | 0.29–0.90 m/s；偏航误差 ≤ 0.05 rad/s | 头在躯干上方，前伸 2–3 cm | 裁剪在行程内 | 300 s 92–100%（1.0 m/s 最弱） | 96.5–100% |
 
-- **速度命令：**只有最后两个能按速度命令跑，前四个不管命令多少，都跑自己那一个速度。
-- **关节目标：**前五个的 `hip_yaw` 和 `neck_pitch` 目标角都远超关节行程，靠顶住限位维持平衡。真实舵机会把目标限制在行程内；打开这个裁剪后，`model_32250` 的 60 秒存活在 0.3 m/s 只有 18.8%，在 1.2 m/s 是 0%。只有 `sprint_straight_head` 是在裁剪条件下训练的。
+- **速度命令：**只有最后三个能按速度命令跑，前四个不管命令多少，都跑自己那一个速度。只有 `sprint_steer` 还能按偏航角速度命令转弯。
+- **关节目标：**前五个的 `hip_yaw` 和 `neck_pitch` 目标角都远超关节行程，靠顶住限位维持平衡。真实舵机会把目标限制在行程内；打开这个裁剪后，`model_32250` 的 60 秒存活在 0.3 m/s 只有 18.8%，在 1.2 m/s 是 0%。只有 `sprint_straight_head` 和 `sprint_steer` 是在裁剪条件下训练的。
 - **头部姿态：**`sprint_head_upright` 靠把 `neck_pitch` 折到 −90° 的限位来扶正头顶，头因此伸在躯干前方。这个姿态一直延续到 `sprint_straight_cmd`，`sprint_straight_head` 才把脖子抬回接近默认站姿。
 - **数据可比性：**各示例的评测条件不同。前两个是 10 秒、512 个环境；中间两个是 128 个环境；后两个是 512 个环境、按各自的速度档评测。详见各目录的 `metrics.json`。
 
-要在仿真里跑得最快，用 `sprint_straight_cmd`；要往实机部署，从 `sprint_straight_head` 开始。
+要在仿真里跑得最快，用 `sprint_straight_cmd`；要往实机部署，从 `sprint_steer` 开始。`sprint_straight_head` 只在 1.0 m/s 的长时直行上略稳一些。
 
 跌倒起身示例 [`examples/velstand_getup/`](examples/velstand_getup/)：
 
