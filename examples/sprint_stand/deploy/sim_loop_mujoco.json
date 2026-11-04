@@ -1,0 +1,87 @@
+{
+  "deploy_dir": "examples/sprint_stand/deploy",
+  "sim": "mujoco",
+  "passes": true,
+  "results": [
+    {
+      "scenario": "stand",
+      "command_m_s": 0.0,
+      "command_yaw_rate_rad_s": 0.0,
+      "hold_heading": false,
+      "survival_fraction": 1.0,
+      "forward_speed_m_s": -0.00044428391484965183,
+      "yaw_rate_rad_s": -0.011610075125173697,
+      "max_obs_error": {
+        "gyro": 0.0,
+        "gravity": 0.0,
+        "joint_pos": 5.066394805908203e-07,
+        "joint_vel": 0.0,
+        "last_action": 0.0,
+        "twist_cmd": 0.0,
+        "pose_cmds": 0.0
+      },
+      "max_target_error_rad": 5.066394805908203e-07,
+      "passes": true
+    },
+    {
+      "scenario": "straight_0.6",
+      "command_m_s": 0.6,
+      "command_yaw_rate_rad_s": 0.0,
+      "hold_heading": true,
+      "survival_fraction": 1.0,
+      "forward_speed_m_s": 0.5868652643006423,
+      "yaw_rate_rad_s": -0.00020402188155928562,
+      "max_obs_error": {
+        "gyro": 0.0,
+        "gravity": 0.0,
+        "joint_pos": 5.066394805908203e-07,
+        "joint_vel": 0.0,
+        "last_action": 0.0,
+        "twist_cmd": 3.8370490074157715e-07,
+        "pose_cmds": 0.0
+      },
+      "max_target_error_rad": 5.066394805908203e-07,
+      "passes": true
+    },
+    {
+      "scenario": "turn_around_left",
+      "command_m_s": 0.2,
+      "command_yaw_rate_rad_s": 0.4,
+      "hold_heading": false,
+      "survival_fraction": 1.0,
+      "forward_speed_m_s": 0.22138465814549346,
+      "yaw_rate_rad_s": 0.34782878927115735,
+      "max_obs_error": {
+        "gyro": 0.0,
+        "gravity": 0.0,
+        "joint_pos": 5.066394805908203e-07,
+        "joint_vel": 0.0,
+        "last_action": 0.0,
+        "twist_cmd": 0.0,
+        "pose_cmds": 0.0
+      },
+      "max_target_error_rad": 5.066394805908203e-07,
+      "passes": true
+    },
+    {
+      "scenario": "turn_around_right",
+      "command_m_s": 0.2,
+      "command_yaw_rate_rad_s": -0.4,
+      "hold_heading": false,
+      "survival_fraction": 1.0,
+      "forward_speed_m_s": 0.21458440432260775,
+      "yaw_rate_rad_s": -0.41674938615026147,
+      "max_obs_error": {
+        "gyro": 0.0,
+        "gravity": 0.0,
+        "joint_pos": 5.066394805908203e-07,
+        "joint_vel": 0.0,
+        "last_action": 0.0,
+        "twist_cmd": 0.0,
+        "pose_cmds": 0.0
+      },
+      "max_target_error_rad": 5.066394805908203e-07,
+      "passes": true
+    }
+  ]
+}

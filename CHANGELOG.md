@@ -6,6 +6,14 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
 
 ## Unreleased
 
+- `microduck_rl_unilab.deploy` is a reference onboard runtime (numpy and
+  onnxruntime only): observation builder, ONNX runner with the goal-position
+  clamp, the training heading hold, and stand / walk / straight / turn-around
+  commands. `scripts/deploy_sim_loop.py` runs it closed-loop on MuJoCo and
+  MotrixSim; for `sprint_stand` the observation matches the training contract
+  to 1e-6 and every scenario survives 100%. See `docs/DEPLOY.md`
+  "Reference runtime".
+
 - Simulator roles are fixed: sprint policies train on MuJoCo only, and
   MotrixSim is the held-out sim2sim check. `scripts/sim2sim_check.py` runs the
   Motrix gate (300 s straight at 0, 0.3, and 0.6 m/s; 60 s turns at 0.5 m/s
