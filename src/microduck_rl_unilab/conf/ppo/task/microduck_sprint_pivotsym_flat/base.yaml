@@ -1,0 +1,21 @@
+# @package _global_
+# Mirror-symmetric turn-in-place training.
+#
+# The pivothold owner learned part of a left pivot (0.23 rad/s for a 0.4 rad/s
+# command at a standstill) and no right pivot, while the 0.15 m/s right turn
+# slipped from 0.41 to 0.11-0.25 rad/s: PPO found one turning direction and
+# the other did not follow. microduck_velocity_flat met the same one-sided
+# turning and fixed it with the sagittal mirror of the 61D contract. The
+# default pose and the soft joint limits are mirror-symmetric under that map,
+# so it applies here unchanged; the PPO symmetry settings live in mujoco.yaml.
+defaults:
+  - /task/microduck_sprint_pivothold_flat/base
+  - _self_
+
+env:
+  curriculum:
+    turn_in_place:
+      params:
+        stages:
+          - {step: 0, fraction: 0.35, lin_max: 0.03}
+          - {step: 12000, fraction: 0.35, lin_max: 0.0}

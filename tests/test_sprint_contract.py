@@ -712,6 +712,21 @@ def test_sprint_pivot_owner_bridges_turns_down_to_a_pivot() -> None:
     assert env_cfg.actions["joint_pos"].clip_target_to_joint_limits is True
 
 
+def test_sprint_pivotsym_owner_mirrors_the_61d_contract() -> None:
+    GlobalHydra.instance().clear()
+    with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
+        cfg = compose("config", overrides=["task=microduck_sprint_pivotsym_flat/mujoco"])
+    symmetry = cfg.algo.algorithm.symmetry_cfg
+    assert symmetry.use_data_augmentation is True
+    assert symmetry.use_mirror_loss is True
+    assert symmetry.mirror_loss_coeff == pytest.approx(0.5)
+    assert symmetry.data_augmentation_func == (
+        "microduck_rl_unilab.tasks.microduck.symmetry.microduck_velocity_symmetry"
+    )
+    stages = cfg.env.curriculum.turn_in_place.params.stages
+    assert stages[-1].lin_max == pytest.approx(0.0)
+
+
 def test_turn_in_place_bucket_draws_forward_speed_below_the_ceiling(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

@@ -1,0 +1,30 @@
+# @package _global_
+defaults:
+  - /task/microduck_sprint_pivotsym_flat/base
+  - _self_
+
+training:
+  task_name: MicroduckSprintFlat
+  sim_backend: mujoco
+  play_steps: 1000
+
+algo:
+  num_envs: 2048
+  max_iterations: 3000
+  save_interval: 500
+  empirical_normalization: true
+  obs_groups:
+    actor: [policy]
+    critic: [critic]
+  policy:
+    init_noise_std: 1.0
+  algorithm:
+    learning_rate: 1.0e-4
+    entropy_coef: 0.005
+    # Mirrored samples carry a turn learned in one direction to the other,
+    # and the mirror loss keeps the policy from settling one-sided again.
+    symmetry_cfg:
+      use_data_augmentation: true
+      use_mirror_loss: true
+      mirror_loss_coeff: 0.5
+      data_augmentation_func: microduck_rl_unilab.tasks.microduck.symmetry.microduck_velocity_symmetry
