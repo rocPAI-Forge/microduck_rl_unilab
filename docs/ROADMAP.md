@@ -22,8 +22,12 @@ Decisions between close checkpoints use 512-environment batteries.
 | 5. Deployment path | Software side merged; hardware side open | #10 |
 | 6. MJWarp | Blocked: needs an NVIDIA GPU | — |
 | 7. Leftovers | Open | — |
-| 8. Turning in place (new) | Open | — |
-| 9. Motrix in the training loop (new) | Exploratory: alternating backends holds 84–88% at 1.0 m/s on both simulators; no checkpoint published | #11 (draft) |
+| 8. Turning in place (new) | In progress: left pivot partly learned, right not | `feat/turn-in-place` |
+| 9. Motrix in the training loop (new) | Closed: train on MuJoCo only, Motrix is the held-out gate | #11 (record), #13 (rule) |
+
+**Simulator rule.** Sprint policies train on MuJoCo only. MotrixSim is held
+out for the sim2sim check (`scripts/sim2sim_check.py`), and a checkpoint is
+published only after it passes. Failures are fixed on the MuJoCo side.
 
 ## Priority 1: complete the motion interface
 
@@ -50,10 +54,11 @@ Decisions between close checkpoints use 512-environment batteries.
   transfer to MotrixSim at 0–0.6 m/s (98.6–100% over 300 s), but not at
   1.0 m/s (57–80%, against 93–97% on MuJoCo). Cap hardware commands near
   0.6 m/s at first.
-- [ ] **9. Motrix in the training loop (new).** Train on both backends, or
-  alternate, so the 1.0 m/s gait does not depend on MuJoCo-specific contact or
-  servo detail. Motrix lacks the push, armature, friction, and inertia events,
-  so the MuJoCo share keeps those.
+- [x] **9. Motrix in the training loop (new), closed.** Motrix-only
+  fine-tuning moved the overfit to Motrix (MuJoCo 1.0 m/s survival fell to
+  7.4%), and alternating held 84–88% on both but spends the only held-out
+  simulator (#11, kept as a record). Decision (#13): train on MuJoCo only and
+  gate releases on Motrix over 0–0.6 m/s; 1.0 m/s is reported, not gated.
 - [x] **4. Position-target audit** (#6). Only the sprint lineage leans on the
   joint stops; the walk, stand-up, and get-up checkpoints finish their tasks
   with the goal-position clamp on. None needs retraining.
