@@ -19,11 +19,12 @@ Decisions between close checkpoints use 512-environment batteries.
 | 2. Standing and low speed | Merged | #8 |
 | 3. Cross-simulator check | Merged | #9 |
 | 4. Position-target audit | Merged | #6 |
-| 5. Deployment path | Software side merged; hardware side open | #10 |
+| 5. Deployment path | Software side merged (export, runtime, closed-loop check); hardware side open | #10, #15 |
 | 6. MJWarp | Blocked: needs an NVIDIA GPU | — |
 | 7. Leftovers | Open | — |
 | 8. Turning in place (new) | Parked: no pivot after three rounds; use the 0.5 m radius turn | #14 |
-| 9. Motrix in the training loop (new) | Closed: train on MuJoCo only, Motrix is the held-out gate | #11 (record), #13 (rule) |
+| 9. Motrix in the training loop (new) | Closed: train on MuJoCo only, Motrix is the held-out gate | #11 (closed, record), #13 (rule) |
+| 10. Top speed on Motrix (new) | In progress: wider MuJoCo randomization | — |
 
 **Simulator rule.** Sprint policies train on MuJoCo only. MotrixSim is held
 out for the sim2sim check (`scripts/sim2sim_check.py`), and a checkpoint is
@@ -62,10 +63,14 @@ published only after it passes. Failures are fixed on the MuJoCo side.
   7.4%), and alternating held 84–88% on both but spends the only held-out
   simulator (#11, kept as a record). Decision (#13): train on MuJoCo only and
   gate releases on Motrix over 0–0.6 m/s; 1.0 m/s is reported, not gated.
+- [ ] **10. Top speed on Motrix (new).** Under the simulator rule, close the
+  1.0 m/s gap (`sprint_stand`: 67.4% over 300 s on Motrix, 95.1% on MuJoCo)
+  from the MuJoCo side only, by widening the contact and servo randomization,
+  and check it with `scripts/sim2sim_check.py`.
 - [x] **4. Position-target audit** (#6). Only the sprint lineage leans on the
   joint stops; the walk, stand-up, and get-up checkpoints finish their tasks
   with the goal-position clamp on. None needs retraining.
-- [ ] **5. Deployment path** (#10 for the software side).
+- [ ] **5. Deployment path** (#10 and #15 for the software side).
   - [x] ONNX export with an onnxruntime check: largest action difference
     2.4e-6 over 8000 observations.
   - [x] `deploy_manifest.json` and `docs/DEPLOY.md`: observation and action
