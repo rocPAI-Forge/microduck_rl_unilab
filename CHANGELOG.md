@@ -6,6 +6,13 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
 
 ## Unreleased
 
+- `docs/HARDWARE_BRINGUP.md` and `scripts/hardware_bringup.py` check the
+  robot side before the first policy step: static IMU, IMU axes and signs,
+  default pose (zero offsets, swapped IDs), per-joint direction with a by-eye
+  confirmation from the MJCF axes, loop timing, and a guarded 5 s stand. They
+  run against any adapter with `read`, `heading`, `write_goals`, and
+  `set_torque` (`microduck_rl_unilab.deploy.bringup`).
+
 - `microduck_rl_unilab.deploy` is a reference onboard runtime (numpy and
   onnxruntime only): observation builder, ONNX runner with the goal-position
   clamp, the training heading hold, and stand / walk / straight / turn-around

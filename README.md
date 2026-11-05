@@ -83,8 +83,9 @@ MJWarp-only tasks) is listed in
 
 To run a policy on the robot, see [`docs/DEPLOY.md`](docs/DEPLOY.md): the
 observation and action contract, the exported ONNX in
-[`examples/sprint_stand/deploy/`](examples/sprint_stand/deploy/), and the
-known sim-to-real limits.
+[`examples/sprint_stand/deploy/`](examples/sprint_stand/deploy/), the reference
+onboard runtime, and the known sim-to-real limits. Before the first run on the
+robot, go through [`docs/HARDWARE_BRINGUP.md`](docs/HARDWARE_BRINGUP.md).
 
 ## Version
 
