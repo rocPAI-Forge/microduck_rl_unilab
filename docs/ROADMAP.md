@@ -76,6 +76,10 @@ published only after it passes. Failures are fixed on the MuJoCo side.
   - [x] `deploy_manifest.json` and `docs/DEPLOY.md`: observation and action
     order, units, clamp, rate, commands, training noise and delay, known
     limits.
+  - [x] Reference onboard runtime (`microduck_rl_unilab.deploy`, numpy and
+    onnxruntime only), run closed-loop on MuJoCo and MotrixSim by
+    `scripts/deploy_sim_loop.py`: observation within 1e-6 of the training
+    contract, 100% survival standing, walking straight, and turning around.
   - [ ] Calibrate the IMU and servo noise and delay envelopes on hardware.
   - [ ] First on-robot run.
 
@@ -95,4 +99,5 @@ published only after it passes. Failures are fixed on the MuJoCo side.
 
 - Is a MicroDuck available for testing, and when? Item 5's hardware side
   waits on it.
-- Next training item: turning in place (8) or Motrix in the loop (9)?
+- On hardware, which simulator does the robot resemble more? That decides
+  whether item 10 matters and whether item 8 is worth reopening.

@@ -4,7 +4,22 @@ Versions follow `project.version` in `pyproject.toml`. Each release is a git
 tag `v<version>` with a matching GitHub release. Checkpoints live in
 `examples/` and are versioned with the code that reproduces them.
 
-## Unreleased
+## 0.3.0
+
+Prepares the standing sprint for a first hardware run: a reference onboard
+runtime checked closed-loop on both simulators, fixed simulator roles with a
+MotrixSim release gate, and a documented way to turn around. No new
+checkpoint; `sprint_stand/model_59000` stays the hardware starting point and
+passes the Motrix gate. Dependencies are unchanged from 0.2.0.
+
+### Known limitations
+
+- No turning in place; turn around with the 0.5 m radius turn.
+- 1.0 m/s does not transfer to MotrixSim (67.4% over 300 s); roadmap item 10.
+- The robot side of deployment (IMU and servo conventions, calibration, first
+  run) is untested.
+
+### Changes
 
 - `microduck_rl_unilab.deploy` is a reference onboard runtime (numpy and
   onnxruntime only): observation builder, ONNX runner with the goal-position
@@ -13,7 +28,6 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
   MotrixSim; for `sprint_stand` the observation matches the training contract
   to 1e-6 and every scenario survives 100%. See `docs/DEPLOY.md`
   "Reference runtime".
-
 - Simulator roles are fixed: sprint policies train on MuJoCo only, and
   MotrixSim is the held-out sim2sim check. `scripts/sim2sim_check.py` runs the
   Motrix gate (300 s straight at 0, 0.3, and 0.6 m/s; 60 s turns at 0.5 m/s
