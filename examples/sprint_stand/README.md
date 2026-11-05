@@ -8,6 +8,12 @@ starts and stops as the command changes.
 Before this training, `sprint_steer/model_55999` walked backward at a zero
 command (−0.2 m/s) and fell in every one of 128 environments within 60 s.
 
+This is the starting point for hardware. It passes the MotrixSim sim2sim
+gate (`scripts/sim2sim_check.py`), and [`deploy/`](deploy/) holds its ONNX
+export, `deploy_manifest.json`, and the closed-loop results of the reference
+onboard runtime on MuJoCo and MotrixSim (`sim_loop_*.json`); see
+[`docs/DEPLOY.md`](../../docs/DEPLOY.md). It has not run on a robot yet.
+
 ## Battery
 
 512 environments, seed 777, targets clamped (`--clip-targets`). Straight is

@@ -11,6 +11,10 @@ on the current 8-core, 59 GB machine, 2048 environments already take about
 26 GB, 3072 ran slower (27.3k vs 29.8k steps/s), and 4096 ran out of memory.
 Decisions between close checkpoints use 512-environment batteries.
 
+**Where things stand (0.3.0).** Every item that does not need hardware is done
+or parked. Work stops here until a MicroDuck is available: item 5's hardware
+side is next, and its results decide whether items 8 and 10 are reopened.
+
 ## Status
 
 | Item | State | PR |
@@ -21,7 +25,7 @@ Decisions between close checkpoints use 512-environment batteries.
 | 4. Position-target audit | Merged | #6 |
 | 5. Deployment path | Software side merged (export, runtime, closed-loop check); hardware side open | #10, #15 |
 | 6. MJWarp | Blocked: needs an NVIDIA GPU | — |
-| 7. Leftovers | Open | — |
+| 7. Leftovers | Settled: SAC documented as failed, `steerfix` kept for reproduction; MJWarp tasks wait on item 6 | #19 |
 | 8. Turning in place (new) | Parked: no pivot after three rounds; use the 0.5 m radius turn | #14 |
 | 9. Motrix in the training loop (new) | Closed: train on MuJoCo only, Motrix is the held-out gate | #11 (closed, record), #13 (rule) |
 | 10. Top speed on Motrix (new) | Parked: wider randomization trades speed for Motrix margin | #18 |
@@ -95,15 +99,18 @@ published only after it passes. Failures are fixed on the MuJoCo side.
   1.19 sees only the CPU next to the Radeon AI PRO R9700; Warp's GPU backend
   is CUDA-only. Both MJWarp tests require "an active CUDA Warp device". This
   needs an NVIDIA machine.
-- [ ] **7. Leftovers.**
-  - Velocity SAC trains but falls repeatedly at inference.
-  - `microduck_sprint_steerfix_flat` has no weights (superseded by item 1).
+- [x] **7. Leftovers, settled (#19).**
+  - Velocity SAC trains but falls repeatedly at inference. The code stays and
+    the READMEs list it as failed validation; no SAC policy is published.
+  - `microduck_sprint_steerfix_flat` is the first stage of the
+    `sprint_straight_long` reproduce chain, so it stays; it has no separate
+    weights.
   - `microduck_ground_pick_flat` and `microduck_sitstand_flat` are
-    MJWarp-only (depends on item 6).
+    MJWarp-only and wait on item 6.
 
 ## Open questions
 
-- Is a MicroDuck available for testing, and when? Item 5's hardware side
-  waits on it.
+- No MicroDuck is available yet (2026-11-05). Item 5's hardware side, and
+  the bring-up checklist in #16, wait on one.
 - On hardware, which simulator does the robot resemble more? That decides
   whether item 10 matters and whether item 8 is worth reopening.

@@ -46,7 +46,7 @@ Standstill heading drift on Motrix is 1.4°, against 6.5° on MuJoCo.
 
 Cap the hardware command band near 0.6 m/s. Training with Motrix in the loop
 was tried and moved the overfit instead of removing it
-([`motrix_training.md`](motrix_training.md) on
+([`motrix_training.md`](https://github.com/rocPAI-Forge/microduck_rl_unilab/blob/exp/motrix-train/docs/audits/motrix_training.md) on
 [PR #11](https://github.com/rocPAI-Forge/microduck_rl_unilab/pull/11)), so the
 project now trains on MuJoCo only and keeps Motrix as the held-out sim2sim
 check: `scripts/sim2sim_check.py` gates the 0–0.6 m/s band and reports

@@ -132,7 +132,10 @@ and the direction of each joint have to match the manifest on the hardware.
 - **Top speed is simulator-dependent.** At 0–0.6 m/s the policy behaves the
   same on MuJoCo and MotrixSim. At 1.0 m/s, 300 s survival drops from about
   95% on MuJoCo to about 67% on MotrixSim
-  ([`audits/motrix_crosscheck.md`](audits/motrix_crosscheck.md)).
+  ([`audits/motrix_crosscheck.md`](audits/motrix_crosscheck.md)). Wider
+  servo randomization closes part of that gap only by slowing the gait
+  ([`audits/motrix_topspeed.md`](audits/motrix_topspeed.md)), so keep first
+  hardware runs at or below 0.6 m/s.
 - **Every deployable checkpoint passes the MotrixSim gate first.** Policies
   are trained on MuJoCo only; `scripts/sim2sim_check.py` checks them on the
   held-out MotrixSim over the 0–0.6 m/s band before they are published.
