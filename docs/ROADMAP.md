@@ -24,7 +24,7 @@ Decisions between close checkpoints use 512-environment batteries.
 | 7. Leftovers | Open | — |
 | 8. Turning in place (new) | Parked: no pivot after three rounds; use the 0.5 m radius turn | #14 |
 | 9. Motrix in the training loop (new) | Closed: train on MuJoCo only, Motrix is the held-out gate | #11 (closed, record), #13 (rule) |
-| 10. Top speed on Motrix (new) | In progress: wider MuJoCo randomization | — |
+| 10. Top speed on Motrix (new) | Parked: wider randomization trades speed for Motrix margin | #18 |
 
 **Simulator rule.** Sprint policies train on MuJoCo only. MotrixSim is held
 out for the sim2sim check (`scripts/sim2sim_check.py`), and a checkpoint is
@@ -66,7 +66,13 @@ published only after it passes. Failures are fixed on the MuJoCo side.
 - [ ] **10. Top speed on Motrix (new).** Under the simulator rule, close the
   1.0 m/s gap (`sprint_stand`: 67.4% over 300 s on Motrix, 95.1% on MuJoCo)
   from the MuJoCo side only, by widening the contact and servo randomization,
-  and check it with `scripts/sim2sim_check.py`.
+  and check it with `scripts/sim2sim_check.py`. **Parked (#18).** A one-at-a-time
+  sweep showed the gait is most sensitive to armature, servo delay, servo gain,
+  and foot friction. Widening those raised 60 s Motrix survival at 1.0 m/s
+  from 85% to 92–94% only by slowing the gait to 0.76–0.82 m/s; heavier
+  top-speed tracking brought 0.85 m/s back and the margin with it
+  ([`audits/motrix_topspeed.md`](audits/motrix_topspeed.md)). Revisit after
+  hardware data; servo-gain randomization is untried.
 - [x] **4. Position-target audit** (#6). Only the sprint lineage leans on the
   joint stops; the walk, stand-up, and get-up checkpoints finish their tasks
   with the goal-position clamp on. None needs retraining.

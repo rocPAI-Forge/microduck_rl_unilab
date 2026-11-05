@@ -4,6 +4,18 @@ Versions follow `project.version` in `pyproject.toml`. Each release is a git
 tag `v<version>` with a matching GitHub release. Checkpoints live in
 `examples/` and are versioned with the code that reproduces them.
 
+## Unreleased
+
+- Top speed on MotrixSim is parked. Owners `microduck_sprint_standwide_flat`
+  (wider armature, servo delay, servo friction, and foot friction) and
+  `microduck_sprint_standwidefast_flat` (plus heavier top-speed tracking)
+  raised 1.0 m/s 60 s survival on Motrix from 85% to 92–94% only by slowing
+  the gait to 0.76–0.82 m/s
+  ([`docs/audits/motrix_topspeed.md`](docs/audits/motrix_topspeed.md)). No
+  checkpoint is published.
+- `eval_sprint_speed.py --override` applies extra Hydra overrides after the
+  owner, for parameter sweeps.
+
 ## 0.3.0
 
 Prepares the standing sprint for a first hardware run: a reference onboard
