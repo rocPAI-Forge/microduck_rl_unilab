@@ -1,0 +1,21 @@
+# @package _global_
+# Hold top speed under the wider servo and contact randomization.
+#
+# The standwide owner made 1.0 m/s sturdier on MotrixSim (60 s survival 85%
+# -> 92-94%) but bought it with speed: a 1.0 m/s command fell from 0.88 to
+# 0.82 m/s after 1000 iterations and 0.76 m/s after 3000, a slower gait being
+# cheaper than a fall under the narrow-kernel tracking weight. This owner keeps
+# the wide ranges and pays more for top-speed tracking: a heavier fine
+# forward-speed kernel and more resamples from the 0.75-1.0 m/s band.
+defaults:
+  - /task/microduck_sprint_standwide_flat/base
+  - _self_
+
+env:
+  commands:
+    twist:
+      high_speed_fraction: 0.45
+
+reward:
+  tracking_lin_vel_fine:
+    weight: 14.0
