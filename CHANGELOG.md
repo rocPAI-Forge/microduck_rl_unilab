@@ -15,6 +15,15 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
   checkpoint is published.
 - `eval_sprint_speed.py --override` applies extra Hydra overrides after the
   owner, for parameter sweeps.
+- Roadmap item 7 is settled: velocity SAC stays documented as failed
+  validation, `microduck_sprint_steerfix_flat` stays as the first stage of the
+  `sprint_straight_long` reproduce chain, and the MJWarp-only tasks wait on an
+  NVIDIA machine.
+- Docs aligned with the state after 0.3.0: README and README.zh (runtime,
+  turn-around, top-speed study, layout, clone URL now
+  `rocPAI-Forge/microduck_rl_unilab`, MJWarp test note),
+  `examples/sprint_stand/README.md` (deploy folder and gate), `docs/DEPLOY.md`,
+  and `docs/ROADMAP.md` (work stops until hardware is available).
 
 ## 0.3.0
 

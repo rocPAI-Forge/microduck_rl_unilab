@@ -69,9 +69,9 @@ owner 配置和机器人 XML 资产。
   </tr>
 </table>
 
-冲刺步态是本仓库独有的，上游 microduck_rl 没有冲刺任务。各冲刺权重之间的区别见[冲刺系列对比](#冲刺系列对比)。尚未完成的部分（平地速度 SAC、只支持 MJWarp 的任务）列在 [`CHANGELOG.md`](CHANGELOG.md#known-limitations) 里。
+冲刺步态是本仓库独有的，上游 microduck_rl 没有冲刺任务。各冲刺权重之间的区别见[冲刺系列对比](#冲刺系列对比)。尚未完成的部分（原地转向、MotrixSim 上的 1.0 m/s、平地速度 SAC、只支持 MJWarp 的任务）列在 [`CHANGELOG.md`](CHANGELOG.md#known-limitations) 里，进度在 [`docs/ROADMAP.md`](docs/ROADMAP.md) 跟踪。
 
-要把策略部署到实机，见 [`docs/DEPLOY.md`](docs/DEPLOY.md)：观测和动作的接口约定、导出好的 ONNX（在 [`examples/sprint_stand/deploy/`](examples/sprint_stand/deploy/)），以及已知的 sim2real 限制。
+要把策略部署到实机，见 [`docs/DEPLOY.md`](docs/DEPLOY.md)：观测和动作的接口约定、导出好的 ONNX（在 [`examples/sprint_stand/deploy/`](examples/sprint_stand/deploy/)）、参考机载运行时（`microduck_rl_unilab.deploy`，只依赖 numpy 和 onnxruntime，已在两个仿真器上闭环验证），以及已知的 sim2real 限制。目前还没有在实机上跑过。
 
 ## 版本
 
@@ -83,7 +83,8 @@ owner 配置和机器人 XML 资产。
 
 - MuJoCo 支持步态依赖的全部随机化（定时推力、关节电枢、脚底摩擦、刚体惯量），Motrix 不支持这四项。
 - Motrix 的接触模型和 MuJoCo 不同，能发现依赖 MuJoCo 特有细节的步态。[`docs/audits/motrix_crosscheck.md`](docs/audits/motrix_crosscheck.md) 里的交叉验证发现，1.0 m/s 步态在 Motrix 上存活率掉 16–36 个点。
-- 把 Motrix 也拿来训练只会转移过拟合、不会消除它（见 [PR #11](https://github.com/rocPAI-Forge/microduck_rl_unilab/pull/11)），还会用掉唯一一个留作验证的仿真器。
+- 把 Motrix 也拿来训练只会转移过拟合、不会消除它（见 [PR #11](https://github.com/rocPAI-Forge/microduck_rl_unilab/pull/11)，已关闭，留作记录），还会用掉唯一一个留作验证的仿真器。
+- 在 MuJoCo 里加宽舵机和接触随机化，能让 1.0 m/s 在 Motrix 上更稳，但代价是跑得更慢（见 [`docs/audits/motrix_topspeed.md`](docs/audits/motrix_topspeed.md)）。
 
 模型必须先通过 Motrix 验证门槛才能发布：
 
@@ -126,8 +127,8 @@ uv run --no-sync scripts/sim2sim_check.py examples/sprint_stand/model_59000.pt
 | `sprint_straight_cmd` PPO | 完成，跟随 0.3–1.2 m/s 前进速度命令（实测 0.31–1.12 m/s），各档 300 秒直线通过率 90–99.6%。同上，本仓库独有 | [`examples/sprint_straight_cmd/model_32250.pt`](examples/sprint_straight_cmd/model_32250.pt) / [`play_video_side_v0.6.mp4`](examples/sprint_straight_cmd/play_video_side_v0.6.mp4) |
 | `sprint_straight_head` PPO | 完成，0.3–1.0 m/s 速度命令，位置目标裁剪到关节行程内，头回到躯干上方（前伸约 3 cm，原来约 9 cm）。300 秒直线通过率 93.6–100%。同上，本仓库独有 | [`examples/sprint_straight_head/model_52250.pt`](examples/sprint_straight_head/model_52250.pt) / [`play_video_side_v0.5.mp4`](examples/sprint_straight_head/play_video_side_v0.5.mp4) |
 | `sprint_steer` PPO | 完成。前进速度 0.3–1.0 m/s 和偏航角速度都可控，目标角按舵机裁剪，头在躯干上方。±0.2、±0.4 rad/s 的偏航误差 ≤ 0.05 rad/s，转弯存活 97–100%。同上，本仓库独有 | [`examples/sprint_steer/model_55999.pt`](examples/sprint_steer/model_55999.pt) / [`play_video_turn_left_v0.5.mp4`](examples/sprint_steer/play_video_turn_left_v0.5.mp4) |
-| `sprint_stand` PPO | 完成。在 `sprint_steer` 基础上加原地站立：前进 0–1.0 m/s、偏航角速度都可控，目标角按舵机裁剪。站立 300 秒存活 99.8%，位置漂移 9 cm。不会原地转向。同上，本仓库独有 | [`examples/sprint_stand/model_59000.pt`](examples/sprint_stand/model_59000.pt) / [`play_video_stand.mp4`](examples/sprint_stand/play_video_stand.mp4) |
-| `sprint_steerfix_flat` PPO | 未训练，已被 `sprint_steer` 取代。同上，本仓库独有；配置在，没有权重 | — |
+| `sprint_stand` PPO | 完成。在 `sprint_steer` 基础上加原地站立：前进 0–1.0 m/s、偏航角速度都可控，目标角按舵机裁剪。站立 300 秒存活 99.8%，位置漂移 9 cm。不会原地转向，用 0.5 m 半径转弯（`[0.2, 0, ±0.4]`）掉头。通过 MotrixSim 验证门槛。同上，本仓库独有 | [`examples/sprint_stand/model_59000.pt`](examples/sprint_stand/model_59000.pt) / [`play_video_stand.mp4`](examples/sprint_stand/play_video_stand.mp4) |
+| `sprint_steerfix_flat` PPO | `sprint_straight_long` 的中间训练阶段（见其 README），没有单独发布权重。同上，本仓库独有 | — |
 
 任务与上游 microduck_rl 保持 1:1：BAM（bam xl330-m6 电压伺服模型，
 `BamVoltageAction` 逐 substep 力矩路径）是上游唯一的驱动器模型，因此本仓库
@@ -138,7 +139,7 @@ motrix 后端可用。motrix 上关掉了该后端没有的速度推力、关节
 ## 安装
 
 ```bash
-git clone https://github.com/unilabsim/microduck_rl_unilab.git
+git clone https://github.com/rocPAI-Forge/microduck_rl_unilab.git
 cd microduck_rl_unilab
 # ROCm（默认）：Linux x86_64 从 ROCm 7.2 索引解析 torch 2.11.0 与 triton-rocm 3.6.0。
 # 需要系统 ROCm >= 7.1。
@@ -207,7 +208,7 @@ uv run --no-sync scripts/train_sprint_robust.py \
 | [`examples/sprint_straight_cmd/`](examples/sprint_straight_cmd/) | 0.3–1.2 m/s 命令 | 300 s 94.7–99.6% | ≤ 0.4% | 速度跟随命令。0.3 / 0.6 / 0.9 / 1.2 m/s 的直线通过率 97.5 / 99.6 / 96.9 / 90.0%；压测存活 ≥ 95%。慢速跌倒只发生在开场 6 秒内。目标不裁剪，头顶在限位上。 |
 | [`examples/sprint_straight_head/`](examples/sprint_straight_head/) | 0.3–1.0 m/s 命令 | 300 s 94.9–100% | ≤ 0.01% | 目标裁剪到关节行程内（接近真实舵机），头回到躯干上方。0.3–0.75 m/s 在 300 秒内无跌倒；1.0 m/s 命令实测 0.93 m/s。评测和回放需加 `--clip-targets`。 |
 | [`examples/sprint_steer/`](examples/sprint_steer/) | 0.3–1.0 m/s 和 ±0.4 rad/s | 直行 300 s 93.4–100%；转弯 96.7–100% | ≤ 0.01% | 在 `sprint_straight_head` 基础上加偏航转向。直行由出生航向闭环充当外部偏航控制器。评测和回放需加 `--clip-targets`。 |
-| [`examples/sprint_stand/`](examples/sprint_stand/) | 0–1.0 m/s 和 ±0.4 rad/s | 直行 300 s 95.1–100%；转弯 98–100% | ≤ 0.01% | 在 `sprint_steer` 基础上加原地站立。不会原地转向；站立时 300 秒内航向平均漂移约 6.5°。评测和回放需加 `--clip-targets`。 |
+| [`examples/sprint_stand/`](examples/sprint_stand/) | 0–1.0 m/s 和 ±0.4 rad/s | 直行 300 s 95.1–100%；转弯 98–100% | ≤ 0.01% | 在 `sprint_steer` 基础上加原地站立。不会原地转向（用 `[0.2, 0, ±0.4]` 掉头）；站立时 300 秒内航向平均漂移约 6.5°。评测和回放需加 `--clip-targets`。ONNX 导出在 `deploy/`。 |
 
 每个目录含 `model_*.pt`、可视化、`metrics.json` 和复现命令。
 `model.pt` 约 4.7 MB，直接入 git。
@@ -293,6 +294,8 @@ uv run --no-sync scripts/eval_sprint_speed.py \
 uv run pytest tests/ -x -q
 ```
 
+两个 MJWarp 测试需要 CUDA 版 Warp 设备；在 ROCm 或纯 CPU 机器上运行 `uv run pytest tests/ -q -k "not mjwarp"`。
+
 `tests/conftest.py` 复现两个 seam：设置 `UNILAB_EXTRA_REGISTRY_PACKAGES` 并通过
 Hydra `SearchPathPlugin` 把本仓库 `conf/<algo>` 追加进 config search path
 （测试不经 CLI，无法用 `--config-dir`）。
@@ -314,6 +317,7 @@ src/microduck_rl_unilab/
 ├── assets.py                       # 冷路径资产物化（snapshot_download 兜底）
 ├── cli.py                          # microduck-train / microduck-eval：env var + --config-dir 注入
 ├── conf_searchpath.py              # Hydra SearchPathPlugin（测试/脚本的程序化 compose 用）
+├── deploy/runtime.py               # 机载运行时（只依赖 numpy + onnxruntime）
 ├── conf/
 │   ├── ppo/task/microduck_{velocity_flat,velstand_flat,standup_flat,ground_pick_flat,sitstand_flat,sprint_*_flat}/
 │   └── sac/task/microduck_velocity_flat/
@@ -327,10 +331,13 @@ src/microduck_rl_unilab/
         ├── standup_terms.py        # standup / ground_pick / sitstand terms
         ├── bam_action.py           # BAM 电压驱动 action term
         ├── deploy_contract.py      # obs/action 维度契约
+        ├── symmetry.py             # 61 维接口的左右镜像
         ├── alignment_contract.py   # 上游 microduck_rl @ 29e887e 对齐契约表
         └── sim2real_notes.py       # sim2real 注意事项
 benchmark/                          # 吞吐实测（硬件、规模、对照）
+docs/DEPLOY.md, docs/ROADMAP.md     # 机载接口与运行时；路线图和各项状态
+docs/audits/                        # 目标角、Motrix、原地转向、高速等专项研究
 docs/media/                         # README 预览动图，从示例视频剪辑而来
 tests/                              # 迁移自 UniLab 的契约/对齐测试套件
-scripts/                            # 对齐审计 / 对比 / rollout 脚本
+scripts/                            # 训练驱动、评测、sim2sim 门槛、导出、部署闭环、审计脚本
 ```
