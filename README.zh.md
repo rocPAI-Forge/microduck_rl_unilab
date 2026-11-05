@@ -75,7 +75,7 @@ owner 配置和机器人 XML 资产。
 
 ## 版本
 
-当前版本：**0.2.0**（git 标签 `v0.2.0`）。这一版包含哪些内容、哪些策略已验证、有哪些已知限制，见 [`CHANGELOG.md`](CHANGELOG.md)。
+当前版本：**0.3.0**（git 标签 `v0.3.0`）。这一版包含哪些内容、哪些策略已验证、有哪些已知限制，见 [`CHANGELOG.md`](CHANGELOG.md)。
 
 ## 仿真器分工：MuJoCo 训练，MotrixSim 验证
 

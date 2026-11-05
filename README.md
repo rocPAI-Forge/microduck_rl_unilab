@@ -88,7 +88,7 @@ known sim-to-real limits.
 
 ## Version
 
-Current release: **0.2.0** (git tag `v0.2.0`). Release contents, checked
+Current release: **0.3.0** (git tag `v0.3.0`). Release contents, checked
 policies, and known limitations are in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Simulators: train on MuJoCo, check on MotrixSim
