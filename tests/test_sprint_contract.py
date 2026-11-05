@@ -688,6 +688,29 @@ def test_sprint_standturn_owner_adds_turn_in_place() -> None:
     assert twist.rel_standing_envs == pytest.approx(0.1)
 
 
+def test_sprint_standwide_owner_widens_servo_and_contact_randomization() -> None:
+    GlobalHydra.instance().clear()
+    with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
+        cfg = compose("config", overrides=["task=microduck_sprint_standwide_flat/mujoco"])
+    registry.ensure_registries()
+    env_cfg = registry.materialize_env_config("MicroduckSprintFlat")
+    apply_cfg_overrides(
+        env_cfg,
+        BackendAdapter(
+            cfg, root_dir=ROOT_DIR, algo_name="ppo"
+        ).build_task_env_cfg_override(),
+    )
+    env_cfg.validate()
+
+    action = env_cfg.actions["joint_pos"]
+    assert (action.delay_min_lag, action.delay_max_lag) == (2, 8)
+    assert list(action.friction_scale_range) == [0.75, 1.35]
+    assert action.clip_target_to_joint_limits is True
+    assert list(env_cfg.events["randomize_armature"].params["ranges"]) == [0.7, 1.4]
+    assert list(env_cfg.events["foot_friction"].params["ranges"]) == [0.6, 1.5]
+    assert env_cfg.commands["twist"].turn_in_place_fraction == pytest.approx(0.1)
+
+
 def test_sprint_pivot_owner_bridges_turns_down_to_a_pivot() -> None:
     GlobalHydra.instance().clear()
     with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):

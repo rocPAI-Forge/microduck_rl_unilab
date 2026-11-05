@@ -54,6 +54,7 @@ def _compose_owner(
     cross_track_stiffness: float | None = None,
     clip_targets: bool = False,
     yaw_rate: float = 0.0,
+    overrides: list[str] | None = None,
 ) -> Any:
     register_conf_search_path()
     GlobalHydra.instance().clear()
@@ -63,7 +64,7 @@ def _compose_owner(
         else "microduck_sprint_flat/mujoco"
     )
     with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
-        cfg = compose("config", overrides=[f"task={selected_owner}"])
+        cfg = compose("config", overrides=[f"task={selected_owner}", *(overrides or [])])
     with open_dict(cfg):
         cfg.algo.seed = seed
         cfg.env.max_episode_seconds = duration_s + 1.0
@@ -132,6 +133,7 @@ def evaluate(
     cross_track_stiffness: float | None = None,
     clip_targets: bool = False,
     yaw_rate: float = 0.0,
+    overrides: list[str] | None = None,
 ) -> dict[str, Any]:
     if not checkpoint.is_file():
         raise FileNotFoundError(f"checkpoint not found: {checkpoint}")
@@ -156,6 +158,7 @@ def evaluate(
         cross_track_stiffness=cross_track_stiffness,
         clip_targets=clip_targets,
         yaw_rate=yaw_rate,
+        overrides=overrides,
     )
     importlib.import_module("microduck_rl_unilab.tasks.microduck")
     registry.ensure_registries()
@@ -536,6 +539,12 @@ def main() -> None:
         default=0.0,
         help="Fixed yaw-rate command, rad/s. Nonzero turns the spawn-heading loop off.",
     )
+    parser.add_argument(
+        "--override",
+        action="append",
+        default=[],
+        help="Extra Hydra override applied after the owner, e.g. env.events.foot_friction.params.ranges=[0.5,0.5].",
+    )
     parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args()
 
@@ -555,8 +564,10 @@ def main() -> None:
         cross_track_stiffness=args.cross_track_stiffness,
         clip_targets=args.clip_targets,
         yaw_rate=args.yaw_rate,
+        overrides=args.override,
     )
     result["clip_targets"] = args.clip_targets
+    result["overrides"] = list(args.override)
     payload = json.dumps(result, ensure_ascii=False, indent=2)
     if args.output is not None:
         args.output.write_text(payload + "\n", encoding="utf-8")
