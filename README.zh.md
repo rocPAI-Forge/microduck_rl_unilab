@@ -302,12 +302,21 @@ Hydra `SearchPathPlugin` 把本仓库 `conf/<algo>` 追加进 config search path
 
 ## 资产策略
 
-全部 MicroDuck 资产（7 个 XML + 47 个 STL + 上游 LICENSE + sha256 清单）随仓库
+全部 MicroDuck 资产（8 个 XML + 47 个 STL + 上游许可证 + sha256 清单）随仓库
 入 git，开箱即用；`assets.py` 仅作为兜底——文件缺失时才从 Hugging Face 数据集
 [`unilabsim/unilab-robots`](https://huggingface.co/datasets/unilabsim/unilab-robots)
-补齐（冷路径）。STL 来源为上游 pollen-robotics/microduck_rl（Apache-2.0，
-见 `assets/robots/microduck/LICENSE.pollen-robotics.txt`），完整性由
-`assets/robots/microduck/assets.sha256` 与 `tests/test_asset_contract.py` 保证。
+补齐（冷路径）。STL 是上游 pollen-robotics/microduck_rl 的原样拷贝（导出版本
+`a8321d2`），完整性由 `assets/robots/microduck/assets.sha256` 与
+`tests/test_asset_contract.py` 保证。
+
+## 许可证
+
+本仓库代码采用 Apache-2.0（[`LICENSE`](LICENSE)）。47 个 MicroDuck STL 网格归
+Pollen Robotics 所有，采用 **CC BY-NC-SA 4.0** 许可（禁止商用；改编作品须以相同
+许可发布；须署名 Pollen Robotics），见
+[`assets/robots/microduck/LICENSE-MODELS.pollen-robotics.md`](assets/robots/microduck/LICENSE-MODELS.pollen-robotics.md)。
+上游的 MJCF 机器人描述文件采用 Apache-2.0
+（[`LICENSE.pollen-robotics.txt`](assets/robots/microduck/LICENSE.pollen-robotics.txt)）。
 
 ## 仓库结构
 

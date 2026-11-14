@@ -6,6 +6,11 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
 
 ## Unreleased
 
+- The 47 MicroDuck STL meshes are licensed CC BY-NC-SA 4.0, following
+  upstream `LICENSE-MODELS.md` (commit `7cc1961`): no commercial use, share
+  alike, credit Pollen Robotics. `assets/robots/microduck/LICENSE-MODELS.pollen-robotics.md`
+  scopes it; the code stays Apache-2.0. The READMEs gain a License section, and
+  the meshes are recorded as the upstream export `a8321d2`.
 - Top speed on MotrixSim is parked. Owners `microduck_sprint_standwide_flat`
   (wider armature, servo delay, servo friction, and foot friction) and
   `microduck_sprint_standwidefast_flat` (plus heavier top-speed tracking)

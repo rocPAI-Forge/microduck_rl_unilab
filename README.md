@@ -374,14 +374,24 @@ the CLI, so they cannot use `--config-dir`).
 
 ## Asset policy
 
-All MicroDuck assets (7 XML + 47 STL + upstream LICENSE + sha256 manifest)
+All MicroDuck assets (8 XML + 47 STL + upstream licenses + sha256 manifest)
 are in git and work out of the box. `assets.py` is a fallback only: missing
 files are filled from the Hugging Face dataset
 [`unilabsim/unilab-robots`](https://huggingface.co/datasets/unilabsim/unilab-robots)
-(cold path). STLs come from upstream pollen-robotics/microduck_rl
-(Apache-2.0, see `assets/robots/microduck/LICENSE.pollen-robotics.txt`).
+(cold path). STLs are unmodified copies of upstream pollen-robotics/microduck_rl
+(export `a8321d2`).
 Integrity is checked by `assets/robots/microduck/assets.sha256` and
 `tests/test_asset_contract.py`.
+
+## License
+
+The code in this repository is Apache-2.0 ([`LICENSE`](LICENSE)). The 47
+MicroDuck STL meshes are Pollen Robotics' and are licensed **CC BY-NC-SA 4.0**
+(no commercial use; adaptations under the same license; credit Pollen
+Robotics): see
+[`assets/robots/microduck/LICENSE-MODELS.pollen-robotics.md`](assets/robots/microduck/LICENSE-MODELS.pollen-robotics.md).
+The upstream MJCF robot descriptions are Apache-2.0
+([`LICENSE.pollen-robotics.txt`](assets/robots/microduck/LICENSE.pollen-robotics.txt)).
 
 ## Layout
 
