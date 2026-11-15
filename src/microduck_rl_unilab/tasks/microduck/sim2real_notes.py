@@ -11,7 +11,10 @@ POLLEN_RUNTIME_OBS_DIM = MICRODUCK_ACTOR_OBS_DIM
 #    Only policies trained with clip_target_to_joint_limits clamp q_des the way
 #    the servo clamps its goal position; earlier sprint checkpoints rely on
 #    targets far past the stops.
-# 2. Optional backlash hinges are not represented in the current model.
+# 2. Gearbox backlash is modeled only in the opt-in backlash robot
+#    (scripts/add_backlash.py, +-1 deg per servo). The published policies were
+#    trained without it and lose 3.5-22 points of 60 s survival on it
+#    (docs/audits/backlash.md).
 # 3. Observation delay/noise envelopes still need hardware calibration.
 # 4. The 1.0 m/s sprint gait loses 16-36 points of 300 s survival on
 #    MotrixSim (docs/audits/motrix_crosscheck.md); 0-0.6 m/s transfers.

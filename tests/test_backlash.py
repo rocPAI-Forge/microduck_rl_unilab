@@ -8,6 +8,7 @@ from pathlib import Path
 
 import mujoco
 import numpy as np
+import pytest
 from hydra import compose, initialize_config_dir
 from hydra.core.global_hydra import GlobalHydra
 from unilab.cli import package_root
@@ -60,10 +61,14 @@ def test_backlash_keyframe_puts_a_zero_after_every_servo_joint() -> None:
     np.testing.assert_allclose(servo, plain[7:])
 
 
-def test_backlash_owner_keeps_the_14_servo_joints_as_the_entity() -> None:
+@pytest.mark.parametrize(
+    "owner",
+    ["microduck_sprint_straightspeed_flat/mujoco_backlash", "microduck_sprint_standbacklash_flat/mujoco"],
+)
+def test_backlash_owners_keep_the_14_servo_joints_as_the_entity(owner: str) -> None:
     GlobalHydra.instance().clear()
     with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
-        cfg = compose("config", overrides=["task=microduck_sprint_straightspeed_flat/mujoco_backlash"])
+        cfg = compose("config", overrides=[f"task={owner}"])
     scene = cfg.env.scene
     assert scene.model_file.endswith("scene_flat_bam_backlash.xml")
     assert list(scene.fragment_files) == ["assets/robots/microduck/locomotion_task_backlash.xml"]
