@@ -11,6 +11,14 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
   alike, credit Pollen Robotics. `assets/robots/microduck/LICENSE-MODELS.pollen-robotics.md`
   scopes it; the code stays Apache-2.0. The READMEs gain a License section, and
   the meshes are recorded as the upstream export `a8321d2`.
+- `sprint_terms.track_yaw_rate` is a yaw-only Gaussian.
+  `unilab.envs.mdp.track_angular_velocity` folds the roll and pitch rates into
+  its exponent, so its narrow copy in the sprint owners worked against
+  stepping in place, the dead zone upstream microduck_rl found in `e1d518d`.
+  Owner `microduck_sprint_pivotyaw_flat` uses it. A fourth pivot round still
+  found a left pivot only (+0.22 / −0.02 rad/s for ±0.4) but kept the slow
+  turns; `docs/audits/turn_in_place.md` is corrected and extended. No
+  checkpoint is published.
 - Top speed on MotrixSim is parked. Owners `microduck_sprint_standwide_flat`
   (wider armature, servo delay, servo friction, and foot friction) and
   `microduck_sprint_standwidefast_flat` (plus heavier top-speed tracking)

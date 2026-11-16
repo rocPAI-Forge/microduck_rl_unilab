@@ -1,0 +1,37 @@
+# @package _global_
+# Turn in place with a yaw-only fine tracking term.
+#
+# The three earlier pivot rounds kept tracking_ang_vel_fine on
+# unilab.envs.mdp.track_angular_velocity, which folds the roll and pitch rates
+# into its exponent. At std 0.2 the roll and pitch that stepping in place
+# makes cost most of that term, so standing still outscored turning.
+# Upstream pollen-robotics/microduck_rl met the same dead zone (commits
+# e1d518d, 4048a3e): a counterfactual showed standing was the reward optimum
+# at 0.3 rad/s, and the fix that held kept the stock term for its far-error
+# gradient and added a yaw-only Gaussian at std 0.35. Here the fine term turns
+# yaw-only at std 0.35, the wide stock term stays, turn-in-place commands
+# start at 0.05 rad/s (0.1 x the 0.5 rad/s range, upstream's floor), and the
+# pivot owner's forward-speed bridge from 0.2 m/s down to 0 is kept.
+defaults:
+  - /task/microduck_sprint_pivot_flat/base
+  - _self_
+
+env:
+  commands:
+    twist:
+      turn_in_place_fraction: 0.2
+      turn_in_place_ang_min: 0.1
+  curriculum:
+    turn_in_place:
+      params:
+        stages:
+          - {step: 0, fraction: 0.2, lin_max: 0.2}
+          - {step: 18000, fraction: 0.2, lin_max: 0.12}
+          - {step: 36000, fraction: 0.2, lin_max: 0.06}
+          - {step: 54000, fraction: 0.2, lin_max: 0.0}
+
+reward:
+  tracking_ang_vel_fine:
+    func: microduck_rl_unilab.tasks.microduck.sprint_terms.track_yaw_rate
+    weight: 6.0
+    params: {std: 0.35, command_name: twist}

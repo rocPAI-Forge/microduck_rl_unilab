@@ -65,6 +65,26 @@ def running_forward_progress(
     return np.asarray(np.clip(velocity_x, 0.0, cap) / cap, dtype=get_global_dtype())
 
 
+def track_yaw_rate(
+    env: ManagerBasedRlEnv,
+    std: float,
+    command_name: str = "twist",
+    asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> np.ndarray:
+    """Gaussian on the yaw-rate error alone.
+
+    ``unilab.envs.mdp.track_angular_velocity`` folds the roll and pitch rates
+    into the same exponent, and stepping in place makes both, so a narrow
+    kernel of that term pays a standing robot more than a turning one. This
+    term scores only the commanded yaw rate.
+    """
+    scale = _positive_real(std, label="track_yaw_rate std")
+    command = _command(env, "track_yaw_rate", command_name)
+    asset = cast("Entity", env.scene[asset_cfg.name])
+    error = np.nan_to_num(asset.data.root_link_ang_vel_b[:, 2] - command[:, 2], nan=10.0)
+    return np.asarray(np.exp(-np.square(error) / scale**2), dtype=get_global_dtype())
+
+
 def running_planar_drift_cost(
     env: ManagerBasedRlEnv,
     command_name: str = "twist",
@@ -1088,5 +1108,6 @@ __all__ = [
     "running_forward_progress",
     "running_planar_drift_cost",
     "running_spawn_progress",
+    "track_yaw_rate",
     "turn_in_place_curriculum",
 ]

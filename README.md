@@ -134,7 +134,7 @@ revisited once on-robot data exists.
 | `microduck_velocity_flat` | mujoco, motrix | mujoco, motrix |
 | `microduck_velstand_flat` | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
-| `microduck_sprint_flat` and its 21 continuation owners (`robust`, `gaitfix`, `rollfix`, `steerfix`, `straightfix`, `straightspeed`, `straighthold`, `straightcmd`, `straightrange`, `straightclip`, `straightneck`, `straighthead`, `steer`, `steermix`, `stand`, `standturn`, `pivot`, `pivothold`, `pivotsym`, `standwide`, `standwidefast`) | mujoco | — |
+| `microduck_sprint_flat` and its 22 continuation owners (`robust`, `gaitfix`, `rollfix`, `steerfix`, `straightfix`, `straightspeed`, `straighthold`, `straightcmd`, `straightrange`, `straightclip`, `straightneck`, `straighthead`, `steer`, `steermix`, `stand`, `standturn`, `pivot`, `pivothold`, `pivotsym`, `standwide`, `standwidefast`, `pivotyaw`) | mujoco | — |
 | `microduck_ground_pick_flat`, `microduck_sitstand_flat` | mjwarp | — |
 
 Each sprint continuation owner is `microduck_sprint_<name>_flat`; the example
