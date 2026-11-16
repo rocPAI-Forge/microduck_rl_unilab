@@ -19,6 +19,13 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
   found a left pivot only (+0.22 / −0.02 rad/s for ±0.4) but kept the slow
   turns; `docs/audits/turn_in_place.md` is corrected and extended. No
   checkpoint is published.
+- `scripts/add_backlash.py` (ported from upstream microduck_rl) writes a
+  backlash robot with a passive ±1° hinge after every servo joint, with the
+  `microduck_sprint_straightspeed_flat/mujoco_backlash` eval owner and the
+  `microduck_sprint_standbacklash_flat` training owner. On it `model_59000`
+  loses 3.5–4 points of 60 s survival at 0–0.6 m/s and 22 at 1.0 m/s.
+  Training on it recovers that but stands at 89.5% on MotrixSim, below the
+  gate, so no checkpoint is published (`docs/audits/backlash.md`).
 - Top speed on MotrixSim is parked. Owners `microduck_sprint_standwide_flat`
   (wider armature, servo delay, servo friction, and foot friction) and
   `microduck_sprint_standwidefast_flat` (plus heavier top-speed tracking)

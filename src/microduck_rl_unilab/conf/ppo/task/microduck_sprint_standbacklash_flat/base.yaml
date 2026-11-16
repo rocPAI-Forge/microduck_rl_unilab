@@ -1,0 +1,17 @@
+# @package _global_
+# The standing sprint trained on the backlash robot.
+#
+# Every servo joint drives its link through a passive +-1 deg hinge
+# (scripts/add_backlash.py, after upstream pollen-robotics/microduck_rl). On
+# that robot sprint_stand/model_59000 loses 3.5-4 points of 60 s survival at
+# 0-0.6 m/s and 22 points at 1.0 m/s (100% -> 77.7%). BAM drives and the
+# encoder reads the servo side, so the 61-D observation is unchanged.
+defaults:
+  - /task/microduck_sprint_standturn_flat/base
+  - _self_
+
+env:
+  scene:
+    model_file: assets/robots/microduck/scene_flat_bam_backlash.xml
+    fragment_files:
+      - assets/robots/microduck/locomotion_task_backlash.xml

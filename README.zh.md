@@ -101,7 +101,7 @@ uv run --no-sync scripts/sim2sim_check.py examples/sprint_stand/model_59000.pt
 | `microduck_velocity_flat` | mujoco, motrix | mujoco, motrix |
 | `microduck_velstand_flat` | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
-| `microduck_sprint_flat` 及其 22 个续训 owner（`robust`、`gaitfix`、`rollfix`、`steerfix`、`straightfix`、`straightspeed`、`straighthold`、`straightcmd`、`straightrange`、`straightclip`、`straightneck`、`straighthead`、`steer`、`steermix`、`stand`、`standturn`、`pivot`、`pivothold`、`pivotsym`、`standwide`、`standwidefast`、`pivotyaw`） | mujoco | — |
+| `microduck_sprint_flat` 及其 23 个续训 owner（`robust`、`gaitfix`、`rollfix`、`steerfix`、`straightfix`、`straightspeed`、`straighthold`、`straightcmd`、`straightrange`、`straightclip`、`straightneck`、`straighthead`、`steer`、`steermix`、`stand`、`standturn`、`pivot`、`pivothold`、`pivotsym`、`standwide`、`standwidefast`、`pivotyaw`、`standbacklash`） | mujoco | — |
 | `microduck_ground_pick_flat`、`microduck_sitstand_flat` | mjwarp | — |
 
 每个冲刺续训 owner 的完整名字是 `microduck_sprint_<名字>_flat`，用到它的示例 README 里有具体命令。
@@ -302,7 +302,7 @@ Hydra `SearchPathPlugin` 把本仓库 `conf/<algo>` 追加进 config search path
 
 ## 资产策略
 
-全部 MicroDuck 资产（8 个 XML + 47 个 STL + 上游许可证 + sha256 清单）随仓库
+全部 MicroDuck 资产（11 个 XML + 47 个 STL + 上游许可证 + sha256 清单）随仓库
 入 git，开箱即用；`assets.py` 仅作为兜底——文件缺失时才从 Hugging Face 数据集
 [`unilabsim/unilab-robots`](https://huggingface.co/datasets/unilabsim/unilab-robots)
 补齐（冷路径）。STL 是上游 pollen-robotics/microduck_rl 的原样拷贝（导出版本
