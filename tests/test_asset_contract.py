@@ -16,6 +16,7 @@ ROBOT_XML = ROBOT_DIR / "microduck.xml"
 TASK_XML = ROBOT_DIR / "locomotion_task.xml"
 MANIFEST = ROBOT_DIR / "assets.sha256"
 LICENSE = ROBOT_DIR / "LICENSE.pollen-robotics.txt"
+MODEL_LICENSE = ROBOT_DIR / "LICENSE-MODELS.pollen-robotics.md"
 
 
 def _manifest() -> dict[str, str]:
@@ -52,6 +53,13 @@ def test_microduck_manifest_covers_every_xml_mesh() -> None:
     assert referenced <= set(manifest)
     assert "trunk_base.stl" in manifest
     assert "Copyright 2026 Pollen Robotics" in LICENSE.read_text(encoding="utf-8")
+
+
+def test_microduck_meshes_carry_the_upstream_model_license() -> None:
+    text = MODEL_LICENSE.read_text(encoding="utf-8")
+    assert "CC BY-NC-SA 4.0" in text
+    assert "assets/robots/microduck/assets/*.stl" in text
+    assert "Pollen Robotics" in text
 
 
 @pytest.mark.slow
