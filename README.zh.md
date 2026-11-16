@@ -71,11 +71,11 @@ owner 配置和机器人 XML 资产。
 
 冲刺步态是本仓库独有的，上游 microduck_rl 没有冲刺任务。各冲刺权重之间的区别见[冲刺系列对比](#冲刺系列对比)。尚未完成的部分（原地转向、MotrixSim 上的 1.0 m/s、平地速度 SAC、只支持 MJWarp 的任务）列在 [`CHANGELOG.md`](CHANGELOG.md#known-limitations) 里，进度在 [`docs/ROADMAP.md`](docs/ROADMAP.md) 跟踪。
 
-要把策略部署到实机，见 [`docs/DEPLOY.md`](docs/DEPLOY.md)：观测和动作的接口约定、导出好的 ONNX（在 [`examples/sprint_stand/deploy/`](examples/sprint_stand/deploy/)）、参考机载运行时（`microduck_rl_unilab.deploy`，只依赖 numpy 和 onnxruntime，已在两个仿真器上闭环验证），以及已知的 sim2real 限制。目前还没有在实机上跑过。
+要把策略部署到实机，见 [`docs/DEPLOY.md`](docs/DEPLOY.md)：观测和动作的接口约定、导出好的 ONNX（在 [`examples/sprint_stand/deploy/`](examples/sprint_stand/deploy/)）、参考机载运行时（`microduck_rl_unilab.deploy`，只依赖 numpy 和 onnxruntime，已在两个仿真器上闭环验证），以及已知的 sim2real 限制。同一个 ONNX 可以原样加载进 Pollen 官方的机载守护进程 `robotd`，文档里列出了按训练方式运行所需的 `[policy]` 设置。目前还没有在实机上跑过。
 
 ## 版本
 
-当前版本：**0.3.0**（git 标签 `v0.3.0`）。这一版包含哪些内容、哪些策略已验证、有哪些已知限制，见 [`CHANGELOG.md`](CHANGELOG.md)。
+当前版本：**0.3.1**（git 标签 `v0.3.1`）。这一版包含哪些内容、哪些策略已验证、有哪些已知限制，见 [`CHANGELOG.md`](CHANGELOG.md)。
 
 ## 仿真器分工：MuJoCo 训练，MotrixSim 验证
 
@@ -345,7 +345,7 @@ src/microduck_rl_unilab/
         └── sim2real_notes.py       # sim2real 注意事项
 benchmark/                          # 吞吐实测（硬件、规模、对照）
 docs/DEPLOY.md, docs/ROADMAP.md     # 机载接口与运行时；路线图和各项状态
-docs/audits/                        # 目标角、Motrix、原地转向、高速等专项研究
+docs/audits/                        # 目标角、Motrix、原地转向、高速、回差等专项研究
 docs/media/                         # README 预览动图，从示例视频剪辑而来
 tests/                              # 迁移自 UniLab 的契约/对齐测试套件
 scripts/                            # 训练驱动、评测、sim2sim 门槛、导出、部署闭环、审计脚本

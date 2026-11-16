@@ -87,11 +87,13 @@ observation and action contract, the exported ONNX in
 [`examples/sprint_stand/deploy/`](examples/sprint_stand/deploy/), the
 reference onboard runtime (`microduck_rl_unilab.deploy`, numpy and onnxruntime
 only, checked closed-loop on both simulators), and the known sim-to-real
-limits. No on-robot run has been done yet.
+limits. The same ONNX loads unchanged into Pollen's onboard daemon `robotd`;
+the guide lists the `[policy]` settings that run it as trained. No on-robot
+run has been done yet.
 
 ## Version
 
-Current release: **0.3.0** (git tag `v0.3.0`). Release contents, checked
+Current release: **0.3.1** (git tag `v0.3.1`). Release contents, checked
 policies, and known limitations are in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Simulators: train on MuJoCo, check on MotrixSim
@@ -420,7 +422,7 @@ src/microduck_rl_unilab/
         └── sim2real_notes.py       # sim2real notes
 benchmark/                          # throughput notes (hardware, scale, comparison)
 docs/DEPLOY.md, docs/ROADMAP.md     # onboard contract and runtime; roadmap and item status
-docs/audits/                        # target, Motrix, turning-in-place, and top-speed studies
+docs/audits/                        # target, Motrix, turning-in-place, top-speed, and backlash studies
 docs/media/                         # README preview GIFs cut from the example clips
 tests/                              # contract/alignment suite migrated from UniLab
 scripts/                            # training drivers, eval, sim2sim gate, export, deploy sim loop, audits

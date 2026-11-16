@@ -4,8 +4,30 @@ Versions follow `project.version` in `pyproject.toml`. Each release is a git
 tag `v<version>` with a matching GitHub release. Checkpoints live in
 `examples/` and are versioned with the code that reproduces them.
 
-## Unreleased
+## 0.3.1
 
+Studies and deployment groundwork after 0.3.0; no new checkpoint, and
+`sprint_stand/model_59000` stays the hardware starting point. The MicroDuck
+meshes are now documented as CC BY-NC-SA 4.0, as upstream licenses them.
+Dependencies are unchanged.
+
+### Known limitations
+
+- No turning in place: four rounds found a left pivot only. Turn around with
+  the 0.5 m radius turn.
+- 1.0 m/s on MotrixSim and under ±1° servo backlash loses margin; wider
+  randomization or backlash training trades it for speed or for standing on a
+  stiff robot. Keep first hardware runs at or below 0.6 m/s.
+- On Pollen's `robotd`, set the `[policy]` values in `docs/DEPLOY.md`, and
+  check the target clamp, which `robotd` does not apply. Nothing has run on a
+  robot yet.
+
+### Changes
+
+- Docs checked for consistency before the release: the roadmap gains item 11
+  (backlash) and records the fourth pivot round and the `robotd` settings
+  under item 5; `docs/DEPLOY.md`, the READMEs, and
+  `examples/sprint_stand/README.md` point at the backlash study and `robotd`.
 - The 47 MicroDuck STL meshes are licensed CC BY-NC-SA 4.0, following
   upstream `LICENSE-MODELS.md` (commit `7cc1961`): no commercial use, share
   alike, credit Pollen Robotics. `assets/robots/microduck/LICENSE-MODELS.pollen-robotics.md`

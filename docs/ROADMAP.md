@@ -11,9 +11,9 @@ on the current 8-core, 59 GB machine, 2048 environments already take about
 26 GB, 3072 ran slower (27.3k vs 29.8k steps/s), and 4096 ran out of memory.
 Decisions between close checkpoints use 512-environment batteries.
 
-**Where things stand (0.3.0).** Every item that does not need hardware is done
+**Where things stand (0.3.1).** Every item that does not need hardware is done
 or parked. Work stops here until a MicroDuck is available: item 5's hardware
-side is next, and its results decide whether items 8 and 10 are reopened.
+side is next, and its results decide whether items 8, 10, and 11 are reopened.
 
 ## Status
 
@@ -23,12 +23,13 @@ side is next, and its results decide whether items 8 and 10 are reopened.
 | 2. Standing and low speed | Merged | #8 |
 | 3. Cross-simulator check | Merged | #9 |
 | 4. Position-target audit | Merged | #6 |
-| 5. Deployment path | Software side merged (export, runtime, closed-loop check); hardware side open | #10, #15 |
+| 5. Deployment path | Software side merged (export, runtime, closed-loop check, robotd settings); hardware side open | #10, #15, #23 |
 | 6. MJWarp | Blocked: needs an NVIDIA GPU | — |
 | 7. Leftovers | Settled: SAC documented as failed, `steerfix` kept for reproduction; MJWarp tasks wait on item 6 | #19 |
-| 8. Turning in place (new) | Parked: no pivot after three rounds; use the 0.5 m radius turn | #14 |
+| 8. Turning in place (new) | Parked: left pivot only after four rounds; use the 0.5 m radius turn | #14, #21 |
 | 9. Motrix in the training loop (new) | Closed: train on MuJoCo only, Motrix is the held-out gate | #11 (closed, record), #13 (rule) |
 | 10. Top speed on Motrix (new) | Parked: wider randomization trades speed for Motrix margin | #18 |
+| 11. Gearbox backlash (new) | Parked: modeled; training on it fails the stiff-robot gate | #22 |
 
 **Simulator rule.** Sprint policies train on MuJoCo only. MotrixSim is held
 out for the sim2sim check (`scripts/sim2sim_check.py`), and a checkpoint is
@@ -52,9 +53,13 @@ published only after it passes. Failures are fixed on the MuJoCo side.
   turn-in-place commands for 2000 iterations did not teach a pivot.
   **Parked (#14).** Three more rounds (a forward-speed curriculum down to a
   pivot, a longer stay at zero, then mirror symmetry) did not teach a pivot
-  either. Turning around uses `[0.2, 0, ±0.4]`, a 0.5 m radius turn at 100%
-  survival on MuJoCo and MotrixSim. Revisit after the first hardware run,
-  with a separate stand-and-turn policy or a foot-yaw reward.
+  either. A fourth (#21) found that the fine yaw-tracking term folds in the
+  roll and pitch rates that stepping makes, as upstream microduck_rl found;
+  with a yaw-only term it learned a left pivot only (+0.22 rad/s for 0.4) and
+  kept the slow turns. Turning around uses `[0.2, 0, ±0.4]`, a 0.5 m radius
+  turn at 100% survival on MuJoCo and MotrixSim. Revisit after the first
+  hardware run: the yaw-only term with mirror symmetry, a separate
+  stand-and-turn policy, or a foot-yaw reward.
 
 ## Priority 2: validate for hardware
 
@@ -77,10 +82,16 @@ published only after it passes. Failures are fixed on the MuJoCo side.
   top-speed tracking brought 0.85 m/s back and the margin with it
   ([`audits/motrix_topspeed.md`](audits/motrix_topspeed.md)). Revisit after
   hardware data; servo-gain randomization is untried.
+- [ ] **11. Gearbox backlash (new), parked (#22).** `scripts/add_backlash.py`
+  (after upstream microduck_rl) adds a passive ±1° hinge per servo. On it
+  `model_59000` loses 3.5–4 points of 60 s survival at 0–0.6 m/s and 22 at
+  1.0 m/s. Training on it recovers that but stands at 89.5% on MotrixSim,
+  below the gate ([`audits/backlash.md`](audits/backlash.md)). Next: train
+  across backlash amounts, then measure the real play on hardware.
 - [x] **4. Position-target audit** (#6). Only the sprint lineage leans on the
   joint stops; the walk, stand-up, and get-up checkpoints finish their tasks
   with the goal-position clamp on. None needs retraining.
-- [ ] **5. Deployment path** (#10 and #15 for the software side).
+- [ ] **5. Deployment path** (#10, #15, and #23 for the software side).
   - [x] ONNX export with an onnxruntime check: largest action difference
     2.4e-6 over 8000 observations.
   - [x] `deploy_manifest.json` and `docs/DEPLOY.md`: observation and action
@@ -90,6 +101,10 @@ published only after it passes. Failures are fixed on the MuJoCo side.
     onnxruntime only), run closed-loop on MuJoCo and MotrixSim by
     `scripts/deploy_sim_loop.py`: observation within 1e-6 of the training
     contract, 100% survival standing, walking straight, and turning around.
+  - [x] Pollen's `robotd` builds the same 61-D observation; `docs/DEPLOY.md`
+    gives the `[policy]` settings that run the policy as trained (its default
+    action scale and low-pass slow every gait by 7–15%). Open on the robot:
+    the target clamp, which `robotd` does not apply.
   - [ ] Calibrate the IMU and servo noise and delay envelopes on hardware.
   - [ ] First on-robot run.
 
@@ -110,7 +125,8 @@ published only after it passes. Failures are fixed on the MuJoCo side.
 
 ## Open questions
 
-- No MicroDuck is available yet (2026-11-05). Item 5's hardware side, and
+- No MicroDuck is available yet (2026-11-16). Item 5's hardware side, and
   the bring-up checklist in #16, wait on one.
 - On hardware, which simulator does the robot resemble more? That decides
-  whether item 10 matters and whether item 8 is worth reopening.
+  whether item 10 matters and whether item 8 is worth reopening. How much
+  backlash do its servos have? That sizes item 11.
