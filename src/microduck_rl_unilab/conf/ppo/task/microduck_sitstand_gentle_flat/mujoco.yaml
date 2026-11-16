@@ -1,0 +1,30 @@
+# @package _global_
+# Price out the drop at the end of the sit.
+#
+# The stance-fixed policy (microduck_sitstand_fix_flat, model_6500) sits and
+# stands upright, but its trunk peaks at ~0.88 m/s at the end of the descent:
+# it lets the last ~4 cm fall onto the seat. Upstream's descent cap (0.05 m/s,
+# weight 10 -> 20) costs that drop only a few steps' worth. Here the cap is
+# three times heavier and the |a_z| shock cost six times, so the touchdown
+# itself is what gets priced.
+defaults:
+  - /task/microduck_sitstand_fix_flat/mujoco
+  - _self_
+
+algo:
+  experiment_name: microduck_sitstand_gentle
+  run_name: microduck_sitstand_gentle
+
+env:
+  curriculum:
+    descent_speed_weight:
+      params:
+        stages:
+          - {step: 0, weight: 30.0}
+          - {step: 12000, weight: 60.0}
+
+reward:
+  descent_speed:
+    weight: 30.0
+  gentle_motion:
+    weight: 0.3
