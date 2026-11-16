@@ -12,7 +12,11 @@ This is the starting point for hardware. It passes the MotrixSim sim2sim
 gate (`scripts/sim2sim_check.py`), and [`deploy/`](deploy/) holds its ONNX
 export, `deploy_manifest.json`, and the closed-loop results of the reference
 onboard runtime on MuJoCo and MotrixSim (`sim_loop_*.json`); see
-[`docs/DEPLOY.md`](../../docs/DEPLOY.md). It has not run on a robot yet.
+[`docs/DEPLOY.md`](../../docs/DEPLOY.md), which also covers loading it into
+Pollen's `robotd`. With ±1° of servo backlash it loses 3.5–4 points of 60 s
+survival at 0–0.6 m/s and 22 at 1.0 m/s
+([`docs/audits/backlash.md`](../../docs/audits/backlash.md)). It has not run
+on a robot yet.
 
 ## Battery
 

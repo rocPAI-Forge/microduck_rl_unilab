@@ -197,10 +197,15 @@ Two gaps remain on the robot side:
   [`examples/sprint_straight_head/`](../examples/sprint_straight_head/)).
   The walk, stand-up, and get-up checkpoints keep their targets near the
   range.
-- Backlash is not modeled, and the noise and delay envelopes above have not
-  been calibrated against hardware.
+- **Backlash costs margin.** With ±1° of play per servo (the opt-in
+  backlash robot), `model_59000` loses 3.5–4 points of 60 s survival at
+  0–0.6 m/s and 22 points at 1.0 m/s on MuJoCo
+  ([`audits/backlash.md`](audits/backlash.md)). Measure the real play before
+  trusting the higher speeds.
+- The noise and delay envelopes above have not been calibrated against
+  hardware.
 - No turning in place; heading drifts about 6.5° over 300 s while standing
-  on MuJoCo (1.4° on MotrixSim). Three training rounds did not teach a pivot
+  on MuJoCo (1.4° on MotrixSim). Four training rounds did not teach a pivot
   ([`audits/turn_in_place.md`](audits/turn_in_place.md)); use the 0.5 m
   radius turn above.
 
