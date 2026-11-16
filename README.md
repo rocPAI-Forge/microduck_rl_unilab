@@ -135,6 +135,7 @@ revisited once on-robot data exists.
 |------|-----|-----|
 | `microduck_velocity_flat` | mujoco, motrix | mujoco, motrix |
 | `microduck_velstand_flat` | mujoco | — |
+| `microduck_stilt_flat` (walking on stilts; [study](docs/audits/stilts.md)) | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
 | `microduck_sprint_flat` and its 23 continuation owners (`robust`, `gaitfix`, `rollfix`, `steerfix`, `straightfix`, `straightspeed`, `straighthold`, `straightcmd`, `straightrange`, `straightclip`, `straightneck`, `straighthead`, `steer`, `steermix`, `stand`, `standturn`, `pivot`, `pivothold`, `pivotsym`, `standwide`, `standwidefast`, `pivotyaw`, `standbacklash`) | mujoco | — |
 | `microduck_ground_pick_flat`, `microduck_sitstand_flat` | mjwarp | — |
@@ -422,7 +423,7 @@ src/microduck_rl_unilab/
         └── sim2real_notes.py       # sim2real notes
 benchmark/                          # throughput notes (hardware, scale, comparison)
 docs/DEPLOY.md, docs/ROADMAP.md     # onboard contract and runtime; roadmap and item status
-docs/audits/                        # target, Motrix, turning-in-place, top-speed, and backlash studies
+docs/audits/                        # target, Motrix, turning-in-place, top-speed, backlash, and stilt studies
 docs/media/                         # README preview GIFs cut from the example clips
 tests/                              # contract/alignment suite migrated from UniLab
 scripts/                            # training drivers, eval, sim2sim gate, export, deploy sim loop, audits
