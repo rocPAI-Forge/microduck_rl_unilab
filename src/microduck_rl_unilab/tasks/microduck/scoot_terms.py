@@ -73,6 +73,23 @@ def command_progress(
     return np.asarray(np.nan_to_num(np.where(active, ratio, 0.0), nan=0.0), dtype=get_global_dtype())
 
 
+def yaw_rate_error_l1(
+    env: ManagerBasedRlEnv,
+    command_name: str = "twist",
+    cap: float = 1.0,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> np.ndarray:
+    """-|yaw rate - commanded yaw rate|, capped. Returns <= 0: positive weight.
+
+    The narrow yaw Gaussian is flat by 0.5 rad/s of error, where a scooting
+    policy that spins while it moves settles; a linear cost keeps its slope.
+    """
+    data = env.scene[asset_cfg.name].data
+    command = _command(env, "yaw_rate_error_l1", command_name)
+    error = np.minimum(np.abs(np.nan_to_num(data.root_link_ang_vel_b[:, 2], nan=0.0) - command[:, 2]), cap)
+    return np.asarray(-error, dtype=get_global_dtype())
+
+
 def stillness_at_zero_command(
     env: ManagerBasedRlEnv,
     command_name: str = "twist",
@@ -162,4 +179,5 @@ __all__ = [
     "joint_limit_proximity",
     "root_height_above",
     "stillness_at_zero_command",
+    "yaw_rate_error_l1",
 ]

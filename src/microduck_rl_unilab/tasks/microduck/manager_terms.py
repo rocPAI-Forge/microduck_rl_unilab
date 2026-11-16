@@ -138,6 +138,12 @@ class MicroduckVelocityCommandCfg(UniformVelocityCommandCfg):
     # instead of ranges.lin_vel_x, so the top of a wide band keeps practice.
     high_speed_fraction: float = 0.0
     high_speed_range: tuple[float, float] | None = None
+    # Share of non-standing resamples that drive straight: no turn, and a
+    # forward speed of at least straight_min_speed, backward with
+    # straight_backward_prob (backing into a dock is a straight move).
+    straight_fraction: float = 0.0
+    straight_min_speed: float = 0.02
+    straight_backward_prob: float = 0.75
 
     def build(self, env: ManagerBasedRlEnv) -> MicroduckVelocityCommand:
         return MicroduckVelocityCommand(self, env)
@@ -201,6 +207,13 @@ class MicroduckVelocityCommand(UniformVelocityCommand):
                     "MicroduckVelocityCommand high_speed_range must be finite and ordered"
                 )
             self._high_speed_range = (low, high)
+        self._straight_fraction = _ratio(cfg.straight_fraction, label="MicroduckVelocityCommand straight_fraction")
+        self._straight_min_speed = _finite_real(
+            cfg.straight_min_speed, label="MicroduckVelocityCommand straight_min_speed", minimum=0.0
+        )
+        self._straight_backward_prob = _ratio(
+            cfg.straight_backward_prob, label="MicroduckVelocityCommand straight_backward_prob"
+        )
         super().__init__(cfg, env)
         self._spawn_heading = np.asarray(
             self.robot.data.heading_w, dtype=get_global_dtype()
@@ -262,6 +275,8 @@ class MicroduckVelocityCommand(UniformVelocityCommand):
                     low, high, len(fast_ids)
                 )
                 self.vel_command_w[fast_ids, 0] = self.vel_command_b[fast_ids, 0]
+        if getattr(self, "_straight_fraction", 0.0) > 0.0 and len(env_ids) > 0:
+            self._resample_straight(env_ids)
         if self._turn_fraction == 0.0 or len(env_ids) == 0:
             return
         selected = self._env.rng.uniform(0.0, 1.0, len(env_ids)) < self._turn_fraction
@@ -285,6 +300,20 @@ class MicroduckVelocityCommand(UniformVelocityCommand):
         # the world-frame copy, matching upstream VelocityCommandCommandOnly.
         self.is_standing_env[turn_ids] = False
         self.vel_command_w[turn_ids] = self.vel_command_b[turn_ids]
+
+    def _resample_straight(self, env_ids: np.ndarray) -> None:
+        rng = self._env.rng
+        chosen = rng.uniform(0.0, 1.0, len(env_ids)) < self._straight_fraction
+        ids = env_ids[chosen & ~self.is_standing_env[env_ids]]
+        if len(ids) == 0:
+            return
+        low, high = (float(v) for v in self.cfg.ranges.lin_vel_x)
+        backward = rng.uniform(0.0, 1.0, len(ids)) < self._straight_backward_prob
+        top = np.where(backward, max(-low, self._straight_min_speed), max(high, self._straight_min_speed))
+        speed = self._straight_min_speed + rng.uniform(0.0, 1.0, len(ids)) * (top - self._straight_min_speed)
+        self.vel_command_b[ids, 0] = np.where(backward, -speed, speed)
+        self.vel_command_b[ids, 1:] = 0.0
+        self.vel_command_w[ids] = self.vel_command_b[ids]
 
     def _update_command(self, env_ids: np.ndarray | None = None) -> None:
         super()._update_command(env_ids)

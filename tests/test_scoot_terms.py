@@ -66,6 +66,37 @@ def test_seated_band_cost_and_stood_up_termination() -> None:
     np.testing.assert_array_equal(sc.root_height_above(env, 0.095), [False, False, True])
 
 
+def test_straight_bucket_drives_straight_and_mostly_backward(monkeypatch: pytest.MonkeyPatch) -> None:
+    from unilab.envs.mdp import UniformVelocityCommand
+
+    from microduck_rl_unilab.tasks.microduck.manager_terms import MicroduckVelocityCommand
+
+    monkeypatch.setattr(UniformVelocityCommand, "_resample_command", lambda self, env_ids: None)
+    n = 4000
+    term = object.__new__(MicroduckVelocityCommand)
+    term._hold_spawn_heading = False
+    term._high_speed_range = None
+    term._turn_fraction = 0.0
+    term._straight_fraction = 1.0
+    term._straight_min_speed = 0.02
+    term._straight_backward_prob = 0.75
+    term.cfg = SimpleNamespace(ranges=SimpleNamespace(lin_vel_x=(-0.10, 0.06)))
+    term._env = SimpleNamespace(rng=np.random.default_rng(0))
+    term.vel_command_b = np.full((n, 3), 0.3, dtype=np.float32)
+    term.vel_command_w = term.vel_command_b.copy()
+    term.is_standing_env = np.zeros(n, dtype=bool)
+    term.is_standing_env[:100] = True
+
+    term._resample_command(np.arange(n, dtype=np.intp))
+
+    vx = term.vel_command_b[100:, 0]
+    assert np.all(np.abs(vx) >= 0.02 - 1e-6)
+    assert vx.min() >= -0.10 - 1e-6 and vx.max() <= 0.06 + 1e-6
+    assert 0.70 < np.mean(vx < 0) < 0.80
+    np.testing.assert_array_equal(term.vel_command_b[100:, 1:], 0.0)
+    np.testing.assert_allclose(term.vel_command_b[:100], 0.3, rtol=1e-6)
+
+
 def test_scoot_owner_starts_seated_and_tracks_a_backward_biased_twist() -> None:
     GlobalHydra.instance().clear()
     with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
