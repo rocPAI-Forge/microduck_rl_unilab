@@ -200,29 +200,62 @@ class PolicyRunner:
         (action,) = self._session.run(None, {self._input: obs[None, :]})
         return np.asarray(action[0], dtype=np.float32)
 
-    def targets(self, action: np.ndarray) -> np.ndarray:
+    def targets(self, action: np.ndarray, scale: float | None = None) -> np.ndarray:
         manifest = self._manifest
-        q_des = action * manifest.action_scale + manifest.default_joint_pos
+        scale = manifest.action_scale if scale is None else scale
+        q_des = action * scale + manifest.default_joint_pos
+        return self.clamp(q_des)
+
+    def clamp(self, q_des: np.ndarray) -> np.ndarray:
+        manifest = self._manifest
         if manifest.clamp:
             q_des = np.clip(q_des, manifest.joint_limits[:, 0], manifest.joint_limits[:, 1])
         return q_des.astype(np.float32, copy=False)
 
 
+@dataclass(frozen=True)
+class TargetShaping:
+    """Post-policy target processing a host runtime may apply.
+
+    The exported policies were trained with none of it: the manifest's action
+    scale and no filter. ``ROBOTD_DEFAULTS`` is what Pollen's ``robotd``
+    applies out of the box, for measuring what running there unchanged costs.
+    """
+
+    action_scale: float | None = None
+    head_lowpass: float | None = None
+    legs_lowpass: float | None = None
+
+
+# pollen-robotics/microduck robotd/src/control.rs Tuning::default: walking
+# action scale 0.9, first-order low-pass alpha 0.5 on the head, 0.7 on the legs.
+ROBOTD_DEFAULTS = TargetShaping(action_scale=0.9, head_lowpass=0.5, legs_lowpass=0.7)
+HEAD_JOINTS = slice(5, 9)
+
+
 class Controller:
     """One call per control period: readings and a command in, goal positions out."""
 
-    def __init__(self, deploy_dir: str | Path, providers: list[str] | None = None):
+    def __init__(
+        self,
+        deploy_dir: str | Path,
+        providers: list[str] | None = None,
+        shaping: TargetShaping = TargetShaping(),
+    ):
         self.manifest = DeployManifest.load(deploy_dir)
         self.observations = ObservationBuilder(self.manifest)
         self.policy = PolicyRunner(self.manifest, providers)
         self.heading_hold = HeadingHold()
+        self.shaping = shaping
         self._command = Command.stand()
+        self._previous_targets: np.ndarray | None = None
         self.last_obs: np.ndarray | None = None
 
     def reset(self) -> None:
         self.observations.reset()
         self.heading_hold = HeadingHold()
         self._command = Command.stand()
+        self._previous_targets = None
 
     def set_command(
         self,
@@ -253,7 +286,26 @@ class Controller:
         action = self.policy.act(obs)
         self.observations.last_action = action
         self.last_obs = obs
-        return self.policy.targets(action)
+        return self._shape(action)
+
+    def _shape(self, action: np.ndarray) -> np.ndarray:
+        shaping = self.shaping
+        if shaping == TargetShaping():
+            return self.policy.targets(action)
+        scale = self.manifest.action_scale if shaping.action_scale is None else shaping.action_scale
+        targets = action * scale + self.manifest.default_joint_pos
+        previous = self._previous_targets
+        if previous is not None:
+            legs = np.ones(NUM_JOINTS, dtype=bool)
+            legs[HEAD_JOINTS] = False
+            if shaping.head_lowpass is not None:
+                alpha = shaping.head_lowpass
+                targets[HEAD_JOINTS] = alpha * targets[HEAD_JOINTS] + (1 - alpha) * previous[HEAD_JOINTS]
+            if shaping.legs_lowpass is not None:
+                alpha = shaping.legs_lowpass
+                targets[legs] = alpha * targets[legs] + (1 - alpha) * previous[legs]
+        self._previous_targets = targets.copy()
+        return self.policy.clamp(targets)
 
 
 def _vector(value: np.ndarray, size: int, name: str) -> np.ndarray:
@@ -272,5 +324,7 @@ __all__ = [
     "HeadingHold",
     "ObservationBuilder",
     "PolicyRunner",
+    "ROBOTD_DEFAULTS",
     "SensorReading",
+    "TargetShaping",
 ]

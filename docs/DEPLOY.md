@@ -127,6 +127,56 @@ The test proves the runtime reproduces the training contract. It cannot check
 the robot side: the IMU axes and sign convention, servo IDs and zero offsets,
 and the direction of each joint have to match the manifest on the hardware.
 
+## Running on Pollen's robotd
+
+Pollen's onboard daemon `robotd`
+([pollen-robotics/microduck](https://github.com/pollen-robotics/microduck),
+checked at `main` on 2026-11-13) builds the same 61-D observation
+(`duck-control/src/obs.rs`): gyro, gravity, joint position minus home, joint
+velocity, previous action, then twist, head, and body commands with body x, y,
+and yaw left at 0. It drives 15 joints; the mouth (index 9) is outside every
+policy, and `Observation::scatter_action` maps the 14 actions around it. Its
+home pose matches `default_joint_pos_rad` to 4e-5 rad, and its running position
+gain (`gain = 200`) matches the BAM `kp_fw = 200` the policies were trained
+with. So the exported ONNX loads as a walk policy unchanged.
+
+What differs is the target processing after the network. `robotd` defaults to
+an action scale of 0.9 and a first-order low-pass of 0.5 on the head and 0.7 on
+the legs, the settings Pollen's own policies were trained with. These policies
+were trained with neither. Measured with `scripts/deploy_sim_loop.py
+--shaping robotd` (MuJoCo, 64 environments, 30 s):
+
+| Scenario | As trained (scale 1.0, no filter) | robotd defaults (0.9, low-pass) |
+|---|---|---|
+| Stand | 100% | 100% |
+| Straight 0.6 m/s | 100%, 0.58 m/s | 100%, 0.54 m/s |
+| Straight 1.0 m/s | 98.4%, 0.94 m/s | 96.9%, 0.80 m/s |
+| Turn around left / right | +0.35 / −0.42 rad/s, 0.21–0.22 m/s | +0.37 / −0.38 rad/s, 0.17–0.18 m/s |
+
+The defaults do not make it fall, but every gait runs 7–15% slower. To run it as
+trained, set in `robotd.toml` (or with `robotctl configure` / `robotctl policy
+load walk policy.onnx`):
+
+```toml
+[policy]
+walk = "/path/to/policy.onnx"   # examples/sprint_stand/deploy/policy.onnx
+stand = "none"                  # the policy stands at a zero command itself
+action_scale = 1.0
+head_lowpass = 1.0              # 1.0 is pass-through
+legs_lowpass = 1.0
+# gain = 200 (default) matches kp_fw; with stand = "none" the softer
+# standing_gain_ratio never applies.
+```
+
+Two gaps remain on the robot side:
+
+- **Target clamp.** The policies were trained with goal positions clamped to
+  the soft joint limits in the manifest. `robotd`'s control loop does not clamp
+  them, so check that the servos' position-limit registers cover it or add the
+  clamp.
+- **Straight-line hold.** `robotd` passes the pad's yaw command through; the
+  heading hold above lives in the reference runtime only.
+
 ## Known limits
 
 - **Top speed is simulator-dependent.** At 0–0.6 m/s the policy behaves the

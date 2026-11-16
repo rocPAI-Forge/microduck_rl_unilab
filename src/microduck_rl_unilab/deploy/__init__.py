@@ -6,8 +6,10 @@ from microduck_rl_unilab.deploy.runtime import (
     DeployManifest,
     HeadingHold,
     ObservationBuilder,
+    ROBOTD_DEFAULTS,
     PolicyRunner,
     SensorReading,
+    TargetShaping,
 )
 
 __all__ = [
@@ -17,5 +19,7 @@ __all__ = [
     "HeadingHold",
     "ObservationBuilder",
     "PolicyRunner",
+    "ROBOTD_DEFAULTS",
     "SensorReading",
+    "TargetShaping",
 ]

@@ -26,6 +26,13 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
   loses 3.5–4 points of 60 s survival at 0–0.6 m/s and 22 at 1.0 m/s.
   Training on it recovers that but stands at 89.5% on MotrixSim, below the
   gate, so no checkpoint is published (`docs/audits/backlash.md`).
+- `docs/DEPLOY.md` "Running on Pollen's robotd": the official daemon builds
+  the same 61-D observation, so the exported ONNX loads unchanged, but its
+  default action scale 0.9 and head/leg low-pass slow every gait by 7–15%; the
+  section gives the `[policy]` settings that run it as trained. The runtime
+  gains `TargetShaping` / `ROBOTD_DEFAULTS`, and `scripts/deploy_sim_loop.py`
+  gains `--shaping robotd` and an optional `straight_1.0` scenario; its target
+  check now skips rows reset that step.
 - Top speed on MotrixSim is parked. Owners `microduck_sprint_standwide_flat`
   (wider armature, servo delay, servo friction, and foot friction) and
   `microduck_sprint_standwidefast_flat` (plus heavier top-speed tracking)
