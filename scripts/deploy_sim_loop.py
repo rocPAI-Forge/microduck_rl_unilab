@@ -40,7 +40,13 @@ from unilab.base.config_adapter import BackendAdapter
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from eval_sprint_speed import REPO_ROOT, _compose_owner  # noqa: E402
 
-from microduck_rl_unilab.deploy import Command, Controller, SensorReading  # noqa: E402
+from microduck_rl_unilab.deploy import (  # noqa: E402
+    ROBOTD_DEFAULTS,
+    Command,
+    Controller,
+    SensorReading,
+    TargetShaping,
+)
 
 SEGMENTS = (
     ("gyro", 0, 3),
@@ -51,10 +57,12 @@ SEGMENTS = (
     ("twist_cmd", 48, 51),
     ("pose_cmds", 51, 61),
 )
+SHAPINGS = {"none": TargetShaping(), "robotd": ROBOTD_DEFAULTS}
 SCENARIOS: dict[str, tuple[Command, float, float]] = {
     # name: (runtime command, env forward command, env yaw command)
     "stand": (Command.stand(), 0.0, 0.0),
     "straight_0.6": (Command.straight(0.6), 0.6, 0.0),
+    "straight_1.0": (Command.straight(1.0), 1.0, 0.0),
     "turn_around_left": (Command.turn_around(1), 0.2, 0.4),
     "turn_around_right": (Command.turn_around(-1), 0.2, -0.4),
 }
@@ -68,6 +76,7 @@ def _run_scenario(
     num_envs: int,
     duration_s: float,
     seed: int,
+    shaping: TargetShaping = TargetShaping(),
 ) -> dict[str, Any]:
     command, env_speed, env_yaw = SCENARIOS[name]
     cfg = _compose_owner(
@@ -110,7 +119,9 @@ def _run_scenario(
     try:
         robot = raw_env.scene["robot"]
         action_term = raw_env.action_manager.get_term("joint_pos")
-        controllers = [Controller(deploy_dir) for _ in range(num_envs)]
+        controllers = [Controller(deploy_dir, shaping=shaping) for _ in range(num_envs)]
+        shaped = shaping != TargetShaping()
+        default_pos = controllers[0].manifest.default_joint_pos
         names = controllers[0].manifest.joint_names
         joint_ids = np.asarray([list(robot.joint_names).index(n) for n in names])
         action_names = [robot.joint_names[i] for i in np.asarray(action_term.joint_ids)]
@@ -144,8 +155,11 @@ def _run_scenario(
                 targets[i] = controller.step(
                     reading, float(data.heading_w[i]), np.asarray(data.root_link_pos_w[i, :2])
                 )
-                actions[i] = controller.observations.last_action
-                if alive[i] and step > 0:
+                # With host shaping the env must apply the shaped target, so it
+                # gets target - default; its last-action slot then differs from
+                # the policy's and the contract checks below are skipped.
+                actions[i] = targets[i] - default_pos if shaped else controller.observations.last_action
+                if alive[i] and step > 0 and not shaped:
                     built = controller.last_obs
                     for segment, lo, hi in SEGMENTS:
                         if segment == "twist_cmd" and env_yaw == 0.0 and not command.hold_heading:
@@ -156,13 +170,16 @@ def _run_scenario(
                         )
             obs, _, dones, infos = env.step(torch.from_numpy(actions))
             applied = np.asarray(action_term.processed_action)
-            target_error = max(
-                target_error, float(np.max(np.abs(applied[alive] - targets[alive]), initial=0.0))
-            )
             terminated = dones.cpu().numpy().astype(bool)
             time_outs = infos.get("time_outs")
             if isinstance(time_outs, torch.Tensor):
                 terminated &= ~time_outs.cpu().numpy().astype(bool)
+            if not shaped:
+                # Rows reset this step hold their post-reset target, not this one.
+                compared = alive & ~dones.cpu().numpy().astype(bool)
+                target_error = max(
+                    target_error, float(np.max(np.abs(applied[compared] - targets[compared]), initial=0.0))
+                )
             gravity = np.asarray(data.projected_gravity_b)
             alive &= ~terminated & (np.arccos(np.clip(-gravity[:, 2], -1, 1)) <= math.radians(70))
             for i in np.flatnonzero(terminated):
@@ -179,6 +196,7 @@ def _run_scenario(
             "command_m_s": command.forward_m_s,
             "command_yaw_rate_rad_s": command.yaw_rate_rad_s,
             "hold_heading": command.hold_heading,
+            "shaping": shaping.__dict__,
             "survival_fraction": float(np.mean(alive)),
             "forward_speed_m_s": speed_sum / samples if samples else None,
             "yaw_rate_rad_s": yaw_sum / samples if samples else None,
@@ -195,12 +213,18 @@ def main() -> int:
     )
     parser.add_argument("deploy_dir", type=Path)
     parser.add_argument("--sim", choices=("mujoco", "motrix"), default="mujoco")
-    parser.add_argument("--scenarios", default=",".join(SCENARIOS))
+    parser.add_argument("--scenarios", default="stand,straight_0.6,turn_around_left,turn_around_right")
     parser.add_argument("--num-envs", type=int, default=32)
     parser.add_argument("--duration", type=float, default=30.0)
     parser.add_argument("--seed", type=int, default=777)
     parser.add_argument("--max-obs-error", type=float, default=1e-4)
     parser.add_argument("--min-survival", type=float, default=0.95)
+    parser.add_argument(
+        "--shaping",
+        choices=tuple(SHAPINGS),
+        default="none",
+        help="Host post-processing of targets; 'robotd' is Pollen robotd's default action scale and low-pass.",
+    )
     parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args()
 
@@ -212,6 +236,7 @@ def main() -> int:
             num_envs=args.num_envs,
             duration_s=args.duration,
             seed=args.seed,
+            shaping=SHAPINGS[args.shaping],
         )
         for name in args.scenarios.split(",")
     ]
@@ -231,8 +256,15 @@ def main() -> int:
             f"obs_err={worst_obs:.2e} target_err={row['max_target_error_rad']:.2e} "
             f"[{'pass' if ok else 'FAIL'}]"
         )
-    summary = {"deploy_dir": str(args.deploy_dir), "sim": args.sim, "passes": passes, "results": results}
-    output = args.output or args.deploy_dir / f"sim_loop_{args.sim}.json"
+    summary = {
+        "deploy_dir": str(args.deploy_dir),
+        "sim": args.sim,
+        "shaping": args.shaping,
+        "passes": passes,
+        "results": results,
+    }
+    suffix = "" if args.shaping == "none" else f"_{args.shaping}"
+    output = args.output or args.deploy_dir / f"sim_loop_{args.sim}{suffix}.json"
     output.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     print(f"deploy sim loop {'PASS' if passes else 'FAIL'}: {output}")
     return 0 if passes else 1

@@ -9,6 +9,7 @@ import numpy as np
 import pytest
 
 from microduck_rl_unilab.deploy import (
+    ROBOTD_DEFAULTS,
     Command,
     Controller,
     DeployManifest,
@@ -106,6 +107,39 @@ def test_controller_clamps_targets_and_feeds_back_the_raw_action() -> None:
 
     controller.reset()
     np.testing.assert_array_equal(controller.observations.last_action, 0.0)
+
+
+def test_robotd_shaping_scales_then_low_passes_head_and_legs() -> None:
+    plain = Controller(DEPLOY_DIR)
+    shaped = Controller(DEPLOY_DIR, shaping=ROBOTD_DEFAULTS)
+    manifest = plain.manifest
+    reading = _reading(manifest)
+
+    first_plain = plain.step(reading)
+    first = shaped.step(reading)
+    action = shaped.observations.last_action
+    expected = np.clip(
+        0.9 * action + manifest.default_joint_pos,
+        manifest.joint_limits[:, 0],
+        manifest.joint_limits[:, 1],
+    )
+    np.testing.assert_allclose(first, expected, atol=1e-6)
+    assert not np.allclose(first, first_plain)
+
+    raw_first = 0.9 * action + manifest.default_joint_pos
+    second = shaped.step(_reading(manifest, offset=0.05))
+    raw = 0.9 * shaped.observations.last_action + manifest.default_joint_pos
+    want = raw.copy()
+    want[5:9] = 0.5 * raw[5:9] + 0.5 * raw_first[5:9]
+    legs = np.r_[0:5, 9:14]
+    want[legs] = 0.7 * raw[legs] + 0.3 * raw_first[legs]
+    np.testing.assert_allclose(
+        second, np.clip(want, manifest.joint_limits[:, 0], manifest.joint_limits[:, 1]), atol=1e-5
+    )
+
+    shaped.reset()
+    third = shaped.step(reading)
+    np.testing.assert_allclose(third, first, atol=1e-6)
 
 
 def test_straight_command_needs_a_heading() -> None:
