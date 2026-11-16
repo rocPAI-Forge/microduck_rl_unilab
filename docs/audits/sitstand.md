@@ -60,11 +60,27 @@ Scored by `scripts/eval_sitstand.py` (stand 1 s, sit until 7 s, stand until
 | 202 | 89.3% | 89.2% | 97.5% | 0% | 0.88 | 0.43 | 3.3° |
 | 303 | 85.2% | 85.2% | 97.3% | 0.2% | 0.88 | 0.43 | 3.3° |
 
+## Gentler descent: two attempts, both stopped sitting
+
+Both resumed `model_6500` for 1500 iterations; 256 environments, seed 101.
+
+| Owner | Change | Sit | Rise | Peak descent p95 |
+|---|---|---|---|---|
+| — (`model_6500`) | — | 84–85% | 97–98% | 0.88 m/s |
+| `microduck_sitstand_gentle_flat` | descent cap 30 → 60, \|a_z\| 0.3 | 0.4–23% | 98–100% | 0.12–0.87 |
+| `microduck_sitstand_ramp_flat` | target ramp 3.5 s, descent cap 15 → 30, \|a_z\| 0.15, dwell 5–8 s | 2–6% | 98–100% | 0.15–0.92 |
+
+Whenever sitting got costlier or slower, the policy stopped sitting within
+250 iterations and kept standing; the low peak speeds are checkpoints that no
+longer sit. The drop is part of the only sit this policy found. `model_6500`
+stays the result.
+
 ## Open
 
-- The final ~4 cm of the descent is a drop. Upstream's descent cap (0.05 m/s,
-  weight 20) did not price it out here; a heavier cap or an impact term is
-  the next step before hardware.
+- The final ~4 cm of the descent is a drop. Heavier speed and shock costs and
+  a slower target made the policy stop sitting rather than sit gently; an
+  impact-force term, or training from scratch with gentleness from the start
+  on 4096 environments, are the remaining routes.
 - Upstream's seated fall-back hardening (head-command jerks, backward tip
   kicks, neck-strain cost) is not ported.
 - No MotrixSim owner; the scoot-to-dock task (microduck-playground butt walk)
