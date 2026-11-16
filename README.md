@@ -134,7 +134,7 @@ revisited once on-robot data exists.
 | `microduck_velocity_flat` | mujoco, motrix | mujoco, motrix |
 | `microduck_velstand_flat` | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
-| `microduck_sprint_flat` and its 22 continuation owners (`robust`, `gaitfix`, `rollfix`, `steerfix`, `straightfix`, `straightspeed`, `straighthold`, `straightcmd`, `straightrange`, `straightclip`, `straightneck`, `straighthead`, `steer`, `steermix`, `stand`, `standturn`, `pivot`, `pivothold`, `pivotsym`, `standwide`, `standwidefast`, `pivotyaw`) | mujoco | — |
+| `microduck_sprint_flat` and its 23 continuation owners (`robust`, `gaitfix`, `rollfix`, `steerfix`, `straightfix`, `straightspeed`, `straighthold`, `straightcmd`, `straightrange`, `straightclip`, `straightneck`, `straighthead`, `steer`, `steermix`, `stand`, `standturn`, `pivot`, `pivothold`, `pivotsym`, `standwide`, `standwidefast`, `pivotyaw`, `standbacklash`) | mujoco | — |
 | `microduck_ground_pick_flat`, `microduck_sitstand_flat` | mjwarp | — |
 
 Each sprint continuation owner is `microduck_sprint_<name>_flat`; the example
@@ -374,7 +374,7 @@ the CLI, so they cannot use `--config-dir`).
 
 ## Asset policy
 
-All MicroDuck assets (8 XML + 47 STL + upstream licenses + sha256 manifest)
+All MicroDuck assets (11 XML + 47 STL + upstream licenses + sha256 manifest)
 are in git and work out of the box. `assets.py` is a fallback only: missing
 files are filled from the Hugging Face dataset
 [`unilabsim/unilab-robots`](https://huggingface.co/datasets/unilabsim/unilab-robots)
