@@ -1,0 +1,256 @@
+# @package _global_
+# Seated scooting on command ("butt walk"), after Vottivott/microduck-playground
+# hardware/microdock-v2/training (Apache-2.0): the MicroDock v2 docks by backing
+# a seated duck in, and undocks by scooting it out. Upstream builds on the
+# sitstand env; here it builds on the standup owner (the sitstand owner's
+# SitStandCommand cannot be swapped back to a velocity command) with the
+# sitstand regularizers re-added:
+#   - every episode starts seated; the twist is a velocity command biased
+#     backward (vx -0.10..+0.06 m/s, wz +-0.3, 20% exact zero);
+#   - tracking (narrow Gaussians + capped linear progress), a seated band
+#     (Gaussian at 65 mm, L1 above 80 mm, terminate above 95 mm), a sharp
+#     upright, head held at its command (Gaussian + L1, terminate past 0.8 rad),
+#     stillness at the zero command, and a hip-limit proximity cost;
+#   - the seat and body collision geoms get a friction range that starts
+#     slippery and widens;
+#   - the inherited curricula stop before iteration 1400 (upstream's runs
+#     collapsed when they hardened at 1500); the released dock policy was the
+#     iteration-1400 checkpoint of such a run.
+defaults:
+  - /task/microduck_standup_flat/base
+  - _self_
+
+training:
+  task_name: MicroduckStandupFlat
+  sim_backend: mujoco
+  play_steps: 2000
+
+algo:
+  seed: 42
+  num_envs: 1024
+  max_iterations: 2000
+  save_interval: 100
+  experiment_name: microduck_scoot
+  run_name: microduck_scoot
+  empirical_normalization: true
+  obs_groups:
+    actor: [policy]
+    critic: [critic]
+  policy:
+    init_noise_std: 1.0
+  algorithm:
+    learning_rate: 1.0e-3
+    entropy_coef: 0.01
+
+env:
+  seed: 42
+  max_episode_seconds: 12.0
+  scene:
+    entities:
+      robot:
+        geom_names:
+          - left_foot_collision
+          - right_foot_collision
+          - np_f970_collision
+          - left_hip_collision
+          - right_hip_collision
+          - top_head_shell_collision
+          - jaw_collision
+          - bottom_head_shell_collision
+  commands:
+    twist:
+      resampling_time_range: [2.5, 6.0]
+      rel_standing_envs: 0.2
+      ranges:
+        lin_vel_x: [-0.10, 0.06]
+        lin_vel_y: [-0.01, 0.01]
+        ang_vel_z: [-0.30, 0.30]
+    body_pose:
+      zero_command_prob: 1.0
+      ranges: [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]
+  events:
+    set_ground_state:
+      params:
+        face_down_prob: 0.0
+        face_up_prob: 0.0
+        sitting_prob: 1.0
+        standing_prob: 0.0
+        sitting_z_min: 0.06
+        sitting_z_max: 0.075
+        sitting_joint_noise_std: 0.10
+        sitting_tilt_max: 0.13962634015954636
+    seat_friction:
+      func: unilab.envs.mdp.geom_friction
+      mode: reset
+      params:
+        asset_cfg:
+          _target_: unilab.managers.SceneEntityCfg
+          name: robot
+          geom_names: [np_f970_collision, left_hip_collision, right_hip_collision, top_head_shell_collision, jaw_collision, bottom_head_shell_collision]
+        ranges: [0.05, 0.25]
+        operation: abs
+        axes: [0]
+        shared_random: true
+  terminations:
+    stood_up:
+      func: microduck_rl_unilab.tasks.microduck.scoot_terms.root_height_above
+      time_out: false
+      params: {max_height: 0.095}
+    head_off_command:
+      func: microduck_rl_unilab.tasks.microduck.scoot_terms.head_off_command
+      time_out: false
+      params: {command_name: head_pose, max_error: 0.8}
+    fell_over:
+      func: unilab.envs.mdp.bad_orientation
+      time_out: false
+      params: {limit_angle: 1.0471975511965976}
+  curriculum:
+    ground_state_mix: null
+    arrival_damping_weight: null
+    head_pose_bias_weight: null
+    body_pose_tracking_weight: null
+    body_pose_range: null
+    height_stand_sharp_weight: null
+    upright_sharp_weight: null
+    standing_composite_weight: null
+    # Inherited curricula, kept only below iteration 1400 (step 33600).
+    head_pose_range:
+      params:
+        stages:
+          - {step: 0, ranges: [[-0.05, 0.05], [-0.05, 0.05], [-0.07, 0.07], [-0.015, 0.015]]}
+          - {step: 12000, ranges: [[-0.17, 0.17], [-0.17, 0.17], [-0.21, 0.21], [-0.047, 0.047]]}
+          - {step: 24000, ranges: [[-0.39, 0.39], [-0.39, 0.39], [-0.49, 0.49], [-0.11, 0.11]]}
+    push_magnitude:
+      params:
+        stages:
+          - {step: 0, params: {velocity_range: {x: [0.0, 0.0], y: [0.0, 0.0]}}}
+          - {step: 24000, params: {velocity_range: {x: [-0.05, 0.05], y: [-0.05, 0.05]}}}
+    action_rate_weight:
+      params:
+        stages:
+          - {step: 0, weight: -0.1}
+          - {step: 12000, weight: -0.2}
+          - {step: 18000, weight: -0.4}
+          - {step: 24000, weight: -0.6}
+          - {step: 30000, weight: -0.8}
+    torque_rate_weight:
+      params:
+        stages:
+          - {step: 0, weight: 0.0}
+          - {step: 18000, weight: -0.0005}
+          - {step: 30000, weight: -0.001}
+    descent_speed_weight:
+      func: unilab.envs.mdp.reward_curriculum
+      params:
+        reward_name: descent_speed
+        stages:
+          - {step: 0, weight: 10.0}
+          - {step: 12000, weight: 20.0}
+    # Scoot's own: a slippery seat first, then the realistic range.
+    seat_friction_range:
+      func: unilab.envs.mdp.event_curriculum
+      params:
+        event_name: seat_friction
+        stages:
+          - {step: 0, params: {ranges: [0.05, 0.25]}}
+          - {step: 9600, params: {ranges: [0.15, 0.45]}}
+          - {step: 21600, params: {ranges: [0.25, 0.7]}}
+          - {step: 36000, params: {ranges: [0.3, 1.0]}}
+
+reward:
+  pose_stand_legs: null
+  pose_stand_l1: null
+  head_pose_bias: null
+  height_stand: null
+  height_stand_sharp: null
+  height_stand_l1: null
+  com_upward_velocity: null
+  gentle_rise: null
+  arrival_damping: null
+  upright_sharp: null
+  standing_composite: null
+  body_pose_tracking: null
+  track_lin:
+    func: unilab.envs.mdp.track_linear_velocity
+    weight: 3.0
+    params: {command_name: twist, std: 0.04}
+  track_ang:
+    func: unilab.envs.mdp.track_angular_velocity
+    weight: 1.5
+    params: {command_name: twist, std: 0.25}
+  progress_lin:
+    func: microduck_rl_unilab.tasks.microduck.scoot_terms.command_progress
+    weight: 2.0
+    params: {command_name: twist, axis: lin_x, min_cmd: 0.01}
+  progress_ang:
+    func: microduck_rl_unilab.tasks.microduck.scoot_terms.command_progress
+    weight: 1.0
+    params: {command_name: twist, axis: ang_z, min_cmd: 0.05}
+  still_at_zero_command:
+    func: microduck_rl_unilab.tasks.microduck.scoot_terms.stillness_at_zero_command
+    weight: 1.0
+    params: {command_name: twist, command_threshold: 0.01, vel_std: 0.03}
+  seated_height:
+    func: microduck_rl_unilab.tasks.microduck.standup_terms.height_target_gaussian
+    weight: 1.0
+    params:
+      target_height: 0.065
+      std: 0.02
+      asset_cfg: {_target_: unilab.managers.SceneEntityCfg, name: robot, body_names: [trunk_base]}
+  seated_height_cap:
+    func: microduck_rl_unilab.tasks.microduck.scoot_terms.height_above_l1_penalty
+    weight: 20.0
+    params: {max_height: 0.080}
+  seated_leg_pose:
+    func: microduck_rl_unilab.tasks.microduck.standup_terms.pose_target_match
+    weight: 0.5
+    params:
+      std: 0.6
+      target_overrides:
+        left_hip_roll: 0.0
+        left_hip_pitch: -0.4079
+        left_knee: 1.35
+        left_ankle: 0.0
+        right_hip_roll: 0.0
+        right_hip_pitch: 0.4079
+        right_knee: -1.35
+        right_ankle: 0.0
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+        joint_names: [left_hip_yaw, left_hip_roll, left_hip_pitch, left_knee, left_ankle, right_hip_yaw, right_hip_roll, right_hip_pitch, right_knee, right_ankle]
+        preserve_order: true
+  seated_upright:
+    func: unilab.envs.mdp.upright
+    weight: 1.5
+    params:
+      std: 0.07
+      asset_cfg: {_target_: unilab.managers.SceneEntityCfg, name: robot, body_names: [trunk_base]}
+  upright_linear:
+    weight: 2.5
+  head_pose_tracking:
+    weight: 1.5
+  head_pose_l1:
+    func: microduck_rl_unilab.tasks.microduck.scoot_terms.head_pose_l1
+    weight: 5.0
+    params: {command_name: head_pose}
+  hip_limit_proximity:
+    func: microduck_rl_unilab.tasks.microduck.scoot_terms.joint_limit_proximity
+    weight: -3.0
+    params:
+      margin: 0.15
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+        joint_names: [left_hip_roll, left_hip_yaw, right_hip_roll, right_hip_yaw]
+        preserve_order: true
+  # Sitstand's anti-hop caps and shock cost (POSITIVE weights: self-negating).
+  descent_speed:
+    func: microduck_rl_unilab.tasks.microduck.sitstand_terms.trunk_downward_velocity_penalty
+    weight: 10.0
+    params: {max_down_vel: 0.05}
+  gentle_motion:
+    func: microduck_rl_unilab.tasks.microduck.standup_terms.trunk_vertical_accel_penalty
+    weight: 0.05
+    params:
+      asset_cfg: {_target_: unilab.managers.SceneEntityCfg, name: robot, body_names: [trunk_base]}
