@@ -120,8 +120,11 @@ published only after it passes. Failures are fixed on the MuJoCo side.
   - `microduck_sprint_steerfix_flat` is the first stage of the
     `sprint_straight_long` reproduce chain, so it stays; it has no separate
     weights.
-  - `microduck_ground_pick_flat` and `microduck_sitstand_flat` are
-    MJWarp-only and wait on item 6.
+  - `microduck_ground_pick_flat` is MJWarp-only and waits on item 6.
+    `microduck_sitstand_flat` now also runs the full upstream recipe on
+    MuJoCo ([`audits/sitstand.md`](audits/sitstand.md)): one policy sits
+    85–89% and stands 97% on command, upright, but drops the last ~4 cm onto
+    the seat.
 
 ## Open questions
 

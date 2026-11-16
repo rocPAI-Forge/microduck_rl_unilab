@@ -1,0 +1,25 @@
+# @package _global_
+# Sit/stand warm-started from the stand-up policy (examples/standup).
+#
+# From scratch (microduck_sitstand_flat) the policy learned to sit but stood
+# in a tripod: one knee on its limit, the head on the floor, trunk ~31 deg.
+# Warm-started from the checked stand-up policy it stood upright but never
+# tried to sit in 2500 iterations: upstream's recipe has a rise bootstrap and
+# no sit counterpart, because a from-scratch policy falls into sitting. Here a
+# capped descent bootstrap pays the first attempt, and the wrong-posture
+# height cost is heavier.
+defaults:
+  - /task/microduck_sitstand_flat/mujoco
+  - _self_
+
+algo:
+  experiment_name: microduck_sitstand_warm
+  run_name: microduck_sitstand_warm
+
+reward:
+  posture_height_l1:
+    weight: 10.0
+  sit_bootstrap:
+    func: microduck_rl_unilab.tasks.microduck.sitstand_terms.posture_sit_bootstrap
+    weight: 0.75
+    params: {command_name: twist, min_height: 0.065, max_vz: 0.05}

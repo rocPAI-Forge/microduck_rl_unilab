@@ -102,7 +102,8 @@ uv run --no-sync scripts/sim2sim_check.py examples/sprint_stand/model_59000.pt
 | `microduck_velstand_flat` | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
 | `microduck_sprint_flat` 及其 23 个续训 owner（`robust`、`gaitfix`、`rollfix`、`steerfix`、`straightfix`、`straightspeed`、`straighthold`、`straightcmd`、`straightrange`、`straightclip`、`straightneck`、`straighthead`、`steer`、`steermix`、`stand`、`standturn`、`pivot`、`pivothold`、`pivotsym`、`standwide`、`standwidefast`、`pivotyaw`、`standbacklash`） | mujoco | — |
-| `microduck_ground_pick_flat`、`microduck_sitstand_flat` | mjwarp | — |
+| `microduck_sitstand_flat`（上游完整的坐下起立方法，MuJoCo 版；[研究记录](docs/audits/sitstand.md)） | mujoco, mjwarp | — |
+| `microduck_ground_pick_flat` | mjwarp | — |
 
 每个冲刺续训 owner 的完整名字是 `microduck_sprint_<名字>_flat`，用到它的示例 README 里有具体命令。
 
@@ -337,7 +338,8 @@ src/microduck_rl_unilab/
         ├── manager_terms.py        # velocity command / 奖励 terms
         ├── sprint_terms.py         # sprint 速度/航向奖励与速度课程
         ├── recovery_terms.py       # velstand 跌倒恢复 terms
-        ├── standup_terms.py        # standup / ground_pick / sitstand terms
+        ├── standup_terms.py        # standup / ground_pick terms
+        ├── sitstand_terms.py       # 坐下 <-> 起立 指令任务的奖励项
         ├── bam_action.py           # BAM 电压驱动 action term
         ├── deploy_contract.py      # obs/action 维度契约
         ├── symmetry.py             # 61 维接口的左右镜像

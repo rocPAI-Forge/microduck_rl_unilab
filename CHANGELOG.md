@@ -4,6 +4,18 @@ Versions follow `project.version` in `pyproject.toml`. Each release is a git
 tag `v<version>` with a matching GitHub release. Checkpoints live in
 `examples/` and are versioned with the code that reproduces them.
 
+## Unreleased
+
+- Commanded sit and stand on MuJoCo, after upstream microduck_rl's sitstand
+  recipe: `sitstand_terms` (posture rewards that track the
+  `SitStandCommand`'s slewed target, rise and sit bootstraps, speed caps),
+  the `microduck_sitstand_flat/mujoco` owner on the standup base, the
+  `microduck_sitstand_warm_flat` and `microduck_sitstand_fix_flat` variants,
+  `MicroduckSitStandFlat` registered on MuJoCo, and `scripts/eval_sitstand.py`.
+  After five rounds one policy sits 85–89% and stands 97% on command,
+  upright, with ≤ 0.2% falls, but drops the last ~4 cm onto the seat
+  (`docs/audits/sitstand.md`). No checkpoint is published.
+
 ## 0.3.1
 
 Studies and deployment groundwork after 0.3.0; no new checkpoint, and
