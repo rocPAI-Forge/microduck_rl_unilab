@@ -46,6 +46,10 @@ env:
   seed: 42
   max_episode_seconds: 12.0
   scene:
+    # Collision meshes capped at 128 hull vertices (scripts/make_hull_robot.py;
+    # run it first): the per-env physics model the randomization events clone
+    # drops from ~30 MB to ~1 MB, so 4096 envs fit in host RAM.
+    model_file: assets/robots/microduck/generated/scene_flat_groundcontact_bam_hull.xml
     entities:
       robot:
         geom_names:
