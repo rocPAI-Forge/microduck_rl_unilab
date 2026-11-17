@@ -10,16 +10,23 @@ collision mesh is replaced by its hull capped at ``--maxhullvert`` vertices
 (MuJoCo's own hull simplification); the clone then drops to about 1 MB, which
 lets ground-contact tasks run thousands of environments on CPU.
 
-The capped hull sits inside the exact hull; ``check`` reports how far the exact
-hull pokes out of it, which is the only geometric change. Bodies carry explicit
-``<inertial>`` elements, so mass and inertia do not depend on the meshes, and
-visual geoms keep the original meshes. The check also confirms bodies,
-joints, actuators, sensors, and contact parameters are unchanged and that the
-robot settles into the same standing pose.
+The capped hull sits inside the exact hull; ``check`` measures the floor
+distance change over random poses and compares self-collision contacts.
+Bodies carry explicit ``<inertial>`` elements, so mass and inertia do not
+depend on the meshes, and visual geoms keep the original meshes. The check
+also confirms bodies, joints, actuators, sensors, and contact parameters are
+unchanged.
+
+The ``_prio`` variant also gives every robot collision geom contact priority
+1. The floor's friction is 1.0 and MuJoCo combines equal-priority geoms with
+the larger friction, so without it any robot geom randomized below 1.0 still
+grips at 1.0; with it the robot geom's own friction governs its floor
+contacts. Floor and robot geoms share solref/solimp/condim, so nothing else
+changes.
 
 Writes into ``assets/robots/microduck/generated/`` (git-ignored):
-    microduck_groundcontact_bam_hull.xml
-    scene_flat_groundcontact_bam_hull.xml
+    microduck_groundcontact_bam_hull.xml, scene_flat_groundcontact_bam_hull.xml
+    microduck_groundcontact_bam_hull_prio.xml, scene_flat_groundcontact_bam_hull_prio.xml
 
 Usage:
     uv run --no-sync scripts/make_hull_robot.py [--maxhullvert 128]
@@ -76,9 +83,15 @@ def collision_mesh_geoms(model: mujoco.MjModel) -> list[int]:
     return [g for g in range(model.ngeom) if model.geom_type[g] == mujoco.mjtGeom.mjGEOM_MESH and is_collision(model, g)]
 
 
-def build_robot(maxhullvert: int) -> mujoco.MjSpec:
+def build_robot(maxhullvert: int, friction_priority: bool = False) -> mujoco.MjSpec:
     spec = mujoco.MjSpec.from_file(str(ROBOT_DIR / ROBOT))
     model = spec.compile()
+    if friction_priority:
+        for gid in range(model.ngeom):
+            if is_collision(model, gid):
+                if not model.geom(gid).name:
+                    raise ValueError("collision geoms must be named to raise their priority")
+                spec.geom(model.geom(gid).name).priority = 1
     geoms = collision_mesh_geoms(model)
     if any(not model.geom(g).name for g in geoms):
         raise ValueError("collision mesh geoms must be named so they can be matched")
@@ -205,19 +218,20 @@ def check(original: mujoco.MjModel, hull: mujoco.MjModel) -> tuple[dict, dict]:
     return floor_distance_gap_mm(original, hull), self_contact_agreement(original, hull)
 
 
-def write_variant(maxhullvert: int = 128) -> Path:
+def write_variant(maxhullvert: int = 128, friction_priority: bool = False) -> Path:
     """Write the hull robot and its scene; return the scene path."""
     OUT_DIR.mkdir(exist_ok=True)
-    spec = build_robot(maxhullvert)
+    spec = build_robot(maxhullvert, friction_priority)
     spec.compile()
+    suffix = "_hull_prio.xml" if friction_priority else "_hull.xml"
     # Visual mesh files resolve against the original robot directory.
-    robot = OUT_DIR / ROBOT.replace(".xml", "_hull.xml")
+    robot = OUT_DIR / ROBOT.replace(".xml", suffix)
     robot.write_text(re.sub(r'meshdir="[^"]*"', 'meshdir="../assets"', spec.to_xml()))
     scene_text = (ROBOT_DIR / SCENE).read_text()
     include = f'<include file="{ROBOT}"/>'
     if scene_text.count(include) != 1:
         raise ValueError(f"{SCENE} must include {ROBOT} once")
-    scene = OUT_DIR / SCENE.replace(".xml", "_hull.xml")
+    scene = OUT_DIR / SCENE.replace(".xml", suffix)
     scene.write_text(scene_text.replace(include, f'<include file="{robot.name}"/>'))
     return scene
 
@@ -227,6 +241,8 @@ def main() -> int:
     parser.add_argument("--maxhullvert", type=int, default=128)
     args = parser.parse_args()
 
+    prio = write_variant(args.maxhullvert, friction_priority=True)
+    print(f"{prio.relative_to(REPO_ROOT)}: robot collision geoms at contact priority 1")
     scene = write_variant(args.maxhullvert)
     original, hulled = load_with_task(ROBOT_DIR / SCENE), load_with_task(scene)
     floor, self_pairs = check(original, hulled)
