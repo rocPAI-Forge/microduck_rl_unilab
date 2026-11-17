@@ -78,5 +78,9 @@ for _task_name in ("MicroduckGroundPickFlat", "MicroduckSitStandFlat"):
 # the MuJoCo substep state-feedback contract.
 registry.register_env("MicroduckSitStandFlat", make_microduck_velocity_env, sim_backend="mujoco")
 
+# Basketball balance: the hull ground-contact duck plus a free ball entity.
+registry.register_env_config("MicroduckBasketballFlat", ManagerBasedRlEnvCfg)
+registry.register_env("MicroduckBasketballFlat", make_microduck_velocity_env, sim_backend="mujoco")
+
 
 __all__ = ["make_microduck_velocity_env"]
