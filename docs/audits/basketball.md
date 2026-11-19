@@ -57,17 +57,35 @@ about 0.16, bias -0.1). So yaw is weakly ordered too; the 0.75 rad/s error is
 mostly oscillation. The yaw Gaussian (std 0.3) is flat at that error, so
 weights do not damp it (round 5).
 
-Round 6 (`microduck_basketball_ft5_flat`, from round 4): `rel_forward_envs` 0,
-20% turn-in-place episodes, and a linear `yaw_rate_error_l1` reward (weight
-1.0, cap 1.0). Smoke-tested only.
+Round 6 (`microduck_basketball_ft5_flat`, `model_10495`, 500 iters from round 4):
+`rel_forward_envs` 0, 20% turn-in-place episodes, and a linear
+`yaw_rate_error_l1` reward (weight 1.0, cap 1.0). Clean eval (60 s, 3 seeds):
+
+| cmd (vx, wz) | run | survival @60 s | vx | yaw error | mean yaw rate |
+|---|---|---|---|---|---|
+| (-0.10, 0) | r4 | 0.943 | +0.014 | 0.83 | -0.32 |
+| (-0.10, 0) | r6 | 0.991 | -0.017 | 0.66 | -0.22 |
+| (0, 0) | r4 | 0.987 | +0.030 | 0.74 | -0.11 |
+| (0, 0) | r6 | 0.988 | +0.005 | 0.65 | -0.01 |
+| (+0.10, 0) | r4 | 0.995 | +0.047 | 0.69 | +0.12 |
+| (+0.10, 0) | r6 | 0.992 | +0.034 | 0.69 | +0.22 |
+| (0, -0.30) | r4 | 0.987 | +0.028 | 0.76 | -0.15 |
+| (0, -0.30) | r6 | 0.986 | +0.006 | 0.69 | -0.06 |
+| (0, +0.30) | r4 | 0.980 | +0.032 | 0.78 | -0.05 |
+| (0, +0.30) | r6 | 0.984 | +0.005 | 0.69 | +0.03 |
+
+Round 6 removes the zero-command bias and gives the right sign in both
+directions: vx slope about 0.26, yaw mean slope about 0.15 (about 11% of the
+command at +0.30). Survival holds at 98% to 99%. Yaw error drops from about
+0.75 to 0.67 but is still mostly oscillation. Forward and yaw following remain
+weak.
 
 ## Open items
 
-- Round 6 is not trained yet.
 - Round 4 has no re-rendered video; the earlier Round 2 clips are the latest
   visual reference.
 - Forward MAE is not discriminative at this command range. A constant
   0.05 m/s predictor gives MAE about 0.154 on commands uniform in +-0.30 m/s,
   which matches playground b11's reported 0.156.
-- The tables above predate the eval fix; their vx column includes the 20%
-  forced-forward envs.
+- The round table above predates the eval fix; its vx column includes the 20%
+  forced-forward envs. Round 4 and 6 clean numbers are in the Round 6 table.
