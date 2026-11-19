@@ -9,8 +9,8 @@
 #     (forward +-0.30, lateral +-0.20, yaw +-1.0 rad/s);
 #   - speed tracking is 2.5x round 2's weights (linear 2.5, angular 1.25).
 # Everything else (action-rate -0.2, hold levels 0.1/0.03/0, pushes) is
-# inherited from round 2. Warm start from round 2 model_8998; the iteration
-# counter is absolute, so max_iterations 9499 gives 500 more iterations.
+# inherited from round 2. Warm start from round 2 model_8998; max_iterations
+# counts additional iterations, so 500 gives about 9498.
 defaults:
   - /task/microduck_basketball_ft_flat/mujoco
   - _self_
