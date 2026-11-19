@@ -9,10 +9,10 @@ training. Port of the playground basketball experiment (b11).
 
 Partial, and still moving. The policy balances a free ball (about 95% or
 better at 60 s from round 3 on). Command following is ordered but weak.
-Current best is round 9 (`microduck_basketball_ft8_flat`, `model_11992`):
-survival 97% to 99% at 60 s, forward slope about 0.44 (vx +0.067 at +0.10 m/s),
-yaw slope about 0.55, yaw error about 0.35. Zero command still drifts at
-about +0.026 m/s.
+Current best is round 10 (`microduck_basketball_ft9_flat`, `model_12491`):
+survival 98% to 99% at 60 s, forward slope about 0.48 (vx -0.024 / +0.023 /
++0.071 at -0.10 / 0 / +0.10 m/s), yaw slope about 0.58, yaw error about 0.33.
+Zero command still drifts at about +0.023 m/s.
 Round 4 was the best point before the tracking-kernel and command-sampling
 fixes; its numbers are in the round 6 table.
 
@@ -165,6 +165,21 @@ with +0.067 m/s. Survival holds. Yaw slope rises from about 0.48 to about
 centered reward (std 0.04 m, per-step reward about 1.8 of a weight-2 term)
 keeps the duck within about 1 cm of the ball centre, which is what rolling
 has to give up.
+
+## Round 10: wider centering kernel (kept)
+
+`microduck_basketball_ft9_flat`, `model_12491`, 500 iters from round 9, centered
+std 0.08 m. The policy stayed on the peak (centered reward still about 1.92).
+Clean eval versus round 9: forward slope 0.44 to 0.48, yaw slope 0.55 to 0.58,
+yaw error slightly down, survival unchanged at 98% to 99%. A small gain, and
+the best checkpoint.
+
+## Round 11: centering weight 0.5 (rejected)
+
+`microduck_basketball_ft10_flat`, `model_12990`, 500 iters from round 10.
+Centered weight 2.0 to 0.5. Training falls rose from about 6 to about 24 per
+log window. Clean eval survival at 60 s is 0.00 to 0.15. Not kept. The
+centering reward holds the duck on the ball; cutting it does not buy tracking.
 
 ## Open items
 
