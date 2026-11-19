@@ -80,6 +80,34 @@ command at +0.30). Survival holds at 98% to 99%. Yaw error drops from about
 0.75 to 0.67 but is still mostly oscillation. Forward and yaw following remain
 weak.
 
+## Round 7: action-rate penalty -1.0 (chatter)
+
+Round 6 yaw spectrum (zero command): 46% of power at 2 to 10 Hz, and joints
+1-3 and 10-12 chatter at 2 to 10 Hz (`/tmp/act_spec.py`, traces in
+`logs/rsl_rl_ppo_bb_r6/traces/`).
+
+Round 7 (`microduck_basketball_ft6_flat`, `model_10994`, 500 iters from round 6):
+action-rate weight -0.2 to -1.0. Clean eval (60 s, 3 seeds):
+
+| cmd (vx, wz) | run | survival @60 s | vx | yaw error | mean yaw rate |
+|---|---|---|---|---|---|
+| (-0.10, 0) | r6 | 0.991 | -0.017 | 0.66 | -0.22 |
+| (-0.10, 0) | r7 | 0.965 | -0.023 | 0.38 | +0.00 |
+| (0, 0) | r6 | 0.988 | +0.005 | 0.65 | -0.01 |
+| (0, 0) | r7 | 0.986 | +0.011 | 0.40 | +0.04 |
+| (+0.10, 0) | r6 | 0.992 | +0.034 | 0.69 | +0.22 |
+| (+0.10, 0) | r7 | 0.992 | +0.049 | 0.47 | +0.10 |
+| (0, -0.30) | r6 | 0.986 | +0.006 | 0.69 | -0.06 |
+| (0, -0.30) | r7 | 0.996 | +0.011 | 0.44 | -0.05 |
+| (0, +0.30) | r6 | 0.984 | +0.005 | 0.69 | +0.03 |
+| (0, +0.30) | r7 | 0.993 | +0.011 | 0.42 | +0.14 |
+
+Yaw error drops by about 40% (0.65 to 0.40), survival holds at 97% to 99.6%,
+and the yaw slope rises from about 0.15 to about 0.31. Forward slope rises
+from about 0.26 to about 0.36. Action std falls from 0.46 to 0.28 and action
+rate std from 0.18 to 0.12. Chatter remains at about 3 Hz in joints 1-3 and
+10-12 (it used to sit at 5-10 Hz), and yaw power at 2 to 5 Hz is now 44%.
+
 ## Open items
 
 - Round 4 has no re-rendered video; the earlier Round 2 clips are the latest
