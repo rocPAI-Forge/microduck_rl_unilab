@@ -7,10 +7,12 @@ training. Port of the playground basketball experiment (b11).
 
 ## Result
 
-Partial. The policy balances a free ball well, but it follows commands only
-weakly: forward speed is ordered with the command, yaw is not tracked at all.
-
-Accepted: Round 4 (`microduck_basketball_ft3_flat`, checkpoint `model_9996`).
+Partial, and still moving. The policy balances a free ball (about 95% or
+better at 60 s from round 3 on). Command following is ordered but weak.
+Current best is round 8 (`microduck_basketball_ft7_flat`, `model_11493`):
+yaw error about 0.33, yaw slope about 0.48, forward slope about 0.35.
+Round 4 was the best point before the tracking-kernel and command-sampling
+fixes; its numbers are in the round 6 table.
 
 ## Round table
 
@@ -107,6 +109,33 @@ and the yaw slope rises from about 0.15 to about 0.31. Forward slope rises
 from about 0.26 to about 0.36. Action std falls from 0.46 to 0.28 and action
 rate std from 0.18 to 0.12. Chatter remains at about 3 Hz in joints 1-3 and
 10-12 (it used to sit at 5-10 Hz), and yaw power at 2 to 5 Hz is now 44%.
+Those joints are the stance joints (left/right hip roll, hip pitch, knee), so
+the chatter is the balance correction, not the head. The action-rate penalty
+was not raised further.
+
+## Round 8: linear forward cost, yaw L1 weight 2
+
+`microduck_basketball_ft7_flat`, `model_11493`, 500 iters from round 7. Adds
+`lin_vel_error_l1` (weight 2, cap 0.4) and doubles `yaw_rate_l1` to 2. The
+training cost plateaued by about iteration 11100 (lin_vel_l1 near -0.21,
+yaw_rate_l1 near -1.16). Clean eval:
+
+| cmd (vx, wz) | run | survival @60 s | vx | yaw error | mean yaw rate |
+|---|---|---|---|---|---|
+| (-0.10, 0) | r7 | 0.965 | -0.023 | 0.38 | +0.00 |
+| (-0.10, 0) | r8 | 0.952 | -0.027 | 0.33 | +0.05 |
+| (0, 0) | r7 | 0.986 | +0.011 | 0.40 | +0.04 |
+| (0, 0) | r8 | 0.984 | +0.007 | 0.32 | +0.05 |
+| (+0.10, 0) | r7 | 0.992 | +0.049 | 0.47 | +0.10 |
+| (+0.10, 0) | r8 | 0.984 | +0.042 | 0.37 | +0.05 |
+| (0, -0.30) | r7 | 0.996 | +0.011 | 0.44 | -0.05 |
+| (0, -0.30) | r8 | 0.987 | +0.010 | 0.37 | -0.10 |
+| (0, +0.30) | r7 | 0.993 | +0.011 | 0.42 | +0.14 |
+| (0, +0.30) | r8 | 0.983 | +0.004 | 0.34 | +0.19 |
+
+Yaw error falls again (about 0.42 to 0.34) and the yaw slope rises from about
+0.31 to about 0.48. Survival stays at 95% to 99%. Forward slope does not
+improve (about 0.35, was 0.36): weight 2 on the linear term plateaued.
 
 ## Open items
 
