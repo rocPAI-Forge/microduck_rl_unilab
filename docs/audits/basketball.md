@@ -181,6 +181,29 @@ Centered weight 2.0 to 0.5. Training falls rose from about 6 to about 24 per
 log window. Clean eval survival at 60 s is 0.00 to 0.15. Not kept. The
 centering reward holds the duck on the ball; cutting it does not buy tracking.
 
+## Playground-protocol eval (round 10, model_12491)
+
+`scripts/eval_basketball_playground.py`: 1024 envs, 60 s, random commands from
+the owner's training ranges (+-0.30 m/s forward, +-0.20 lateral, +-1.0 rad/s
+yaw) resampled as in training (3 to 8 s), free ball, first fall counts as
+failure. The resample interval and the exact push protocol of playground b11
+are assumptions here; pushes are +-0.09 m/s at 0.5 to 1.0 s, as recorded for b11.
+
+| condition | survival 10 s | survival 60 s | forward MAE (zero / constant) | yaw MAE (zero / constant) |
+|---|---|---|---|---|
+| pushes 0.5-1 s | 0.52 | 0.035 | 0.106 (0.144 / 0.092) | 0.595 (0.506 / 0.606) |
+| pushes 3-6 s (training) | 0.81 | 0.32 | 0.095 (0.145 / 0.078) | 0.508 (0.503 / 0.531) |
+| no pushes | 0.84 | 0.43 | 0.094 (0.147 / 0.076) | 0.492 (0.500 / 0.517) |
+
+Fixed-command eval (earlier tables) gives 98% to 99% at 60 s, so the gap is
+mostly the random command mix (lateral and large yaw), not the pushes.
+Playground b11 reports 97% at 60 s under its protocol. We are far below it.
+
+The MAEs do not show tracking: the constant predictor (the run mean of vx and
+wz) beats the policy on both, and the yaw MAE is worse than predicting zero.
+The playground's 0.156 forward MAE and 1.26 yaw MAE should not be compared
+with these numbers without matching the baselines.
+
 ## Open items
 
 - Round 4 has no re-rendered video; the earlier Round 2 clips are the latest
