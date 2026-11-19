@@ -204,6 +204,29 @@ wz) beats the policy on both, and the yaw MAE is worse than predicting zero.
 The playground's 0.156 forward MAE and 1.26 yaw MAE should not be compared
 with these numbers without matching the baselines.
 
+## Playground-protocol ablation (round 10, no pushes, 1024 envs, 60 s)
+
+Each row enables one part of the random command mix. "resampled" uses the
+owner's training resample (3 to 8 s); "fixed" holds one command per episode.
+
+| command mix | survival 60 s |
+|---|---|
+| forward +-0.10, resampled | 0.99 |
+| forward +-0.15, resampled | 0.98 |
+| forward +-0.30, fixed per episode | 0.95 |
+| yaw +-1.0 only, resampled | 0.985 |
+| lateral +-0.2 only, resampled | 0.94 |
+| forward +-0.30 only, resampled | 0.67 |
+| all three, fixed per episode | 0.89 |
+| forward +-0.30, lateral +-0.2, yaw +-0.3, resampled | 0.45 |
+| all three ranges, resampled (full training mix) | 0.43 |
+
+Forward magnitude alone is survivable (0.95 fixed). Command switching at a
+small range is survivable (0.98). The failure is both together: large forward
+commands that change every few seconds. Lateral and yaw add loss on top of that
+but are not the cause. The fixed-command eval in the earlier tables (+-0.10 m/s)
+sits in the safe region, which is why it read 98% to 99%.
+
 ## Open items
 
 - Round 4 has no re-rendered video; the earlier Round 2 clips are the latest

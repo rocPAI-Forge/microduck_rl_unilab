@@ -62,6 +62,15 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
                 twist[key] = 0.0
         for name in cfg.env.curriculum:
             cfg.env.curriculum[name] = None
+        ranges = twist.ranges
+        if args.vx_range is not None:
+            ranges.lin_vel_x = [-args.vx_range, args.vx_range]
+        if args.lat_range is not None:
+            ranges.lin_vel_y = [-args.lat_range, args.lat_range]
+        if args.yaw_range is not None:
+            ranges.ang_vel_z = [-args.yaw_range, args.yaw_range]
+        if args.resample is not None:
+            twist.resampling_time_range = [args.resample, args.resample]
         push = cfg.env.events.push_robot
         if push is not None:
             push.interval_range_s = [args.push_min, args.push_max]
@@ -108,6 +117,8 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
             "checkpoint": str(args.checkpoint),
             "owner": args.owner,
             "num_envs": args.num_envs,
+            "ranges": {"vx": args.vx_range, "lat": args.lat_range, "yaw": args.yaw_range,
+                       "resample_s": args.resample},
             "duration_s": args.duration,
             "push": {"interval_s": [args.push_min, args.push_max], "velocity": args.push},
             "seed": args.seed,
@@ -137,6 +148,10 @@ def main() -> int:
     parser.add_argument("--push", type=float, default=0.09)
     parser.add_argument("--push-min", type=float, default=0.5)
     parser.add_argument("--push-max", type=float, default=1.0)
+    parser.add_argument("--vx-range", type=float, default=None, help="+-m/s; default owner range")
+    parser.add_argument("--lat-range", type=float, default=None, help="+-m/s; default owner range")
+    parser.add_argument("--yaw-range", type=float, default=None, help="+-rad/s; default owner range")
+    parser.add_argument("--resample", type=float, default=None, help="fixed resample period, s")
     parser.add_argument("--device", default=None)
     parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args()
