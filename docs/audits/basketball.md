@@ -39,16 +39,35 @@ tracking reward rose during round 3 while the evaluated speed response stayed
 flat, which is what this predicts. Round 4 tightens the kernels (std 0.1 m/s
 linear, 0.3 rad/s yaw) to make the response matter.
 
+## Command distribution bug (found after round 5)
+
+The walking recipe sets `rel_forward_envs: 0.2`. `UniformVelocityCommand`
+rewrites 20% of commands to `(max(|vx|, 0.3), 0, 0)`: above the basketball
+range, never backward, zero yaw. Rounds 1 to 5 all trained on it, and
+`scripts/eval_basketball.py` did not clear it, so 20% of eval envs were
+commanded +0.3 m/s whatever `--speed` said. This is why a zero command averaged
++0.04 m/s (0.8 x cmd + 0.2 x 0.3 matches the probe for -0.2, 0 and +0.2).
+The eval now clears `rel_forward_envs` and `rel_world_envs`, and also reports
+the signed mean yaw rate (`yaw_rate_mean`).
+
+Round 4 re-evaluated clean (60 s, 3 seeds): survival 0.94 to 0.995; vx
++0.014 / +0.030 / +0.047 at -0.10 / 0 / +0.10 m/s (slope about 0.17, offset
++0.03); mean yaw rate -0.148 / -0.106 / -0.051 at wz -0.30 / 0 / +0.30 (slope
+about 0.16, bias -0.1). So yaw is weakly ordered too; the 0.75 rad/s error is
+mostly oscillation. The yaw Gaussian (std 0.3) is flat at that error, so
+weights do not damp it (round 5).
+
+Round 6 (`microduck_basketball_ft5_flat`, from round 4): `rel_forward_envs` 0,
+20% turn-in-place episodes, and a linear `yaw_rate_error_l1` reward (weight
+1.0, cap 1.0). Smoke-tested only.
+
 ## Open items
 
-- Yaw is not tracked in any round. Yaw error grows with the yaw weight and
-  with survival pressure, so a yaw fix probably needs its own kernel or command
-  design rather than a larger weight.
-- A zero command is sampled as about +0.04 m/s in the probe (`/tmp/bb_cmdprobe.py`,
-  not in the repo). The cause is not yet traced; it may shift the training
-  command distribution.
+- Round 6 is not trained yet.
+- Round 4 has no re-rendered video; the earlier Round 2 clips are the latest
+  visual reference.
 - Forward MAE is not discriminative at this command range. A constant
   0.05 m/s predictor gives MAE about 0.154 on commands uniform in +-0.30 m/s,
   which matches playground b11's reported 0.156.
-- Round 4 has no re-rendered video; the earlier Round 2 clips are the latest
-  visual reference.
+- The tables above predate the eval fix; their vx column includes the 20%
+  forced-forward envs.

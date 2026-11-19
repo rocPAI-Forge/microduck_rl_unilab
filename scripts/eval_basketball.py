@@ -52,7 +52,13 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
         twist.ranges.lin_vel_y = [args.lateral, args.lateral]
         twist.ranges.ang_vel_z = [args.yaw_rate, args.yaw_rate]
         twist.resampling_time_range = [args.duration + 5.0, args.duration + 5.0]
-        for key in ("rel_standing_envs", "rel_heading_envs", "turn_in_place_fraction"):
+        for key in (
+            "rel_standing_envs",
+            "rel_heading_envs",
+            "rel_world_envs",
+            "rel_forward_envs",
+            "turn_in_place_fraction",
+        ):
             if key in twist:
                 twist[key] = 0.0
         for name in cfg.env.curriculum:
@@ -80,7 +86,7 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
         dt = float(raw_env.cfg.ctrl_dt)
         alive = np.ones(args.num_envs, dtype=bool)
         survival: dict[str, float] = {}
-        speed_sum = yaw_err_sum = 0.0
+        speed_sum = yaw_err_sum = yaw_sum = 0.0
         samples = 0
         for step in range(1, round(args.duration / dt) + 1):
             with torch.inference_mode():
@@ -91,6 +97,7 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
                 speed_sum += float(np.sum(np.asarray(robot.data.root_link_lin_vel_b)[alive, 0]))
                 yaw = np.asarray(robot.data.root_link_ang_vel_w)[alive, 2]
                 yaw_err_sum += float(np.sum(np.abs(yaw - args.yaw_rate)))
+                yaw_sum += float(np.sum(yaw))
                 samples += int(alive.sum())
             for mark in (10, 20, 60):
                 if abs(t - mark) < dt / 2:
@@ -107,6 +114,7 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
             "survival_end": float(alive.mean()),
             "forward_speed_m_s": speed_sum / samples if samples else None,
             "yaw_rate_abs_error": yaw_err_sum / samples if samples else None,
+            "yaw_rate_mean": yaw_sum / samples if samples else None,
         }
     finally:
         env.close()
