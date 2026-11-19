@@ -9,8 +9,10 @@ training. Port of the playground basketball experiment (b11).
 
 Partial, and still moving. The policy balances a free ball (about 95% or
 better at 60 s from round 3 on). Command following is ordered but weak.
-Current best is round 8 (`microduck_basketball_ft7_flat`, `model_11493`):
-yaw error about 0.33, yaw slope about 0.48, forward slope about 0.35.
+Current best is round 9 (`microduck_basketball_ft8_flat`, `model_11992`):
+survival 97% to 99% at 60 s, forward slope about 0.44 (vx +0.067 at +0.10 m/s),
+yaw slope about 0.55, yaw error about 0.35. Zero command still drifts at
+about +0.026 m/s.
 Round 4 was the best point before the tracking-kernel and command-sampling
 fixes; its numbers are in the round 6 table.
 
@@ -136,6 +138,33 @@ yaw_rate_l1 near -1.16). Clean eval:
 Yaw error falls again (about 0.42 to 0.34) and the yaw slope rises from about
 0.31 to about 0.48. Survival stays at 95% to 99%. Forward slope does not
 improve (about 0.35, was 0.36): weight 2 on the linear term plateaued.
+
+## Round 9: linear forward cost weight 4
+
+`microduck_basketball_ft8_flat`, `model_11992`, 500 iters from round 8. The
+logged lin_vel_l1 ends near -0.40, so the mean forward error is still about
+0.10 m/s (the weight doubled and the cost doubled). Clean eval:
+
+| cmd (vx, wz) | run | survival @60 s | vx | yaw error | mean yaw rate |
+|---|---|---|---|---|---|
+| (-0.10, 0) | r8 | 0.952 | -0.027 | 0.33 | +0.05 |
+| (-0.10, 0) | r9 | 0.971 | -0.021 | 0.33 | +0.09 |
+| (0, 0) | r8 | 0.984 | +0.007 | 0.32 | +0.05 |
+| (0, 0) | r9 | 0.990 | +0.026 | 0.35 | +0.06 |
+| (+0.10, 0) | r8 | 0.984 | +0.042 | 0.37 | +0.05 |
+| (+0.10, 0) | r9 | 0.980 | +0.067 | 0.41 | +0.06 |
+| (0, -0.30) | r8 | 0.987 | +0.010 | 0.37 | -0.10 |
+| (0, -0.30) | r9 | 0.987 | +0.025 | 0.39 | -0.10 |
+| (0, +0.30) | r8 | 0.983 | +0.004 | 0.34 | +0.19 |
+| (0, +0.30) | r9 | 0.991 | +0.027 | 0.34 | +0.23 |
+
+Forward slope rises from about 0.35 to about 0.44, and +0.10 m/s is answered
+with +0.067 m/s. Survival holds. Yaw slope rises from about 0.48 to about
+0.55; yaw error stays near 0.35. The zero-command forward drift grows from
++0.007 to +0.026 m/s. Another weight increase is the wrong next step: the
+centered reward (std 0.04 m, per-step reward about 1.8 of a weight-2 term)
+keeps the duck within about 1 cm of the ball centre, which is what rolling
+has to give up.
 
 ## Open items
 
