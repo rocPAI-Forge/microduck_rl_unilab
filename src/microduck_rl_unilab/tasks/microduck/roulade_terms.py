@@ -342,6 +342,34 @@ def roulade_rise_velocity(
     return _out(np.clip(vz, 0.0, None) * low * _completion_gate(env, gate_lo, gate_hi))
 
 
+def roulade_regress_penalty(
+    env: ManagerBasedRlEnv,
+    window_lo: float = math.radians(30.0),
+    window_hi: float = math.radians(260.0),
+    cap: float = math.pi,
+) -> np.ndarray:
+    """(max - accum), capped, while the maximum is mid-roll. Returns >= 0: negative weight.
+
+    Not upstream. Progress only pays new maxima, so falling back from a
+    face-plant to the standing pose was free; this makes it cost.
+    """
+    state = _state(env)
+    mid = (state.max > window_lo) & (state.max < window_hi)
+    return _out(np.clip(state.max - state.accum, 0.0, cap) * mid)
+
+
+def roulade_stall_penalty(
+    env: ManagerBasedRlEnv,
+    window_lo: float = math.radians(30.0),
+    window_hi: float = math.radians(260.0),
+) -> np.ndarray:
+    """1 while the maximum is mid-roll and short of completion. Returns >= 0:
+    negative weight. Not upstream: with ``roulade_regress_penalty`` alone,
+    lying on the face at the maximum would cost nothing."""
+    state = _state(env)
+    return _out(((state.max > window_lo) & (state.max < window_hi)).astype(np.float64))
+
+
 def roulade_flatness_penalty(env: ManagerBasedRlEnv) -> np.ndarray:
     """(lateral-axis world z)^2. Returns >= 0: negative weight."""
     q = np.asarray(_robot(env).data.root_link_quat_w, dtype=np.float64)
@@ -370,7 +398,9 @@ __all__ = [
     "roulade_lateral_velocity_penalty",
     "roulade_overspeed_penalty",
     "roulade_progress",
+    "roulade_regress_penalty",
     "roulade_rise_velocity",
     "roulade_sagittal_penalty",
+    "roulade_stall_penalty",
     "roulade_stand_tax",
 ]
