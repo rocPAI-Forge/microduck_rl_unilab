@@ -82,5 +82,9 @@ registry.register_env("MicroduckSitStandFlat", make_microduck_velocity_env, sim_
 registry.register_env_config("MicroduckBasketballFlat", ManagerBasedRlEnvCfg)
 registry.register_env("MicroduckBasketballFlat", make_microduck_velocity_env, sim_backend="mujoco")
 
+# Ball kicking: the walking duck plus a free ball entity.
+registry.register_env_config("MicroduckKickFlat", ManagerBasedRlEnvCfg)
+registry.register_env("MicroduckKickFlat", make_microduck_velocity_env, sim_backend="mujoco")
+
 
 __all__ = ["make_microduck_velocity_env"]
