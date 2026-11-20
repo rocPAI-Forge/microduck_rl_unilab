@@ -1,0 +1,72 @@
+# @package _global_
+# Walking on stilts, after Vottivott/microduck-playground
+# microduck_stilt_env_cfg.py (Apache-2.0). Each run compiles one fixed stilt
+# morphology from scripts/make_stilt_robot.py; scripts/train_stilts.py runs
+# the stages (support blend at 2 cm, then height), each resuming the last.
+# The scene paths below are the 2 cm platform stage; the stage driver
+# overrides them. On top of the walking owner:
+#   - balance and commanded motion are the task: upright, tracking, and air
+#     time up; head tracking light; a quarter of commands are exact zero.
+#   - discovery first: no pushes, no CoM / head-range / standing curricula,
+#     and a light action-rate tax ramped in later.
+defaults:
+  - /task/microduck_velocity_flat/mujoco
+  - _self_
+
+algo:
+  max_iterations: 400
+  save_interval: 100
+  experiment_name: stilt_locomotion
+  run_name: stilt_locomotion
+
+env:
+  max_episode_seconds: 10.0
+  scene:
+    model_file: assets/robots/microduck/generated/scene_flat_bam_stilt_h2_b000.xml
+    fragment_files: [assets/robots/microduck/generated/locomotion_task_stilt_h2_b000.xml]
+  commands:
+    twist:
+      resampling_time_range: [4.0, 8.0]
+      rel_heading_envs: 0.0
+      rel_standing_envs: 0.25
+      turn_in_place_fraction: 0.05
+      ranges:
+        lin_vel_x: [-0.12, 0.25]
+        lin_vel_y: [-0.06, 0.06]
+        ang_vel_z: [-0.35, 0.35]
+  events:
+    push_robot: null
+  curriculum:
+    standing_envs: null
+    head_pose_range: null
+    base_com_range: null
+    head_com_range: null
+    head_pose_bias_weight: null
+    action_rate_weight:
+      params:
+        stages:
+          - {step: 0, weight: -0.02}
+          - {step: 24000, weight: -0.05}
+          - {step: 60000, weight: -0.10}
+          - {step: 96000, weight: -0.20}
+
+reward:
+  upright:
+    weight: 3.0
+  tracking_lin_vel:
+    weight: 2.5
+  tracking_ang_vel:
+    weight: 1.0
+  air_time:
+    weight: 2.0
+  head_pose_tracking:
+    weight: 0.25
+  head_pose_bias:
+    weight: 0.0
+  body_pose_tracking:
+    weight: 0.0
+  action_rate:
+    weight: -0.02
+  # -0.1 - 0.1 x blend upstream; the stage driver sets it per blend.
+  foot_slip:
+    weight: -0.1
