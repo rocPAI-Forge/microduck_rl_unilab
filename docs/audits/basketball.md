@@ -7,9 +7,20 @@ training. Port of the playground basketball experiment (b11).
 
 ## Result
 
-Partial, and still moving. The policy balances a free ball (about 95% or
-better at 60 s from round 3 on). Command following is ordered but weak.
-Current best is round 10 (`microduck_basketball_ft9_flat`, `model_12491`):
+Stopped. Partial success: the policy balances a free ball well, follows small
+commands weakly, and collapses under large switching commands.
+
+- Balance: 98% to 99% survival at 60 s with fixed commands up to +-0.10 m/s
+  and +-0.30 rad/s, pushes on.
+- Small commands: ordered but weak following (forward slope about 0.48, yaw
+  slope about 0.58).
+- Large commands: under the playground protocol (random +-0.30 m/s forward,
+  +-0.20 lateral, +-1.0 rad/s yaw, resampled every 3 to 8 s) survival at 60 s
+  is 3.5% with frequent pushes and 43% without. The cause is large forward
+  commands combined with switching (see the ablation below). Playground b11
+  reports 97% under its protocol.
+
+Accepted checkpoint: round 10 (`microduck_basketball_ft9_flat`, `model_12491`):
 survival 98% to 99% at 60 s, forward slope about 0.48 (vx -0.024 / +0.023 /
 +0.071 at -0.10 / 0 / +0.10 m/s), yaw slope about 0.58, yaw error about 0.33.
 Zero command still drifts at about +0.023 m/s.
