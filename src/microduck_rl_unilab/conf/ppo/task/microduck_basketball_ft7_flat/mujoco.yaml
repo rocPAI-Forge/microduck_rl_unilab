@@ -1,0 +1,30 @@
+# @package _global_
+# Basketball round 8: linear forward-speed cost, stronger linear yaw cost.
+#
+# Round 7 (model_10994) is the best balance-plus-tracking point so far
+# (survival 97-99%, yaw error about 0.42, forward slope about 0.36, yaw slope
+# about 0.31). The remaining gap is the tracking kernels: at the basketball
+# command sizes the Gaussians are nearly flat (xy tracking error stays near
+# 0.32 m/s in the round 7 log), so raising their weight does not pull. The
+# 2-5 Hz chatter is in the stance joints (hip roll, hip pitch, knee), so it is
+# left alone rather than raising the action-rate penalty again.
+# Here, on top of round 7:
+#   - lin_vel_error_l1, weight 2.0, cap 0.4 m/s (slope at any forward error);
+#   - yaw_rate_l1 weight 2.0 (was 1.0).
+# Warm start from round 7 model_10994. max_iterations counts additional
+# iterations.
+defaults:
+  - /task/microduck_basketball_ft6_flat/mujoco
+  - _self_
+
+algo:
+  experiment_name: microduck_basketball_ft7
+  run_name: microduck_basketball_ft7
+
+reward:
+  lin_vel_l1:
+    func: microduck_rl_unilab.tasks.microduck.scoot_terms.lin_vel_error_l1
+    weight: 2.0
+    params: {command_name: twist, cap: 0.4}
+  yaw_rate_l1:
+    weight: 2.0

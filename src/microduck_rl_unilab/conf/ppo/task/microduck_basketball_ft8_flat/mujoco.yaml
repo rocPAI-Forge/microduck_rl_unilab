@@ -1,0 +1,19 @@
+# @package _global_
+# Basketball round 9: double the linear forward-speed cost.
+#
+# Round 8 (model_11493) improved yaw (error about 0.34, slope about 0.48) and
+# held survival, but the forward slope stayed near 0.35. lin_vel_error_l1 at
+# weight 2 plateaued near -0.21 within about 120 iterations, so more of the
+# same training will not move it. Here that weight goes to 4; yaw_rate_l1
+# stays at 2. Warm start from round 8 model_11493.
+defaults:
+  - /task/microduck_basketball_ft7_flat/mujoco
+  - _self_
+
+algo:
+  experiment_name: microduck_basketball_ft8
+  run_name: microduck_basketball_ft8
+
+reward:
+  lin_vel_l1:
+    weight: 4.0

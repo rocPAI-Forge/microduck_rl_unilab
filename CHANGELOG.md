@@ -39,6 +39,16 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
 - Recorded that friction randomization below the floor's 1.0 never took
   effect on MuJoCo (`docs/audits/friction_combination.md`); fixed for scoot
   only, the walking tasks are roadmap item 12.
+- Basketball balance on MuJoCo, after microduck-playground's b11: a free
+  ball entity and `BallHoldAction` hold curriculum (`basketball_terms`),
+  `scripts/make_basketball_scene.py`, a blind LSTM actor, the
+  `microduck_basketball_*` owners (rounds 1–13), `lin_vel_error_l1` in
+  `scoot_terms`, and `scripts/eval_basketball.py` /
+  `scripts/eval_basketball_playground.py`. Partial result: round 10 balances
+  98–99% at 60 s under small fixed commands and follows them weakly, but
+  under the playground protocol (random ±0.30 m/s commands, frequent pushes)
+  survives 3.5% at 60 s, against b11's reported 97%
+  (`docs/audits/basketball.md`). No checkpoint is published.
 
 ## 0.3.1
 

@@ -1,0 +1,37 @@
+# @package _global_
+# Basketball round 6: clean command distribution and a yaw signal with slope.
+#
+# Findings behind this round (docs/audits/basketball.md):
+#   - the walking recipe's rel_forward_envs 0.2 rewrites 20% of commands to
+#     (max(|vx|, 0.3), 0, 0): above the basketball range, never backward, with
+#     zero yaw. Every earlier round trained on it, and the evals saw it too
+#     (a zero command averaged +0.04 m/s). Off here.
+#   - round 4's yaw is weakly ordered (slope about 0.16) but oscillates by
+#     about 0.75 rad/s. The Gaussian yaw kernel (std 0.3) is flat there
+#     (exp(-6) at 0.75 error), so a bigger weight cannot damp it (round 5).
+#     A linear -|wz - cmd| term (capped) keeps its slope at any error.
+#   - turn-in-place episodes (vx = vy = 0, |wz| >= 0.4) give yaw its own
+#     episodes instead of sharing them with translation.
+# Warm start from round 4 model_9996; max_iterations counts additional
+# iterations.
+defaults:
+  - /task/microduck_basketball_ft3_flat/mujoco
+  - _self_
+
+algo:
+  experiment_name: microduck_basketball_ft5
+  run_name: microduck_basketball_ft5
+
+env:
+  commands:
+    twist:
+      rel_forward_envs: 0.0
+      turn_in_place_fraction: 0.2
+      turn_in_place_ang_min: 0.4
+      turn_in_place_lin_max: 0.0
+
+reward:
+  yaw_rate_l1:
+    func: microduck_rl_unilab.tasks.microduck.scoot_terms.yaw_rate_error_l1
+    weight: 1.0
+    params: {command_name: twist, cap: 1.0}

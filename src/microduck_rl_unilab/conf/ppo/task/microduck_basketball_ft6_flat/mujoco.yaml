@@ -1,0 +1,21 @@
+# @package _global_
+# Basketball round 7: stronger action-rate penalty on round 6.
+#
+# Round 6 (model_10495) balances but its yaw is dominated by joint chatter:
+# six joints (indices 1-3 and 10-12 of the 14 actions) put most power at 2-10 Hz,
+# and yaw power is about 46% in the same band (docs/audits/basketball.md).
+# The action-rate L2 penalty is -0.2 here; the walking recipe ramps the same
+# term from -0.1 to -1.0. Here it goes to -1.0. Everything else is inherited
+# from round 6. Warm start from round 6 model_10495; max_iterations counts
+# additional iterations (500 gives about 10996).
+defaults:
+  - /task/microduck_basketball_ft5_flat/mujoco
+  - _self_
+
+algo:
+  experiment_name: microduck_basketball_ft6
+  run_name: microduck_basketball_ft6
+
+reward:
+  action_rate:
+    weight: -1.0

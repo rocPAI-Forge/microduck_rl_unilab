@@ -90,6 +90,24 @@ def yaw_rate_error_l1(
     return np.asarray(-error, dtype=get_global_dtype())
 
 
+def lin_vel_error_l1(
+    env: ManagerBasedRlEnv,
+    command_name: str = "twist",
+    cap: float = 0.4,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> np.ndarray:
+    """-|forward speed - commanded forward speed|, capped. Returns <= 0: positive weight.
+
+    The linear-velocity Gaussian (std 0.1 m/s) is flat once the error is a few
+    tenths of a metre per second, which is the whole basketball command range.
+    A capped linear cost keeps a slope there.
+    """
+    data = env.scene[asset_cfg.name].data
+    command = _command(env, "lin_vel_error_l1", command_name)
+    error = np.minimum(np.abs(np.nan_to_num(data.root_link_lin_vel_b[:, 0], nan=0.0) - command[:, 0]), cap)
+    return np.asarray(-error, dtype=get_global_dtype())
+
+
 def stillness_at_zero_command(
     env: ManagerBasedRlEnv,
     command_name: str = "twist",
@@ -177,6 +195,7 @@ __all__ = [
     "head_pose_l1",
     "height_above_l1_penalty",
     "joint_limit_proximity",
+    "lin_vel_error_l1",
     "root_height_above",
     "stillness_at_zero_command",
     "yaw_rate_error_l1",

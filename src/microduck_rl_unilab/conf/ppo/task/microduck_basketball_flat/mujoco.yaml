@@ -1,0 +1,167 @@
+# @package _global_
+# Basketball balance, after Vottivott/microduck-playground
+# experiments/basketball (Apache-2.0): the duck stands on the apex of a free
+# size-7 ball and follows the twist command by rolling it. The released
+# playground policy (b11) is a blind one-layer LSTM(256): no ball state in the
+# 61-D actor input, ball state for the critic only. Built on the velocity
+# recipe (BAM servo, DR, observation noise and delays):
+#   - scene: the convex-hull ground-contact duck at contact priority 1 plus a
+#     free ball entity (scripts/make_basketball_scene.py; run it first);
+#   - BallHoldAction pins the ball and props the duck up, scaled per env by a
+#     hold level the curriculum lowers 1 -> 0.5 -> 0.25 -> 0.1 -> 0.03 -> 0
+#     (promote after a 6 s episode, demote after a fall within 1.5 s);
+#   - rewards: upright, centred over the ball, feet on the ball, height over
+#     the ball, a small ball-speed cost, velocity tracking and the recipe's
+#     regularizers; the gait and head/body pose terms are off;
+#   - off the ball (low, more than 0.16 m off centre, or tilted past 55 deg)
+#     terminates; 10 s episodes; pushes at 0.3x the walking recipe.
+defaults:
+  - /task/microduck_velocity_flat/mujoco
+  - _self_
+
+training:
+  task_name: MicroduckBasketballFlat
+  sim_backend: mujoco
+  play_steps: 2000
+
+algo:
+  seed: 42
+  num_envs: 4096
+  max_iterations: 6000
+  save_interval: 250
+  experiment_name: microduck_basketball
+  run_name: microduck_basketball
+  policy: null
+  actor:
+    class_name: rsl_rl.models.RNNModel
+    hidden_dims: [512, 256, 128]
+    activation: elu
+    obs_normalization: true
+    rnn_type: lstm
+    rnn_hidden_dim: 256
+    rnn_num_layers: 1
+    distribution_cfg:
+      class_name: rsl_rl.modules.distribution.GaussianDistribution
+      init_std: 1.0
+      std_type: scalar
+  critic:
+    class_name: rsl_rl.models.MLPModel
+    hidden_dims: [512, 256, 128]
+    activation: elu
+    obs_normalization: true
+  algorithm:
+    symmetry_cfg: null
+
+env:
+  max_episode_seconds: 10.0
+  scene:
+    model_file: assets/robots/microduck/generated/scene_basketball.xml
+    fragment_files: [assets/robots/microduck/generated/locomotion_task_basketball.xml]
+    entities:
+      ball:
+        root_body_name: ball
+        body_names: [ball]
+  actions:
+    ball_hold:
+      _target_: microduck_rl_unilab.tasks.microduck.basketball_terms.BallHoldActionCfg
+      entity_name: ball
+      duck_name: robot
+      levels: [1.0, 0.5, 0.25, 0.1, 0.03, 0.0]
+  commands:
+    twist:
+      turn_in_place_fraction: 0.0
+      ranges:
+        lin_vel_x: [-0.15, 0.15]
+        lin_vel_y: [-0.1, 0.1]
+        ang_vel_z: [-0.5, 0.5]
+  observations:
+    policy:
+      terms:
+        head_pose_command:
+          func: microduck_rl_unilab.tasks.microduck.basketball_terms.zero_pad
+          params: {width: 4}
+        body_pose_command:
+          func: microduck_rl_unilab.tasks.microduck.basketball_terms.zero_pad
+          params: {width: 6}
+    critic:
+      terms:
+        head_pose_command:
+          func: microduck_rl_unilab.tasks.microduck.basketball_terms.zero_pad
+          params: {width: 4}
+        body_pose_command:
+          func: microduck_rl_unilab.tasks.microduck.basketball_terms.basketball_state
+          params: {pos_scale: 3.0, vel_scale: 1.0}
+  events:
+    reset_base: null
+    reset_basketball:
+      func: microduck_rl_unilab.tasks.microduck.basketball_terms.reset_basketball
+      mode: reset
+      params:
+        ball_radius: 0.12
+        root_height: 0.125
+        xy_noise: 0.01
+        tilt_noise_deg: 2.0
+        joint_noise: 0.05
+    push_robot:
+      params:
+        velocity_range:
+          x: [-0.09, 0.09]
+          y: [-0.09, 0.09]
+  terminations:
+    tilt: null
+    fell:
+      func: microduck_rl_unilab.tasks.microduck.basketball_terms.basketball_fell
+      params: {ball_radius: 0.12, fall_tilt_deg: 55.0, min_height: 0.05, max_offset: 0.16}
+  curriculum:
+    head_pose_bias_weight: null
+    head_pose_range: null
+    basketball_hold:
+      func: microduck_rl_unilab.tasks.microduck.basketball_terms.basketball_hold_curriculum
+      params:
+        levels: [1.0, 0.5, 0.25, 0.1, 0.03, 0.0]
+        promote_len_s: 6.0
+        demote_len_s: 1.5
+
+reward:
+  tracking_lin_vel:
+    weight: 1.0
+  tracking_ang_vel:
+    weight: 0.5
+  upright: null
+  head_pose_tracking: null
+  head_pose_bias: null
+  body_pose_tracking: null
+  air_time: null
+  foot_clearance: null
+  foot_swing_height: null
+  foot_slip: null
+  body_ang_vel:
+    weight: -0.05
+  angular_momentum:
+    weight: -0.02
+  ball_upright:
+    func: microduck_rl_unilab.tasks.microduck.basketball_terms.basketball_upright
+    weight: 1.0
+    params: {std: 0.3}
+  centered:
+    func: microduck_rl_unilab.tasks.microduck.basketball_terms.basketball_centered
+    weight: 2.0
+    params: {std: 0.04}
+  feet_on_ball:
+    func: microduck_rl_unilab.tasks.microduck.basketball_terms.basketball_feet_on_ball
+    weight: 1.0
+    params:
+      ball_radius: 0.12
+      sole_gap: 0.012
+      std: 0.02
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+        body_names: [ankle_left, ankle_right]
+  height:
+    func: microduck_rl_unilab.tasks.microduck.basketball_terms.basketball_height
+    weight: 1.0
+    params: {ball_radius: 0.12, root_height: 0.125, std: 0.03}
+  ball_speed:
+    func: microduck_rl_unilab.tasks.microduck.basketball_terms.basketball_ball_speed_l2
+    weight: -0.05
