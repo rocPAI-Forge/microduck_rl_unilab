@@ -4,6 +4,17 @@ Versions follow `project.version` in `pyproject.toml`. Each release is a git
 tag `v<version>` with a matching GitHub release. Checkpoints live in
 `examples/` and are versioned with the code that reproduces them.
 
+## Unreleased
+
+- Walking on stilts, after Vottivott/microduck-playground:
+  `scripts/make_stilt_robot.py` writes the robot with procedural stilts
+  (height, and a blend from platform to peg), `microduck_stilt_flat/mujoco`
+  is the task, `scripts/train_stilts.py` runs the support-then-height
+  curriculum, and `scripts/eval_walk.py` scores any walking owner at a fixed
+  command. From the walking policy to 10 cm stilts, every stage held 100% at
+  0.15 m/s; the 10 cm policy walks straight at 99–100% over 60 s but steers
+  with a right bias (`docs/audits/stilts.md`). No checkpoint is published.
+
 ## 0.3.1
 
 Studies and deployment groundwork after 0.3.0; no new checkpoint, and
