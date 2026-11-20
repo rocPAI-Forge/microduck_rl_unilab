@@ -13,3 +13,6 @@ results/
 
 # Entrypoint logs written next to cwd by train scripts
 train_*.log
+
+# Stilt stages written by scripts/make_stilt_robot.py
+assets/robots/microduck/generated/
