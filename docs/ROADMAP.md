@@ -88,6 +88,12 @@ published only after it passes. Failures are fixed on the MuJoCo side.
   1.0 m/s. Training on it recovers that but stands at 89.5% on MotrixSim,
   below the gate ([`audits/backlash.md`](audits/backlash.md)). Next: train
   across backlash amounts, then measure the real play on hardware.
+- [ ] **12. Foot friction randomization below 1.0 (new), open.** The floor's
+  1.0 friction wins MuJoCo's max-combination, so the walking tasks' 0.7–1.3
+  foot friction has only ever trained 1.0–1.3
+  ([`audits/friction_combination.md`](audits/friction_combination.md)).
+  Contact priority fixes it; applying it to sprint needs a retrain and the
+  Motrix gate.
 - [x] **4. Position-target audit** (#6). Only the sprint lineage leans on the
   joint stops; the walk, stand-up, and get-up checkpoints finish their tasks
   with the goal-position clamp on. None needs retraining.

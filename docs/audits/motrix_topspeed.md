@@ -28,6 +28,10 @@ one parameter pinned (`scripts/eval_sprint_speed.py --override`):
 | foot friction 1.8 (0.7–1.3) | 9.8% | 0.99 |
 | foot friction 0.4, servo friction ×0.5, mass ×1.12 | 98–100% | — |
 
+The 0.4 foot friction above most likely ran at 1.0: the floor's 1.0 friction
+wins MuJoCo's max-combination
+([`friction_combination.md`](friction_combination.md)).
+
 The top-speed gait fits a narrow band of servo dynamics. Motrix runs it
 slightly faster, the same direction as a quicker servo or more foot grip.
 

@@ -60,7 +60,7 @@ def test_minimal_microduck_owners_are_registered_as_mjwarp_ppo_profiles() -> Non
     }
     assert registered["MicroduckSitStandFlat"] == {
         "config_factory": "ManagerBasedRlEnvCfg",
-        "available_backends": ["mjwarp"],
+        "available_backends": ["mjwarp", "mujoco"],
     }
 
 
