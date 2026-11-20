@@ -93,7 +93,7 @@ run has been done yet.
 
 ## Version
 
-Current release: **0.3.1** (git tag `v0.3.1`). Release contents, checked
+Current release: **0.4.0** (git tag `v0.4.0`). Release contents, checked
 policies, and known limitations are in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Simulators: train on MuJoCo, check on MotrixSim
@@ -139,6 +139,8 @@ revisited once on-robot data exists.
 | `microduck_standup_flat` | mujoco | — |
 | `microduck_sprint_flat` and its 23 continuation owners (`robust`, `gaitfix`, `rollfix`, `steerfix`, `straightfix`, `straightspeed`, `straighthold`, `straightcmd`, `straightrange`, `straightclip`, `straightneck`, `straighthead`, `steer`, `steermix`, `stand`, `standturn`, `pivot`, `pivothold`, `pivotsym`, `standwide`, `standwidefast`, `pivotyaw`, `standbacklash`) | mujoco | — |
 | `microduck_sitstand_flat` (full upstream sit/stand recipe on mujoco; [study](docs/audits/sitstand.md)) | mujoco, mjwarp | — |
+| `microduck_scoot_flat`, `microduck_scoot_straight_flat`, `microduck_scoot_sym_flat` (seated scooting; [study](docs/audits/scoot.md)) | mujoco | — |
+| `microduck_basketball_flat` and its fine-tunes `microduck_basketball_ft_flat` … `ft12_flat` (balancing on a free ball; [study](docs/audits/basketball.md)) | mujoco | — |
 | `microduck_ground_pick_flat` | mjwarp | — |
 
 Each sprint continuation owner is `microduck_sprint_<name>_flat`; the example
@@ -425,7 +427,7 @@ src/microduck_rl_unilab/
         └── sim2real_notes.py       # sim2real notes
 benchmark/                          # throughput notes (hardware, scale, comparison)
 docs/DEPLOY.md, docs/ROADMAP.md     # onboard contract and runtime; roadmap and item status
-docs/audits/                        # target, Motrix, turning-in-place, top-speed, backlash, and stilt studies
+docs/audits/                        # target, Motrix, turning-in-place, top-speed, backlash, stilt, sit/stand, scoot, friction, and basketball studies
 docs/media/                         # README preview GIFs cut from the example clips
 tests/                              # contract/alignment suite migrated from UniLab
 scripts/                            # training drivers, eval, sim2sim gate, export, deploy sim loop, audits
