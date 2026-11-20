@@ -75,7 +75,7 @@ owner 配置和机器人 XML 资产。
 
 ## 版本
 
-当前版本：**0.3.1**（git 标签 `v0.3.1`）。这一版包含哪些内容、哪些策略已验证、有哪些已知限制，见 [`CHANGELOG.md`](CHANGELOG.md)。
+当前版本：**0.4.0**（git 标签 `v0.4.0`）。这一版包含哪些内容、哪些策略已验证、有哪些已知限制，见 [`CHANGELOG.md`](CHANGELOG.md)。
 
 ## 仿真器分工：MuJoCo 训练，MotrixSim 验证
 
@@ -104,6 +104,8 @@ uv run --no-sync scripts/sim2sim_check.py examples/sprint_stand/model_59000.pt
 | `microduck_standup_flat` | mujoco | — |
 | `microduck_sprint_flat` 及其 23 个续训 owner（`robust`、`gaitfix`、`rollfix`、`steerfix`、`straightfix`、`straightspeed`、`straighthold`、`straightcmd`、`straightrange`、`straightclip`、`straightneck`、`straighthead`、`steer`、`steermix`、`stand`、`standturn`、`pivot`、`pivothold`、`pivotsym`、`standwide`、`standwidefast`、`pivotyaw`、`standbacklash`） | mujoco | — |
 | `microduck_sitstand_flat`（上游完整的坐下起立方法，MuJoCo 版；[研究记录](docs/audits/sitstand.md)） | mujoco, mjwarp | — |
+| `microduck_scoot_flat`、`microduck_scoot_straight_flat`、`microduck_scoot_sym_flat`（坐姿挪动；[研究记录](docs/audits/scoot.md)） | mujoco | — |
+| `microduck_basketball_flat` 及其续训 owner `microduck_basketball_ft_flat` … `ft12_flat`（在自由球上平衡；[研究记录](docs/audits/basketball.md)） | mujoco | — |
 | `microduck_ground_pick_flat` | mjwarp | — |
 
 每个冲刺续训 owner 的完整名字是 `microduck_sprint_<名字>_flat`，用到它的示例 README 里有具体命令。
@@ -348,7 +350,7 @@ src/microduck_rl_unilab/
         └── sim2real_notes.py       # sim2real 注意事项
 benchmark/                          # 吞吐实测（硬件、规模、对照）
 docs/DEPLOY.md, docs/ROADMAP.md     # 机载接口与运行时；路线图和各项状态
-docs/audits/                        # 目标角、Motrix、原地转向、高速、回差、高跷等专项研究
+docs/audits/                        # 目标角、Motrix、原地转向、高速、回差、高跷、坐下起立、坐姿挪动、摩擦、篮球等专项研究
 docs/media/                         # README 预览动图，从示例视频剪辑而来
 tests/                              # 迁移自 UniLab 的契约/对齐测试套件
 scripts/                            # 训练驱动、评测、sim2sim 门槛、导出、部署闭环、审计脚本

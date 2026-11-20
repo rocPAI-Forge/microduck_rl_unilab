@@ -11,9 +11,11 @@ on the current 8-core, 59 GB machine, 2048 environments already take about
 26 GB, 3072 ran slower (27.3k vs 29.8k steps/s), and 4096 ran out of memory.
 Decisions between close checkpoints use 512-environment batteries.
 
-**Where things stand (0.3.1).** Every item that does not need hardware is done
-or parked. Work stops here until a MicroDuck is available: item 5's hardware
-side is next, and its results decide whether items 8, 10, and 11 are reopened.
+**Where things stand (0.4.0).** Every item that does not need hardware is done
+or parked, except item 12, which is open. 0.4.0 adds four simulation-only
+motion tasks (stilts, sit/stand, scooting, basketball); none has a MotrixSim
+gate or a published checkpoint. Item 5's hardware side is next, and its
+results decide whether items 8, 10, and 11 are reopened.
 
 ## Status
 
@@ -30,6 +32,7 @@ side is next, and its results decide whether items 8, 10, and 11 are reopened.
 | 9. Motrix in the training loop (new) | Closed: train on MuJoCo only, Motrix is the held-out gate | #11 (closed, record), #13 (rule) |
 | 10. Top speed on Motrix (new) | Parked: wider randomization trades speed for Motrix margin | #18 |
 | 11. Gearbox backlash (new) | Parked: modeled; training on it fails the stiff-robot gate | #22 |
+| 12. Foot friction below 1.0 (new) | Open: found by scoot; fixed for scoot only, walking tasks need a retrain and the Motrix gate | #27 |
 
 **Simulator rule.** Sprint policies train on MuJoCo only. MotrixSim is held
 out for the sim2sim check (`scripts/sim2sim_check.py`), and a checkpoint is

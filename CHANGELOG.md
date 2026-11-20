@@ -4,8 +4,37 @@ Versions follow `project.version` in `pyproject.toml`. Each release is a git
 tag `v<version>` with a matching GitHub release. Checkpoints live in
 `examples/` and are versioned with the code that reproduces them.
 
-## Unreleased
+## 0.4.0
 
+Four new motion tasks after upstream microduck_rl and Vottivott's
+microduck-playground, all in simulation on MuJoCo: walking on 10 cm stilts,
+commanded sit and stand, seated scooting, and balancing on a free basketball.
+No new checkpoint is published (none of the four has a MotrixSim gate), and
+`sprint_stand/model_59000` stays the hardware starting point. Dependencies
+are unchanged.
+
+### Known limitations
+
+- No turning in place: four rounds found a left pivot only. Turn around with
+  the 0.5 m radius turn.
+- 1.0 m/s on MotrixSim and under ±1° servo backlash loses margin; wider
+  randomization or backlash training trades it for speed or for standing on a
+  stiff robot. Keep first hardware runs at or below 0.6 m/s.
+- On Pollen's `robotd`, set the `[policy]` values in `docs/DEPLOY.md`, and
+  check the target clamp, which `robotd` does not apply. Nothing has run on a
+  robot yet.
+- The new tasks are simulation results only. Stilts steer with a right bias;
+  sit/stand drops the last ~4 cm onto the seat; scooting turns and moves
+  forward weakly; basketball collapses under large switching commands
+  (3.5% survival at 60 s under the playground protocol).
+- Foot friction randomization below 1.0 never took effect on MuJoCo for the
+  walking tasks (roadmap item 12); only scoot uses the fix.
+
+### Changes
+
+- Docs checked for consistency before the release: the roadmap status names
+  0.4.0 and lists item 12; the READMEs list the scoot and basketball owners
+  and their studies.
 - Walking on stilts, after Vottivott/microduck-playground:
   `scripts/make_stilt_robot.py` writes the robot with procedural stilts
   (height, and a blend from platform to peg), `microduck_stilt_flat/mujoco`
