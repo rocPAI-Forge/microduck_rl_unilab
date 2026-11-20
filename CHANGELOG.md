@@ -6,6 +6,14 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
 
 ## Unreleased
 
+- Walking on stilts, after Vottivott/microduck-playground:
+  `scripts/make_stilt_robot.py` writes the robot with procedural stilts
+  (height, and a blend from platform to peg), `microduck_stilt_flat/mujoco`
+  is the task, `scripts/train_stilts.py` runs the support-then-height
+  curriculum, and `scripts/eval_walk.py` scores any walking owner at a fixed
+  command. From the walking policy to 10 cm stilts, every stage held 100% at
+  0.15 m/s; the 10 cm policy walks straight at 99–100% over 60 s but steers
+  with a right bias (`docs/audits/stilts.md`). No checkpoint is published.
 - Commanded sit and stand on MuJoCo, after upstream microduck_rl's sitstand
   recipe: `sitstand_terms` (posture rewards that track the
   `SitStandCommand`'s slewed target, rise and sit bootstraps, speed caps),
