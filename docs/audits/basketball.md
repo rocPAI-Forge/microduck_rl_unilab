@@ -227,6 +227,27 @@ commands that change every few seconds. Lateral and yaw add loss on top of that
 but are not the cause. The fixed-command eval in the earlier tables (+-0.10 m/s)
 sits in the safe region, which is why it read 98% to 99%.
 
+## Round 12-13: forward-command curriculum (did not help)
+
+Stage 1 (`microduck_basketball_ft11_flat`, `model_12990`, 500 iters from round 10):
+forward +-0.20 with switching. At its own range: survival 0.70 at 60 s,
+round 10 at the same range: 0.72. Not an improvement.
+
+Stage 2 (`microduck_basketball_ft12_flat`, `model_13489`, 500 iters from stage 1):
+forward +-0.30 restored, lateral +-0.2, yaw +-1.0. Playground protocol:
+full (pushes 0.5-1 s) 0.017 at 60 s; no pushes 0.277. Round 10: 0.035 and 0.434.
+Fixed +-0.30 per episode, no pushes: 0.913 (round 10: 0.95).
+
+Neither stage changed the switching cliff. Stage 1 is also worse than round 10
+at the full +-0.30 range, which is expected since it never trained there.
+
+Candidate cause, not yet tested: the centered reward (std 0.04 m, weight 2)
+pays for the root sitting over the ball centre, but rolling the ball forward
+requires a fore-aft offset that grows with the commanded speed. Round 11 showed
+that removing centering collapses balance, so the reward is needed, but a
+fixed centre target may conflict with a large commanded speed. A probe of the
+offset during +-0.30 switching would test it before any training.
+
 ## Open items
 
 - Round 4 has no re-rendered video; the earlier Round 2 clips are the latest
