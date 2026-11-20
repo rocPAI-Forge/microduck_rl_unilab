@@ -74,5 +74,9 @@ for _task_name in ("MicroduckGroundPickFlat", "MicroduckSitStandFlat"):
     registry.register_env_config(_task_name, ManagerBasedRlEnvCfg)
     registry.register_env(_task_name, make_microduck_velocity_env, sim_backend="mjwarp")
 
+# The full sit/stand recipe runs on the BAM ground-contact model, which needs
+# the MuJoCo substep state-feedback contract.
+registry.register_env("MicroduckSitStandFlat", make_microduck_velocity_env, sim_backend="mujoco")
+
 
 __all__ = ["make_microduck_velocity_env"]

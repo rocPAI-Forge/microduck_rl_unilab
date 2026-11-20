@@ -1,0 +1,36 @@
+# @package _global_
+# Slow the sit target instead of only pricing the drop.
+#
+# The stance-fixed policy drops the last ~4 cm onto the seat (peak trunk speed
+# ~0.88 m/s). Tripling the descent cap and the |a_z| cost
+# (microduck_sitstand_gentle_flat) did not make it sit gently; it stopped
+# sitting. Here the posture target slews over 3.5 s instead of 2 s, so the
+# setpoint falls at ~0.016 m/s and tracking it is a slow squat, with moderate
+# caps (descent 15 -> 30, |a_z| 0.15). Dwell and episode grow so a full
+# transition plus rest still fits.
+defaults:
+  - /task/microduck_sitstand_fix_flat/mujoco
+  - _self_
+
+algo:
+  experiment_name: microduck_sitstand_ramp
+  run_name: microduck_sitstand_ramp
+
+env:
+  max_episode_seconds: 14.0
+  commands:
+    twist:
+      ramp_s: 3.5
+      resampling_time_range: [5.0, 8.0]
+  curriculum:
+    descent_speed_weight:
+      params:
+        stages:
+          - {step: 0, weight: 15.0}
+          - {step: 12000, weight: 30.0}
+
+reward:
+  descent_speed:
+    weight: 15.0
+  gentle_motion:
+    weight: 0.15

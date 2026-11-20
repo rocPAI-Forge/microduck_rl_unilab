@@ -1,0 +1,34 @@
+# @package _global_
+# Fix the standing posture of the from-scratch sit/stand policy.
+#
+# microduck_sitstand_flat learned to sit (82% on the schedule) but stood in a
+# tripod: left knee on its -90 deg limit, neck pitched -110 deg onto the floor,
+# trunk ~31 deg, which the multiplicative goal score (~0) and the linear upright
+# floor did not price out. Resumed from that policy, this owner adds the
+# standup task's height-gated sharp upright Gaussian, a heavier joint-limit
+# cost against the knee-on-limit pose, and heavier head tracking to lift the
+# head off the floor.
+defaults:
+  - /task/microduck_sitstand_flat/mujoco
+  - _self_
+
+algo:
+  experiment_name: microduck_sitstand_fix
+  run_name: microduck_sitstand_fix
+
+reward:
+  upright_sharp:
+    func: microduck_rl_unilab.tasks.microduck.standup_terms.upright_gaussian_at_height
+    weight: 1.5
+    params:
+      std: 0.3
+      height_low: 0.075
+      height_high: 0.11
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+        body_names: [trunk_base]
+  dof_pos_limits:
+    weight: -5.0
+  head_pose_tracking:
+    weight: 1.5

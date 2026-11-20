@@ -138,7 +138,8 @@ revisited once on-robot data exists.
 | `microduck_stilt_flat` (walking on stilts; [study](docs/audits/stilts.md)) | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
 | `microduck_sprint_flat` and its 23 continuation owners (`robust`, `gaitfix`, `rollfix`, `steerfix`, `straightfix`, `straightspeed`, `straighthold`, `straightcmd`, `straightrange`, `straightclip`, `straightneck`, `straighthead`, `steer`, `steermix`, `stand`, `standturn`, `pivot`, `pivothold`, `pivotsym`, `standwide`, `standwidefast`, `pivotyaw`, `standbacklash`) | mujoco | — |
-| `microduck_ground_pick_flat`, `microduck_sitstand_flat` | mjwarp | — |
+| `microduck_sitstand_flat` (full upstream sit/stand recipe on mujoco; [study](docs/audits/sitstand.md)) | mujoco, mjwarp | — |
+| `microduck_ground_pick_flat` | mjwarp | — |
 
 Each sprint continuation owner is `microduck_sprint_<name>_flat`; the example
 README that used it lists the exact commands.
@@ -415,7 +416,8 @@ src/microduck_rl_unilab/
         ├── manager_terms.py        # velocity command / reward terms
         ├── sprint_terms.py         # sprint speed/heading rewards and speed curriculum
         ├── recovery_terms.py       # velstand fall-recovery terms
-        ├── standup_terms.py        # standup / ground_pick / sitstand terms
+        ├── standup_terms.py        # standup / ground_pick terms
+        ├── sitstand_terms.py       # commanded sit <-> stand terms
         ├── bam_action.py           # BAM voltage-servo action term
         ├── deploy_contract.py      # obs/action dimension contract
         ├── symmetry.py             # sagittal mirror of the 61-D contract

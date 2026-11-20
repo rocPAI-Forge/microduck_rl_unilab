@@ -14,6 +14,17 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
   command. From the walking policy to 10 cm stilts, every stage held 100% at
   0.15 m/s; the 10 cm policy walks straight at 99–100% over 60 s but steers
   with a right bias (`docs/audits/stilts.md`). No checkpoint is published.
+- Commanded sit and stand on MuJoCo, after upstream microduck_rl's sitstand
+  recipe: `sitstand_terms` (posture rewards that track the
+  `SitStandCommand`'s slewed target, rise and sit bootstraps, speed caps),
+  the `microduck_sitstand_flat/mujoco` owner on the standup base, the
+  `microduck_sitstand_warm_flat` and `microduck_sitstand_fix_flat` variants,
+  `MicroduckSitStandFlat` registered on MuJoCo, and `scripts/eval_sitstand.py`.
+  After five rounds one policy sits 85–89% and stands 97% on command,
+  upright, with ≤ 0.2% falls, but drops the last ~4 cm onto the seat;
+  two gentler-descent variants (`microduck_sitstand_gentle_flat`,
+  `microduck_sitstand_ramp_flat`) made it stop sitting instead
+  (`docs/audits/sitstand.md`). No checkpoint is published.
 
 ## 0.3.1
 

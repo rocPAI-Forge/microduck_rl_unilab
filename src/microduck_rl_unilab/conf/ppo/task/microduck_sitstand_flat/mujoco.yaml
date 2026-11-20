@@ -1,0 +1,220 @@
+# @package _global_
+# Commanded sit <-> stand on MuJoCo, after upstream pollen-robotics/microduck_rl
+# microduck_sitstand_env_cfg.py (develop; the real-robot policy is that
+# recipe, base run then a seated fall-back hardening resume). Built on the
+# standup owner, which already carries the same BAM ground-contact robot,
+# observations, DR, head_pose command and its curriculum, CoM curricula, and
+# the action-rate ramp. Deltas from standup:
+#   - twist is the SitStandCommand: [sit_flag, 0, 0], dwell 3.5-6.5 s, and an
+#     internal target blend slewed over 2 s that every posture reward tracks.
+#   - The fixed stand layer is replaced by the posture-conditioned layer
+#     (sitstand_terms): pose, height, composite, and stillness against the
+#     moving target, a rise bootstrap, and descent/rise speed caps.
+#   - Resets: 50% standing, 50% seated (no prone/supine).
+#   - 12 s episodes for a full sit -> rest -> rise -> rest cycle.
+#   - body_pose stays zero (body control is not part of this task).
+# The mjwarp owner beside this file is the older minimal posture-height port.
+defaults:
+  - /task/microduck_standup_flat/base
+  - _self_
+
+training:
+  task_name: MicroduckSitStandFlat
+  sim_backend: mujoco
+  play_steps: 2000
+
+algo:
+  seed: 42
+  num_envs: 2048
+  max_iterations: 2500
+  save_interval: 250
+  experiment_name: microduck_sitstand
+  run_name: microduck_sitstand
+  empirical_normalization: true
+  obs_groups:
+    actor: [policy]
+    critic: [critic]
+  policy:
+    init_noise_std: 1.0
+  algorithm:
+    learning_rate: 1.0e-3
+    entropy_coef: 0.01
+
+env:
+  seed: 42
+  max_episode_seconds: 12.0
+  commands:
+    twist:
+      _target_: microduck_rl_unilab.tasks.microduck.manager_terms.SitStandCommandCfg
+      resampling_time_range: [3.5, 6.5]
+      ranges:
+        lin_vel_x: [0.0, 0.0]
+        lin_vel_y: [0.0, 0.0]
+        ang_vel_z: [0.0, 0.0]
+      sit_prob: 0.5
+      ramp_s: 2.0
+      sit_z: 0.060
+      stand_z: 0.115
+    body_pose:
+      zero_command_prob: 1.0
+      ranges: [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]
+  events:
+    set_ground_state:
+      params:
+        face_down_prob: 0.0
+        face_up_prob: 0.0
+        sitting_prob: 0.5
+        standing_prob: 0.5
+        sitting_z_min: 0.06
+        sitting_z_max: 0.075
+        sitting_joint_noise_std: 0.10
+        sitting_tilt_max: 0.13962634015954636
+  curriculum:
+    ground_state_mix: null
+    arrival_damping_weight: null
+    head_pose_bias_weight: null
+    body_pose_tracking_weight: null
+    body_pose_range: null
+    height_stand_sharp_weight: null
+    upright_sharp_weight: null
+    standing_composite_weight: null
+    # Pushes delayed until both transitions exist (upstream sit lesson: early
+    # pushes made the policy unlearn sitting).
+    push_magnitude:
+      params:
+        stages:
+          - {step: 0, params: {velocity_range: {x: [0.0, 0.0], y: [0.0, 0.0]}}}
+          - {step: 24000, params: {velocity_range: {x: [-0.05, 0.05], y: [-0.05, 0.05]}}}
+          - {step: 36000, params: {velocity_range: {x: [-0.1, 0.1], y: [-0.1, 0.1]}}}
+          - {step: 48000, params: {velocity_range: {x: [-0.2, 0.2], y: [-0.2, 0.2]}}}
+          - {step: 60000, params: {velocity_range: {x: [-0.3, 0.3], y: [-0.3, 0.3]}}}
+    torque_rate_weight:
+      params:
+        stages:
+          - {step: 0, weight: 0.0}
+          - {step: 18000, weight: -0.0005}
+          - {step: 30000, weight: -0.001}
+    # Discover the sit under 10, then tighten to 20 (positive: self-negating term).
+    descent_speed_weight:
+      func: unilab.envs.mdp.reward_curriculum
+      params:
+        reward_name: descent_speed
+        stages:
+          - {step: 0, weight: 10.0}
+          - {step: 12000, weight: 20.0}
+    # Rise cap only after the rise exists (any motion tax during discovery
+    # keeps the skill from being found).
+    rise_speed_weight:
+      func: unilab.envs.mdp.reward_curriculum
+      params:
+        reward_name: rise_speed
+        stages:
+          - {step: 0, weight: 0.0}
+          - {step: 36000, weight: 5.0}
+          - {step: 60000, weight: 10.0}
+
+reward:
+  pose_stand_legs: null
+  pose_stand_l1: null
+  head_pose_bias: null
+  height_stand: null
+  height_stand_sharp: null
+  height_stand_l1: null
+  com_upward_velocity: null
+  gentle_rise: null
+  arrival_damping: null
+  upright_sharp: null
+  standing_composite: null
+  body_pose_tracking: null
+  posture_pose_legs:
+    func: microduck_rl_unilab.tasks.microduck.sitstand_terms.posture_pose_match
+    weight: 4.0
+    params:
+      command_name: twist
+      std: 0.5
+      sit_overrides: &sit_pose
+        left_hip_roll: 0.0
+        left_hip_pitch: -0.4079
+        left_knee: 1.35
+        left_ankle: 0.0
+        right_hip_roll: 0.0
+        right_hip_pitch: 0.4079
+        right_knee: -1.35
+        right_ankle: 0.0
+      asset_cfg: &legs
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+        joint_names: [left_hip_yaw, left_hip_roll, left_hip_pitch, left_knee, left_ankle, right_hip_yaw, right_hip_roll, right_hip_pitch, right_knee, right_ankle]
+        preserve_order: true
+  posture_pose_l1:
+    func: microduck_rl_unilab.tasks.microduck.sitstand_terms.posture_pose_l1
+    weight: 1.0
+    params:
+      command_name: twist
+      sit_overrides: *sit_pose
+      asset_cfg: *legs
+  posture_height:
+    func: microduck_rl_unilab.tasks.microduck.sitstand_terms.posture_height_gaussian
+    weight: 1.0
+    params: {command_name: twist, sit_z: 0.060, stand_z: 0.115, std: 0.04}
+  posture_height_sharp:
+    func: microduck_rl_unilab.tasks.microduck.sitstand_terms.posture_height_gaussian
+    weight: 1.0
+    params: {command_name: twist, sit_z: 0.060, stand_z: 0.115, std: 0.015}
+  posture_height_l1:
+    func: microduck_rl_unilab.tasks.microduck.sitstand_terms.posture_height_l1
+    weight: 6.0
+    params: {command_name: twist, sit_z: 0.060, stand_z: 0.115}
+  rise_bootstrap:
+    func: microduck_rl_unilab.tasks.microduck.sitstand_terms.posture_rise_bootstrap
+    weight: 0.75
+    params: {command_name: twist, max_height: 0.125, max_vz: 0.08}
+  # Positive weights: the next three return <= 0. Negative weights would turn
+  # them into rewards for violence (upstream run 7ev90yd9).
+  descent_speed:
+    func: microduck_rl_unilab.tasks.microduck.sitstand_terms.trunk_downward_velocity_penalty
+    weight: 10.0
+    params: {max_down_vel: 0.05}
+  rise_speed:
+    func: microduck_rl_unilab.tasks.microduck.sitstand_terms.trunk_upward_velocity_penalty
+    weight: 0.0
+    params: {max_up_vel: 0.08}
+  gentle_motion:
+    func: microduck_rl_unilab.tasks.microduck.standup_terms.trunk_vertical_accel_penalty
+    weight: 0.05
+    params:
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+        body_names: [trunk_base]
+  upright_linear:
+    weight: 2.5
+  upright_while_tall:
+    func: microduck_rl_unilab.tasks.microduck.sitstand_terms.upright_while_tall
+    weight: 1.5
+    params: {height_low: 0.075, height_high: 0.10}
+  posture_stillness:
+    func: microduck_rl_unilab.tasks.microduck.sitstand_terms.posture_stillness
+    weight: 2.0
+    params:
+      command_name: twist
+      sit_z: 0.060
+      stand_z: 0.115
+      band_full: 0.012
+      band_zero: 0.03
+      vel_std: 0.05
+      tilt_full_deg: 25.0
+      tilt_zero_deg: 60.0
+  posture_composite:
+    func: microduck_rl_unilab.tasks.microduck.sitstand_terms.posture_composite
+    weight: 3.0
+    params:
+      command_name: twist
+      sit_overrides: *sit_pose
+      sit_z: 0.060
+      stand_z: 0.115
+      height_std: 0.03
+      upright_std: 0.40
+      pose_std: 0.40
+      head_std: 0.40
+      asset_cfg: *legs
