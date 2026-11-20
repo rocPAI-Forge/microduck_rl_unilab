@@ -17,6 +17,20 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
   two gentler-descent variants (`microduck_sitstand_gentle_flat`,
   `microduck_sitstand_ramp_flat`) made it stop sitting instead
   (`docs/audits/sitstand.md`). No checkpoint is published.
+- Seated scooting ("butt walk") on MuJoCo, after microduck-playground:
+  `scoot_terms` (command progress, yaw-rate L1, stillness at zero command,
+  head and height costs), the `microduck_scoot_flat`,
+  `microduck_scoot_straight_flat` and `microduck_scoot_sym_flat` owners on the
+  ground-contact standup base. Round 4 backs up at 56–80% of the command with
+  100% survival; turning reaches 0.03–0.10 of 0.3 rad/s
+  (`docs/audits/scoot.md`). No checkpoint is published.
+- `scripts/make_hull_robot.py` caps collision meshes at 128 hull vertices so
+  ground-contact tasks fit 4096 envs (29.7 MB to 0.65 MB per env clone), and
+  writes a contact-priority variant that lets robot friction govern floor
+  contacts.
+- Recorded that friction randomization below the floor's 1.0 never took
+  effect on MuJoCo (`docs/audits/friction_combination.md`); fixed for scoot
+  only, the walking tasks are roadmap item 12.
 
 ## 0.3.1
 
