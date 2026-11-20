@@ -241,12 +241,13 @@ Fixed +-0.30 per episode, no pushes: 0.913 (round 10: 0.95).
 Neither stage changed the switching cliff. Stage 1 is also worse than round 10
 at the full +-0.30 range, which is expected since it never trained there.
 
-Candidate cause, not yet tested: the centered reward (std 0.04 m, weight 2)
-pays for the root sitting over the ball centre, but rolling the ball forward
-requires a fore-aft offset that grows with the commanded speed. Round 11 showed
-that removing centering collapses balance, so the reward is needed, but a
-fixed centre target may conflict with a large commanded speed. A probe of the
-offset during +-0.30 switching would test it before any training.
+Candidate cause tested by probe (round 10, 512 envs, 30 s, no pushes): the
+centering conflict hypothesis is not supported. The ball centre stays 1 to 2 cm
+from the root (about 1.1 cm mean at +-0.10, 1.1 to 2.2 cm at +-0.30), far
+inside the 4 cm centering std, and the offset does not grow with the command:
+it is largest at -0.30 and smallest at +0.30. The real limit at +-0.30 is
+speed following: body vx reaches only about 30% to 45% of the command, and
+survival at 30 s falls from 99% (+-0.10) to 85% (+-0.30).
 
 ## Open items
 
