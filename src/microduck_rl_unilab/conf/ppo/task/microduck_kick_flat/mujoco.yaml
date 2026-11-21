@@ -1,0 +1,72 @@
+# @package _global_
+# Ball kicking on the sprint_stand gait.
+#
+# The duck walks to a free ball and kicks it toward a goal direction. The gait
+# is the published sprint_stand policy (warm start from
+# examples/sprint_stand/model_59000.pt), kept by its own rewards:
+#   - BallPursuitCommand rewrites the twist command every step: walk to a point
+#     behind the ball on the goal line, then through the ball along the goal
+#     (forward <= 0.3 m/s, yaw rate <= 0.8 rad/s), so velocity tracking does
+#     the walking;
+#   - the spawn-heading loop is off, which also zeroes the spawn-heading
+#     rewards (they are gated on it);
+#   - the policy sees the ball and the goal in the head-pose command slot
+#     (zero in sprint_stand), and is paid for ball velocity along the goal and
+#     charged for ball velocity across it.
+# Scene: the walking model plus a 3.5 cm, 45 g ball; only the foot soles touch
+# it. 2048 envs: the walking model at 4096 runs out of memory on this machine.
+defaults:
+  - /task/microduck_sprint_stand_flat/mujoco
+  - _self_
+
+training:
+  task_name: MicroduckKickFlat
+  sim_backend: mujoco
+
+algo:
+  num_envs: 2048
+  max_iterations: 1500
+  save_interval: 250
+  experiment_name: microduck_kick
+  run_name: microduck_kick
+
+env:
+  max_episode_seconds: 12.0
+  scene:
+    model_file: assets/robots/microduck/scene_flat_bam_kick.xml
+    fragment_files: [assets/robots/microduck/locomotion_task_kick.xml]
+    entities:
+      ball:
+        root_body_name: ball
+        body_names: [ball]
+  commands:
+    twist:
+      _target_: microduck_rl_unilab.tasks.microduck.kick_terms.BallPursuitCommandCfg
+      hold_spawn_heading: false
+      rel_standing_envs: 0.0
+      rel_forward_envs: 0.0
+      high_speed_fraction: 0.0
+  observations:
+    policy:
+      terms:
+        head_pose_command:
+          func: microduck_rl_unilab.tasks.microduck.kick_terms.kick_ball_obs
+    critic:
+      terms:
+        head_pose_command:
+          func: microduck_rl_unilab.tasks.microduck.kick_terms.kick_ball_obs
+  events:
+    reset_base: null
+    reset_kick:
+      func: microduck_rl_unilab.tasks.microduck.kick_terms.reset_kick
+      mode: reset
+
+reward:
+  kick_ball_velocity:
+    func: microduck_rl_unilab.tasks.microduck.kick_terms.kick_ball_velocity
+    weight: 2.0
+    params: {cap: 1.0}
+  kick_ball_off_goal:
+    func: microduck_rl_unilab.tasks.microduck.kick_terms.kick_ball_off_goal
+    weight: -0.5
+    params: {cap: 1.0}

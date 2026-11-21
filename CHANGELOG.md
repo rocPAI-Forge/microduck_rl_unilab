@@ -22,6 +22,14 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
     ends standing (`microduck_roll_flat`, then `microduck_tumble_flat` with
     completion-gated stand-up terms): 100% full turn in 0.56 s, 100% standing.
   - `scripts/eval_roll.py` scores either from standing starts.
+- Ball dribbling on the `sprint_stand` gait (`docs/audits/kick.md`,
+  `examples/kick/model_60499.pt`): `kick_terms` (`BallPursuitCommand` walks the
+  duck behind the ball and through it along a goal direction; ball and goal in
+  the head-pose command slot; ball-velocity rewards), `microduck_kick_flat`,
+  a 3.5 cm ball scene, and `scripts/eval_kick.py`. 99.6–100% survival and the
+  ball pushed a median 1.0–1.4 m along the goal in 12 s; it dribbles rather
+  than strikes, since only the foot soles collide in the walking model.
+- README: a clip table for the motions added in 0.4.0 and after.
 
 ## 0.4.0
 
