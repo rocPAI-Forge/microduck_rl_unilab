@@ -4,6 +4,25 @@ Versions follow `project.version` in `pyproject.toml`. Each release is a git
 tag `v<version>` with a matching GitHub release. Checkpoints live in
 `examples/` and are versioned with the code that reproduces them.
 
+## Unreleased
+
+- Forward roll, two policies (`docs/audits/roulade.md`), simulation only:
+  - Roulade (`examples/roulade/model_999.pt`): upstream microduck_rl's roll
+    over the flat top of the head, landing on the feet, in one policy.
+    `roulade_terms` ports upstream's design (support- and flatness-gated
+    rotation accumulator, head-top latch, capped progress, completion-gated
+    landing, mid-roll spawns) as `microduck_roulade_flat`, with head and
+    whole-robot floor contact sensors in `roulade_task.xml`. Our own training
+    (standup warm start, and upstream's recipe from scratch to 6000
+    iterations) never rolled over the head from standing; upstream's published
+    `roulade.onnx` does in our simulator, so the checkpoint is that policy
+    converted with the new `scripts/onnx_to_rsl_rl.py` and fine-tuned 1000
+    iterations: 100% complete in 0.86 s and 100% standing, rolling once.
+  - Tumble (`examples/tumble/model_17997.pt`): a fast forward tumble that
+    ends standing (`microduck_roll_flat`, then `microduck_tumble_flat` with
+    completion-gated stand-up terms): 100% full turn in 0.56 s, 100% standing.
+  - `scripts/eval_roll.py` scores either from standing starts.
+
 ## 0.4.0
 
 Four new motion tasks after upstream microduck_rl and Vottivott's

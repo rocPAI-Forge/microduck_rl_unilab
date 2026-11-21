@@ -106,6 +106,7 @@ uv run --no-sync scripts/sim2sim_check.py examples/sprint_stand/model_59000.pt
 | `microduck_sitstand_flat`（上游完整的坐下起立方法，MuJoCo 版；[研究记录](docs/audits/sitstand.md)） | mujoco, mjwarp | — |
 | `microduck_scoot_flat`、`microduck_scoot_straight_flat`、`microduck_scoot_sym_flat`（坐姿挪动；[研究记录](docs/audits/scoot.md)） | mujoco | — |
 | `microduck_basketball_flat` 及其续训 owner `microduck_basketball_ft_flat` … `ft12_flat`（在自由球上平衡；[研究记录](docs/audits/basketball.md)） | mujoco | — |
+| `microduck_roulade_flat`（过头顶的前滚翻；[研究记录](docs/audits/roulade.md)、[示例](examples/roulade/)）、`microduck_roll_flat`、`microduck_tumble_flat`（[示例](examples/tumble/)） | mujoco | — |
 | `microduck_ground_pick_flat` | mjwarp | — |
 
 每个冲刺续训 owner 的完整名字是 `microduck_sprint_<名字>_flat`，用到它的示例 README 里有具体命令。

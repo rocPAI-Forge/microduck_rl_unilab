@@ -141,6 +141,7 @@ revisited once on-robot data exists.
 | `microduck_sitstand_flat` (full upstream sit/stand recipe on mujoco; [study](docs/audits/sitstand.md)) | mujoco, mjwarp | — |
 | `microduck_scoot_flat`, `microduck_scoot_straight_flat`, `microduck_scoot_sym_flat` (seated scooting; [study](docs/audits/scoot.md)) | mujoco | — |
 | `microduck_basketball_flat` and its fine-tunes `microduck_basketball_ft_flat` … `ft12_flat` (balancing on a free ball; [study](docs/audits/basketball.md)) | mujoco | — |
+| `microduck_roulade_flat` (forward roll over the head; [study](docs/audits/roulade.md), [example](examples/roulade/)), `microduck_roll_flat`, `microduck_tumble_flat` ([example](examples/tumble/)) | mujoco | — |
 | `microduck_ground_pick_flat` | mjwarp | — |
 
 Each sprint continuation owner is `microduck_sprint_<name>_flat`; the example
