@@ -69,6 +69,56 @@ owner 配置和机器人 XML 资产。
   </tr>
 </table>
 
+### 0.4.0 起新增的动作（仅仿真）
+
+又新增了七个动作，都还没做 MotrixSim 验证，也没上过真机。已发布权重的动作点击会进入示例目录，其余进入研究记录。
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <a href="docs/audits/stilts.md"><img src="docs/media/stilts.gif" width="260" alt="踩高跷行走"></a><br>
+      <b>踩高跷行走</b>（<code>microduck_stilt_flat</code>）<br>
+      10 cm 高跷，0.15 m/s 下存活 100%；转向偏右
+    </td>
+    <td align="center" width="33%">
+      <a href="docs/audits/sitstand.md"><img src="docs/media/sitstand.gif" width="260" alt="坐下与站起"></a><br>
+      <b>坐下与站起</b>（<code>microduck_sitstand_flat</code>）<br>
+      按指令坐下 85–89%，站起 97%
+    </td>
+    <td align="center" width="33%">
+      <a href="docs/audits/scoot.md"><img src="docs/media/scoot.gif" width="260" alt="坐姿挪动"></a><br>
+      <b>坐姿挪动</b>（<code>microduck_scoot_sym_flat</code>）<br>
+      坐着后退，速度为指令的 56–80%
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="docs/audits/basketball.md"><img src="docs/media/basketball.gif" width="260" alt="篮球上平衡"></a><br>
+      <b>篮球上平衡</b>（<code>microduck_basketball_ft9_flat</code>）<br>
+      小指令下在自由球上 60 秒存活 98–99%；大幅切换指令仍会失败
+    </td>
+    <td align="center">
+      <a href="examples/kick/"><img src="docs/media/kick.gif" width="260" alt="带球"></a><br>
+      <b>带球</b>（<code>microduck_kick_flat</code>）<br>
+      走到球后把球沿目标方向推走，不摔倒；是带球，不是抽射
+    </td>
+    <td align="center">
+      <a href="examples/roulade/"><img src="docs/media/roulade.gif" width="260" alt="前滚翻"></a><br>
+      <b>前滚翻</b>（<code>microduck_roulade_flat</code>）<br>
+      以头顶为支点前滚翻并用脚落地，从站立出发 100% 成功；由上游策略微调而来；2 倍慢放
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="examples/tumble/"><img src="docs/media/tumble.gif" width="260" alt="翻滚起身"></a><br>
+      <b>翻滚起身</b>（<code>microduck_tumble_flat</code>）<br>
+      0.56 秒快速向前翻滚后站起，100%；2 倍慢放
+    </td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>
+
 冲刺步态是本仓库独有的，上游 microduck_rl 没有冲刺任务。各冲刺权重之间的区别见[冲刺系列对比](#冲刺系列对比)。尚未完成的部分（原地转向、MotrixSim 上的 1.0 m/s、平地速度 SAC、只支持 MJWarp 的任务）列在 [`CHANGELOG.md`](CHANGELOG.md#known-limitations) 里，进度在 [`docs/ROADMAP.md`](docs/ROADMAP.md) 跟踪。
 
 要把策略部署到实机，见 [`docs/DEPLOY.md`](docs/DEPLOY.md)：观测和动作的接口约定、导出好的 ONNX（在 [`examples/sprint_stand/deploy/`](examples/sprint_stand/deploy/)）、参考机载运行时（`microduck_rl_unilab.deploy`，只依赖 numpy 和 onnxruntime，已在两个仿真器上闭环验证），以及已知的 sim2real 限制。同一个 ONNX 可以原样加载进 Pollen 官方的机载守护进程 `robotd`，文档里列出了按训练方式运行所需的 `[policy]` 设置。目前还没有在实机上跑过。
@@ -107,6 +157,7 @@ uv run --no-sync scripts/sim2sim_check.py examples/sprint_stand/model_59000.pt
 | `microduck_scoot_flat`、`microduck_scoot_straight_flat`、`microduck_scoot_sym_flat`（坐姿挪动；[研究记录](docs/audits/scoot.md)） | mujoco | — |
 | `microduck_basketball_flat` 及其续训 owner `microduck_basketball_ft_flat` … `ft12_flat`（在自由球上平衡；[研究记录](docs/audits/basketball.md)） | mujoco | — |
 | `microduck_roulade_flat`（过头顶的前滚翻；[研究记录](docs/audits/roulade.md)、[示例](examples/roulade/)）、`microduck_roll_flat`、`microduck_tumble_flat`（[示例](examples/tumble/)） | mujoco | — |
+| `microduck_kick_flat`（在 `sprint_stand` 步态上带球；[研究记录](docs/audits/kick.md)、[示例](examples/kick/)） | mujoco | — |
 | `microduck_ground_pick_flat` | mjwarp | — |
 
 每个冲刺续训 owner 的完整名字是 `microduck_sprint_<名字>_flat`，用到它的示例 README 里有具体命令。
@@ -124,6 +175,9 @@ uv run --no-sync scripts/sim2sim_check.py examples/sprint_stand/model_59000.pt
 |---|---|---|
 | `microduck_standup_flat` PPO | 完成；15000 轮。慢放侧面近景依次是趴着撑起、仰着翻身站起、坐着站起 | [`examples/standup/model_14999.pt`](examples/standup/model_14999.pt) / [`play_video.mp4`](examples/standup/play_video.mp4) |
 | `microduck_velstand_flat` PPO | 完成。64 次强制跌倒中，趴下和仰躺都在 8 秒内站起（末态倾角 1.2°），原地指令和默认行走指令都成立 | [`examples/velstand_getup/model_12498.pt`](examples/velstand_getup/model_12498.pt) / [`play_video_getup.mp4`](examples/velstand_getup/play_video_getup.mp4) |
+| `microduck_roulade_flat` PPO | 仿真中完成。以头顶为支点前滚翻并用脚落地：三个种子下从站立出发 100% 成功，1.04 秒站起。由上游发布的 `roulade.onnx` 微调而来；我们自己的训练没能翻过头顶（[研究记录](docs/audits/roulade.md)） | [`examples/roulade/model_999.pt`](examples/roulade/model_999.pt) / [`play_video.mp4`](examples/roulade/play_video.mp4) |
+| `microduck_tumble_flat` PPO | 仿真中完成。0.56 秒快速向前翻滚后站起：三个种子下 100%。这不是 roulade | [`examples/tumble/model_17997.pt`](examples/tumble/model_17997.pt) / [`play_video.mp4`](examples/tumble/play_video.mp4) |
+| `microduck_kick_flat` PPO | 部分完成。沿目标方向带球（12 秒内中位 1.0–1.4 m，存活 99.6–100%），不会抽射（[研究记录](docs/audits/kick.md)） | [`examples/kick/model_60499.pt`](examples/kick/model_60499.pt) / [`play_video.mp4`](examples/kick/play_video.mp4) |
 | `microduck_velocity_flat` SAC | **未通过**；5000 轮训练完成，但推理反复倒地重置，不能作为成品策略。失败样本留在本地 `logs/`，不入库 | — |
 | `sprint_speed_1p68` PPO | 完成，约 1.68 m/s。Sprint 不是上游 microduck_rl 的官方任务，是本仓库独有的冲刺步态 | [`examples/sprint_speed_1p68/model_11997.pt`](examples/sprint_speed_1p68/model_11997.pt) |
 | `sprint_head_upright` PPO | 完成，约 1.32 m/s，头朝上。同上，本仓库独有 | [`examples/sprint_head_upright/model_14500.pt`](examples/sprint_head_upright/model_14500.pt) |
@@ -351,7 +405,7 @@ src/microduck_rl_unilab/
         └── sim2real_notes.py       # sim2real 注意事项
 benchmark/                          # 吞吐实测（硬件、规模、对照）
 docs/DEPLOY.md, docs/ROADMAP.md     # 机载接口与运行时；路线图和各项状态
-docs/audits/                        # 目标角、Motrix、原地转向、高速、回差、高跷、坐下起立、坐姿挪动、摩擦、篮球等专项研究
+docs/audits/                        # 目标角、Motrix、原地转向、高速、回差、高跷、坐下起立、坐姿挪动、摩擦、篮球、前滚翻、踢球等专项研究
 docs/media/                         # README 预览动图，从示例视频剪辑而来
 tests/                              # 迁移自 UniLab 的契约/对齐测试套件
 scripts/                            # 训练驱动、评测、sim2sim 门槛、导出、部署闭环、审计脚本

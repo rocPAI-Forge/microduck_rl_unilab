@@ -75,6 +75,57 @@ its metrics and reproduce commands.
   </tr>
 </table>
 
+### Added in 0.4.0 and after (simulation only)
+
+Seven more motions, none checked on MotrixSim or run on a robot yet. A clip
+links to its example when the weights are published, otherwise to its study.
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <a href="docs/audits/stilts.md"><img src="docs/media/stilts.gif" width="260" alt="Walking on stilts"></a><br>
+      <b>Walking on stilts</b> (<code>microduck_stilt_flat</code>)<br>
+      10 cm stilts, 100% survival at 0.15 m/s; steers with a right bias
+    </td>
+    <td align="center" width="33%">
+      <a href="docs/audits/sitstand.md"><img src="docs/media/sitstand.gif" width="260" alt="Sit and stand"></a><br>
+      <b>Sit and stand</b> (<code>microduck_sitstand_flat</code>)<br>
+      Sits 85–89% and stands 97% on command
+    </td>
+    <td align="center" width="33%">
+      <a href="docs/audits/scoot.md"><img src="docs/media/scoot.gif" width="260" alt="Seated scooting"></a><br>
+      <b>Seated scooting</b> (<code>microduck_scoot_sym_flat</code>)<br>
+      Backs up while seated at 56–80% of the command
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="docs/audits/basketball.md"><img src="docs/media/basketball.gif" width="260" alt="Basketball balance"></a><br>
+      <b>Basketball balance</b> (<code>microduck_basketball_ft9_flat</code>)<br>
+      98–99% for 60 s on a free ball under small commands; large switching commands still fail
+    </td>
+    <td align="center">
+      <a href="examples/kick/"><img src="docs/media/kick.gif" width="260" alt="Ball dribbling"></a><br>
+      <b>Ball dribbling</b> (<code>microduck_kick_flat</code>)<br>
+      Walks to the ball and pushes it along a goal, no falls; dribbles, does not strike
+    </td>
+    <td align="center">
+      <a href="examples/roulade/"><img src="docs/media/roulade.gif" width="260" alt="Roulade"></a><br>
+      <b>Roulade</b> (<code>microduck_roulade_flat</code>)<br>
+      Forward roll over the head, lands on the feet, 100% from standing; fine-tuned from upstream's policy; 2× slow
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="examples/tumble/"><img src="docs/media/tumble.gif" width="260" alt="Tumble and get up"></a><br>
+      <b>Tumble and get up</b> (<code>microduck_tumble_flat</code>)<br>
+      Fast forward tumble in 0.56 s, then stands, 100%; 2× slow
+    </td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>
+
 The sprint gaits exist only in this repo; upstream microduck_rl has no sprint
 task. How the sprint checkpoints differ is under
 [Sprint lineage](#sprint-lineage). What is not available yet (turning in
@@ -142,6 +193,7 @@ revisited once on-robot data exists.
 | `microduck_scoot_flat`, `microduck_scoot_straight_flat`, `microduck_scoot_sym_flat` (seated scooting; [study](docs/audits/scoot.md)) | mujoco | — |
 | `microduck_basketball_flat` and its fine-tunes `microduck_basketball_ft_flat` … `ft12_flat` (balancing on a free ball; [study](docs/audits/basketball.md)) | mujoco | — |
 | `microduck_roulade_flat` (forward roll over the head; [study](docs/audits/roulade.md), [example](examples/roulade/)), `microduck_roll_flat`, `microduck_tumble_flat` ([example](examples/tumble/)) | mujoco | — |
+| `microduck_kick_flat` (ball dribbling on the `sprint_stand` gait; [study](docs/audits/kick.md), [example](examples/kick/)) | mujoco | — |
 | `microduck_ground_pick_flat` | mjwarp | — |
 
 Each sprint continuation owner is `microduck_sprint_<name>_flat`; the example
@@ -160,6 +212,9 @@ Training reproduction status (complete requires both metrics and inference video
 |---|---|---|
 | `microduck_standup_flat` PPO | Complete; 15000 iterations. Slow side views, in order: prone push-up, supine roll-up, sit-to-stand | [`examples/standup/model_14999.pt`](examples/standup/model_14999.pt) / [`play_video.mp4`](examples/standup/play_video.mp4) |
 | `microduck_velstand_flat` PPO | Complete. On 64 forced falls, face-down and face-up both stand within 8 s (mean tilt 1.2°), with stand-still and with the default walk commands | [`examples/velstand_getup/model_12498.pt`](examples/velstand_getup/model_12498.pt) / [`play_video_getup.mp4`](examples/velstand_getup/play_video_getup.mp4) |
+| `microduck_roulade_flat` PPO | Complete in simulation. Forward roll over the head, lands on the feet: 100% from standing over three seeds, standing at 1.04 s. Fine-tuned from upstream's published `roulade.onnx`; our own training did not get over the head ([study](docs/audits/roulade.md)) | [`examples/roulade/model_999.pt`](examples/roulade/model_999.pt) / [`play_video.mp4`](examples/roulade/play_video.mp4) |
+| `microduck_tumble_flat` PPO | Complete in simulation. Fast forward tumble in 0.56 s, then stands: 100% over three seeds. Not the roulade | [`examples/tumble/model_17997.pt`](examples/tumble/model_17997.pt) / [`play_video.mp4`](examples/tumble/play_video.mp4) |
+| `microduck_kick_flat` PPO | Partial. Dribbles the ball along a goal (median 1.0–1.4 m in 12 s, 99.6–100% survival); does not strike it ([study](docs/audits/kick.md)) | [`examples/kick/model_60499.pt`](examples/kick/model_60499.pt) / [`play_video.mp4`](examples/kick/play_video.mp4) |
 | `microduck_velocity_flat` SAC | **Failed validation**; all 5000 iterations completed, but inference repeatedly falls and resets, so this is not a usable policy. The failure clip stays in local `logs/` and is not published | — |
 | `sprint_speed_1p68` PPO | Complete, about 1.68 m/s. Sprint is not an upstream microduck_rl task; it is a gait that exists only in this repo | [`examples/sprint_speed_1p68/model_11997.pt`](examples/sprint_speed_1p68/model_11997.pt) |
 | `sprint_head_upright` PPO | Complete, about 1.32 m/s with the head up. Same: this repo only | [`examples/sprint_head_upright/model_14500.pt`](examples/sprint_head_upright/model_14500.pt) |
@@ -428,7 +483,7 @@ src/microduck_rl_unilab/
         └── sim2real_notes.py       # sim2real notes
 benchmark/                          # throughput notes (hardware, scale, comparison)
 docs/DEPLOY.md, docs/ROADMAP.md     # onboard contract and runtime; roadmap and item status
-docs/audits/                        # target, Motrix, turning-in-place, top-speed, backlash, stilt, sit/stand, scoot, friction, and basketball studies
+docs/audits/                        # target, Motrix, turning-in-place, top-speed, backlash, stilt, sit/stand, scoot, friction, basketball, forward-roll, and kick studies
 docs/media/                         # README preview GIFs cut from the example clips
 tests/                              # contract/alignment suite migrated from UniLab
 scripts/                            # training drivers, eval, sim2sim gate, export, deploy sim loop, audits
