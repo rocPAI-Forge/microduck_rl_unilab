@@ -4,8 +4,38 @@ Versions follow `project.version` in `pyproject.toml`. Each release is a git
 tag `v<version>` with a matching GitHub release. Checkpoints live in
 `examples/` and are versioned with the code that reproduces them.
 
-## Unreleased
+## 0.5.0
 
+Three more motions, all in simulation on MuJoCo, and this time with published
+weights: the roulade (upstream microduck_rl's forward roll over the head,
+landing on the feet), a fast forward tumble that ends standing, and ball
+dribbling on the `sprint_stand` gait. The README gains a clip table for every
+motion added in 0.4.0 and after. None of the new checkpoints has a MotrixSim
+check or a robot run; `sprint_stand/model_59000` stays the hardware starting
+point. Dependencies are unchanged.
+
+### Known limitations
+
+- No turning in place: four rounds found a left pivot only. Turn around with
+  the 0.5 m radius turn.
+- 1.0 m/s on MotrixSim and under ±1° servo backlash loses margin; wider
+  randomization or backlash training trades it for speed or for standing on a
+  stiff robot. Keep first hardware runs at or below 0.6 m/s.
+- On Pollen's `robotd`, set the `[policy]` values in `docs/DEPLOY.md`, and
+  check the target clamp, which `robotd` does not apply. Nothing has run on a
+  robot yet.
+- The roulade checkpoint is upstream's published policy fine-tuned here; our
+  own training never rolled over the head from standing. It plants the head on
+  the floor, and the tumble peaks near 10 rad/s: both are simulation demos.
+- Ball "kicking" is a dribble: only the foot soles collide with the ball in
+  the walking model, so the duck cannot strike it.
+- The 0.4.0 limitations of stilts, sit/stand, scooting and basketball still
+  hold, and walking-task foot friction below 1.0 is still roadmap item 12.
+
+### Changes
+
+- Docs checked for consistency before the release: the roadmap status names
+  0.5.0; the READMEs point at `v0.5.0`.
 - Forward roll, two policies (`docs/audits/roulade.md`), simulation only:
   - Roulade (`examples/roulade/model_999.pt`): upstream microduck_rl's roll
     over the flat top of the head, landing on the feet, in one policy.
