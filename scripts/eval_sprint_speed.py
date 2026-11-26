@@ -85,6 +85,9 @@ def _compose_owner(
         twist.rel_standing_envs = 0.0
         twist.rel_forward_envs = 0.0
         twist.turn_in_place_fraction = 0.0
+        for key in ("high_speed_fraction", "straight_fraction"):
+            if key in twist:
+                twist[key] = 0.0
         twist.resampling_time_range = [duration_s + 1.0, duration_s + 1.0]
         if clip_targets:
             cfg.env.actions.joint_pos.clip_target_to_joint_limits = True
