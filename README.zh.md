@@ -121,7 +121,7 @@ owner 配置和机器人 XML 资产。
 
 冲刺步态是本仓库独有的，上游 microduck_rl 没有冲刺任务。各冲刺权重之间的区别见[冲刺系列对比](#冲刺系列对比)。尚未完成的部分（原地转向、MotrixSim 上的 1.0 m/s、平地速度 SAC、只支持 MJWarp 的任务）列在 [`CHANGELOG.md`](CHANGELOG.md#known-limitations) 里，进度在 [`docs/ROADMAP.md`](docs/ROADMAP.md) 跟踪。
 
-要把策略部署到实机，见 [`docs/DEPLOY.md`](docs/DEPLOY.md)：观测和动作的接口约定、导出好的 ONNX（在 [`examples/sprint_stand/deploy/`](examples/sprint_stand/deploy/)）、参考机载运行时（`microduck_rl_unilab.deploy`，只依赖 numpy 和 onnxruntime，已在两个仿真器上闭环验证），以及已知的 sim2real 限制。同一个 ONNX 可以原样加载进 Pollen 官方的机载守护进程 `robotd`，文档里列出了按训练方式运行所需的 `[policy]` 设置。目前还没有在实机上跑过。
+要把策略部署到实机，见 [`docs/DEPLOY.md`](docs/DEPLOY.md)：观测和动作的接口约定、导出好的 ONNX（在 [`examples/sprint_stand/deploy/`](examples/sprint_stand/deploy/)）、参考机载运行时（`microduck_rl_unilab.deploy`，只依赖 numpy 和 onnxruntime，已在两个仿真器上闭环验证），以及已知的 sim2real 限制。同一个 ONNX 可以原样加载进 Pollen 官方的机载守护进程 `robotd`，文档里列出了按训练方式运行所需的 `[policy]` 设置。目前还没有在实机上跑过；第一次上真机前，先按 [`docs/HARDWARE_BRINGUP.md`](docs/HARDWARE_BRINGUP.md) 逐项检查。
 
 ## 版本
 

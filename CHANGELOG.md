@@ -4,6 +4,15 @@ Versions follow `project.version` in `pyproject.toml`. Each release is a git
 tag `v<version>` with a matching GitHub release. Checkpoints live in
 `examples/` and are versioned with the code that reproduces them.
 
+## Unreleased
+
+- `docs/HARDWARE_BRINGUP.md` and `scripts/hardware_bringup.py` check the
+  robot side before the first policy step: static IMU, IMU axes and signs,
+  default pose (zero offsets, swapped IDs), per-joint direction with a by-eye
+  confirmation from the MJCF axes, loop timing, and a guarded 5 s stand. They
+  run against any adapter with `read`, `heading`, `write_goals`, and
+  `set_torque` (`microduck_rl_unilab.deploy.bringup`).
+
 ## 0.5.1
 
 Publishes the four 0.4.0 motions as examples: walking on stilts, commanded
