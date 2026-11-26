@@ -53,6 +53,7 @@ def test_microduck_mjwarp_owner_enables_base_com_and_push_events() -> None:
 
 
 def test_microduck_mjwarp_full_dr_reset_and_interval_smoke() -> None:
+    pytest.importorskip("mujoco_warp", reason="needs the optional mujoco-warp dependency (uv sync --extra mjwarp)")
     dependencies = load_mjwarp_dependencies()
     if not bool(dependencies.warp.get_device().is_cuda):
         pytest.fail("microduck mjwarp DR smoke requires an active CUDA Warp device")

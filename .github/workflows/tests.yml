@@ -1,0 +1,33 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      # uv.lock pins the ROCm torch build; hosted runners have no GPU, so install
+      # everything else from the lock and the same torch version as a CPU wheel.
+      - name: Install
+        run: |
+          uv sync --frozen --no-install-package torch --no-install-package triton-rocm
+          uv pip install "torch==2.11.0" --index-url https://download.pytorch.org/whl/cpu
+
+      # MJWarp tests skip without the optional mujoco-warp dependency.
+      - name: Test
+        run: uv run --no-sync pytest -q -rs
