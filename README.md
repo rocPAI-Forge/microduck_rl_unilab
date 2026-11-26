@@ -145,7 +145,7 @@ run has been done yet.
 
 ## Version
 
-Current release: **0.5.0** (git tag `v0.5.0`). Release contents, checked
+Current release: **0.5.1** (git tag `v0.5.1`). Release contents, checked
 policies, and known limitations are in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Simulators: train on MuJoCo, check on MotrixSim

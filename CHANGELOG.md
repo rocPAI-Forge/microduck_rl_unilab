@@ -4,8 +4,30 @@ Versions follow `project.version` in `pyproject.toml`. Each release is a git
 tag `v<version>` with a matching GitHub release. Checkpoints live in
 `examples/` and are versioned with the code that reproduces them.
 
-## Unreleased
+## 0.5.1
 
+Publishes the four 0.4.0 motions as examples: walking on stilts, commanded
+sit and stand, seated scooting, and balancing on a free basketball (partial).
+Their checkpoints were trained in 0.4.0 but kept out of the repo; each now
+ships with a clip, `metrics.json` from three seeds, and reproduce commands.
+All ten motion examples since 0.4.0 are simulation only, with no MotrixSim
+check or robot run; `sprint_stand/model_59000` stays the hardware starting
+point. Dependencies are unchanged.
+
+### Known limitations
+
+- Unchanged from 0.5.0: no turning in place; 1.0 m/s loses margin on MotrixSim
+  and under servo backlash; on `robotd`, set the `[policy]` values in
+  `docs/DEPLOY.md`; nothing has run on a robot.
+- Stilts drift forward at a standstill and steer right; sit/stand drops the
+  last ~4 cm onto the seat; scooting forward is weak; basketball collapses
+  under large switching commands (3.5% under the playground protocol).
+- Walking-task foot friction below 1.0 is still roadmap item 12.
+
+### Changes
+
+- Docs checked for consistency before the release: the roadmap status names
+  0.5.1; the READMEs point at `v0.5.1`.
 - Checkpoints published for the four 0.4.0 motions, each as an example with
   weights, a 15 s clip, `metrics.json` and reproduce commands, re-evaluated on
   three seeds: `examples/stilts/` (10 cm stilts, 99.2–100% over 60 s),

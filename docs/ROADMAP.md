@@ -11,11 +11,11 @@ on the current 8-core, 59 GB machine, 2048 environments already take about
 26 GB, 3072 ran slower (27.3k vs 29.8k steps/s), and 4096 ran out of memory.
 Decisions between close checkpoints use 512-environment batteries.
 
-**Where things stand (0.5.0).** Every item that does not need hardware is done
+**Where things stand (0.5.1).** Every item that does not need hardware is done
 or parked, except item 12, which is open. 0.4.0 added four simulation-only
-motion tasks (stilts, sit/stand, scooting, basketball); 0.5.0 adds the
-roulade, a tumble and ball dribbling with published checkpoints. None of them
-has a MotrixSim gate or a robot run. Item 5's hardware side is next, and its
+motion tasks (stilts, sit/stand, scooting, basketball), 0.5.0 the roulade, a
+tumble and ball dribbling, and 0.5.1 publishes checkpoints for all seven. None
+of them has a MotrixSim gate or a robot run. Item 5's hardware side is next, and its
 results decide whether items 8, 10, and 11 are reopened.
 
 ## Status
