@@ -77,30 +77,31 @@ its metrics and reproduce commands.
 
 ### Added in 0.4.0 and after (simulation only)
 
-Seven more motions, none checked on MotrixSim or run on a robot yet. A clip
-links to its example when the weights are published, otherwise to its study.
+Seven more motions, none checked on MotrixSim or run on a robot yet. Each clip
+links to its example (weights, metrics, reproduce commands), which links its
+study.
 
 <table>
   <tr>
     <td align="center" width="33%">
-      <a href="docs/audits/stilts.md"><img src="docs/media/stilts.gif" width="260" alt="Walking on stilts"></a><br>
+      <a href="examples/stilts/"><img src="docs/media/stilts.gif" width="260" alt="Walking on stilts"></a><br>
       <b>Walking on stilts</b> (<code>microduck_stilt_flat</code>)<br>
       10 cm stilts, 100% survival at 0.15 m/s; steers with a right bias
     </td>
     <td align="center" width="33%">
-      <a href="docs/audits/sitstand.md"><img src="docs/media/sitstand.gif" width="260" alt="Sit and stand"></a><br>
+      <a href="examples/sitstand/"><img src="docs/media/sitstand.gif" width="260" alt="Sit and stand"></a><br>
       <b>Sit and stand</b> (<code>microduck_sitstand_flat</code>)<br>
       Sits 85–89% and stands 97% on command
     </td>
     <td align="center" width="33%">
-      <a href="docs/audits/scoot.md"><img src="docs/media/scoot.gif" width="260" alt="Seated scooting"></a><br>
+      <a href="examples/scoot/"><img src="docs/media/scoot.gif" width="260" alt="Seated scooting"></a><br>
       <b>Seated scooting</b> (<code>microduck_scoot_sym_flat</code>)<br>
       Backs up while seated at 56–80% of the command
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="docs/audits/basketball.md"><img src="docs/media/basketball.gif" width="260" alt="Basketball balance"></a><br>
+      <a href="examples/basketball/"><img src="docs/media/basketball.gif" width="260" alt="Basketball balance"></a><br>
       <b>Basketball balance</b> (<code>microduck_basketball_ft9_flat</code>)<br>
       98–99% for 60 s on a free ball under small commands; large switching commands still fail
     </td>
@@ -186,12 +187,12 @@ revisited once on-robot data exists.
 |------|-----|-----|
 | `microduck_velocity_flat` | mujoco, motrix | mujoco, motrix |
 | `microduck_velstand_flat` | mujoco | — |
-| `microduck_stilt_flat` (walking on stilts; [study](docs/audits/stilts.md)) | mujoco | — |
+| `microduck_stilt_flat` (walking on stilts; [study](docs/audits/stilts.md), [example](examples/stilts/)) | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
 | `microduck_sprint_flat` and its 23 continuation owners (`robust`, `gaitfix`, `rollfix`, `steerfix`, `straightfix`, `straightspeed`, `straighthold`, `straightcmd`, `straightrange`, `straightclip`, `straightneck`, `straighthead`, `steer`, `steermix`, `stand`, `standturn`, `pivot`, `pivothold`, `pivotsym`, `standwide`, `standwidefast`, `pivotyaw`, `standbacklash`) | mujoco | — |
-| `microduck_sitstand_flat` (full upstream sit/stand recipe on mujoco; [study](docs/audits/sitstand.md)) | mujoco, mjwarp | — |
-| `microduck_scoot_flat`, `microduck_scoot_straight_flat`, `microduck_scoot_sym_flat` (seated scooting; [study](docs/audits/scoot.md)) | mujoco | — |
-| `microduck_basketball_flat` and its fine-tunes `microduck_basketball_ft_flat` … `ft12_flat` (balancing on a free ball; [study](docs/audits/basketball.md)) | mujoco | — |
+| `microduck_sitstand_flat` (full upstream sit/stand recipe on mujoco; [study](docs/audits/sitstand.md), [example](examples/sitstand/)) | mujoco, mjwarp | — |
+| `microduck_scoot_flat`, `microduck_scoot_straight_flat`, `microduck_scoot_sym_flat` (seated scooting; [study](docs/audits/scoot.md), [example](examples/scoot/)) | mujoco | — |
+| `microduck_basketball_flat` and its fine-tunes `microduck_basketball_ft_flat` … `ft12_flat` (balancing on a free ball; [study](docs/audits/basketball.md), [example](examples/basketball/)) | mujoco | — |
 | `microduck_roulade_flat` (forward roll over the head; [study](docs/audits/roulade.md), [example](examples/roulade/)), `microduck_roll_flat`, `microduck_tumble_flat` ([example](examples/tumble/)) | mujoco | — |
 | `microduck_kick_flat` (ball dribbling on the `sprint_stand` gait; [study](docs/audits/kick.md), [example](examples/kick/)) | mujoco | — |
 | `microduck_ground_pick_flat` | mjwarp | — |
@@ -212,6 +213,10 @@ Training reproduction status (complete requires both metrics and inference video
 |---|---|---|
 | `microduck_standup_flat` PPO | Complete; 15000 iterations. Slow side views, in order: prone push-up, supine roll-up, sit-to-stand | [`examples/standup/model_14999.pt`](examples/standup/model_14999.pt) / [`play_video.mp4`](examples/standup/play_video.mp4) |
 | `microduck_velstand_flat` PPO | Complete. On 64 forced falls, face-down and face-up both stand within 8 s (mean tilt 1.2°), with stand-still and with the default walk commands | [`examples/velstand_getup/model_12498.pt`](examples/velstand_getup/model_12498.pt) / [`play_video_getup.mp4`](examples/velstand_getup/play_video_getup.mp4) |
+| `microduck_stilt_flat` PPO | Complete in simulation. 10 cm stilts: 99.2-100% survival over 60 s at stand, 0.15 and 0.25 m/s; drifts forward at a standstill and steers right ([study](docs/audits/stilts.md)) | [`examples/stilts/model_4091.pt`](examples/stilts/model_4091.pt) / [`play_video.mp4`](examples/stilts/play_video.mp4) |
+| `microduck_sitstand_flat` PPO (`fix` owner) | Complete in simulation. Sits 85-89% and stands 97% on command, falls ≤ 0.2%; drops the last ~4 cm onto the seat ([study](docs/audits/sitstand.md)) | [`examples/sitstand/model_6500.pt`](examples/sitstand/model_6500.pt) / [`play_video.mp4`](examples/sitstand/play_video.mp4) |
+| `microduck_scoot_flat` PPO (`sym` owner) | Complete in simulation. Backs up while seated at 82-88% of the command, 100% survival; forward is weaker ([study](docs/audits/scoot.md)) | [`examples/scoot/model_2999.pt`](examples/scoot/model_2999.pt) / [`play_video.mp4`](examples/scoot/play_video.mp4) |
+| `microduck_basketball_flat` PPO (`ft9` owner) | Partial. 98-99% for 60 s on a free ball under small commands; 3.5% under the playground protocol ([study](docs/audits/basketball.md)) | [`examples/basketball/model_12491.pt`](examples/basketball/model_12491.pt) / [`play_video.mp4`](examples/basketball/play_video.mp4) |
 | `microduck_roulade_flat` PPO | Complete in simulation. Forward roll over the head, lands on the feet: 100% from standing over three seeds, standing at 1.04 s. Fine-tuned from upstream's published `roulade.onnx`; our own training did not get over the head ([study](docs/audits/roulade.md)) | [`examples/roulade/model_999.pt`](examples/roulade/model_999.pt) / [`play_video.mp4`](examples/roulade/play_video.mp4) |
 | `microduck_tumble_flat` PPO | Complete in simulation. Fast forward tumble in 0.56 s, then stands: 100% over three seeds. Not the roulade | [`examples/tumble/model_17997.pt`](examples/tumble/model_17997.pt) / [`play_video.mp4`](examples/tumble/play_video.mp4) |
 | `microduck_kick_flat` PPO | Partial. Dribbles the ball along a goal (median 1.0–1.4 m in 12 s, 99.6–100% survival); does not strike it ([study](docs/audits/kick.md)) | [`examples/kick/model_60499.pt`](examples/kick/model_60499.pt) / [`play_video.mp4`](examples/kick/play_video.mp4) |
@@ -315,7 +320,8 @@ uv run --no-sync scripts/train_sprint_robust.py \
 | [`examples/sprint_stand/`](examples/sprint_stand/) | 0–1.0 m/s and ±0.4 rad/s | straight 300 s 95.1–100%; turns 98–100% | ≤ 0.01% | Adds standing still to `sprint_steer`. No turning in place (turn around with `[0.2, 0, ±0.4]`); heading drifts about 6.5° over 300 s while standing. Eval and play need `--clip-targets`. Exported to ONNX in `deploy/`. |
 
 Each directory has `model_*.pt`, visualizations, `metrics.json`, and
-reproduce commands. `model.pt` is about 4.7 MB and is stored in git.
+reproduce commands. A `model_*.pt` is about 4.7 MB (the basketball LSTM
+checkpoint about 10 MB) and is stored in git.
 
 ### Sprint lineage
 

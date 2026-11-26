@@ -1,0 +1,175 @@
+{
+  "label": "scoot",
+  "task": "MicroduckStandupFlat",
+  "train_owner": "microduck_scoot_sym_flat/mujoco",
+  "checkpoint": "examples/scoot/model_2999.pt",
+  "source_run": "2026-11-17_08-07-57_mujoco",
+  "source_iteration": 2999,
+  "scene": {
+    "script": "scripts/make_hull_robot.py",
+    "model_file": "assets/robots/microduck/generated/scene_flat_groundcontact_bam_hull_prio.xml"
+  },
+  "training": {
+    "backend": "mujoco",
+    "num_envs": 4096,
+    "completed_iterations": 3000,
+    "start": "scratch (round 4, see docs/audits/scoot.md)",
+    "final_mean_reward": 103.47
+  },
+  "playback": {
+    "video": "examples/scoot/play_video.mp4",
+    "duration_s": 15,
+    "schedule": "backward 0.10 m/s for 10 s, then stop"
+  },
+  "evaluation": {
+    "script": "scripts/eval_walk.py",
+    "num_envs": 128,
+    "duration_s": 10,
+    "runs": [
+      {
+        "owner": "microduck_scoot_sym_flat/mujoco",
+        "overrides": [],
+        "command_m_s": -0.05,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 10.0,
+        "num_envs": 128,
+        "seed": 101,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": -0.043564243972301485,
+        "yaw_rate_rad_s": -0.012708429989172145
+      },
+      {
+        "owner": "microduck_scoot_sym_flat/mujoco",
+        "overrides": [],
+        "command_m_s": -0.05,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 10.0,
+        "num_envs": 128,
+        "seed": 202,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": -0.04389500095695257,
+        "yaw_rate_rad_s": -0.025527154275216162
+      },
+      {
+        "owner": "microduck_scoot_sym_flat/mujoco",
+        "overrides": [],
+        "command_m_s": -0.05,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 10.0,
+        "num_envs": 128,
+        "seed": 303,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": -0.043338492177426816,
+        "yaw_rate_rad_s": -0.02028039357904345
+      },
+      {
+        "owner": "microduck_scoot_sym_flat/mujoco",
+        "overrides": [],
+        "command_m_s": -0.1,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 10.0,
+        "num_envs": 128,
+        "seed": 101,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": -0.08219597317278385,
+        "yaw_rate_rad_s": 0.017167265708791093
+      },
+      {
+        "owner": "microduck_scoot_sym_flat/mujoco",
+        "overrides": [],
+        "command_m_s": -0.1,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 10.0,
+        "num_envs": 128,
+        "seed": 202,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": -0.08519816699624061,
+        "yaw_rate_rad_s": 0.010136850664857776
+      },
+      {
+        "owner": "microduck_scoot_sym_flat/mujoco",
+        "overrides": [],
+        "command_m_s": -0.1,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 10.0,
+        "num_envs": 128,
+        "seed": 303,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": -0.0831513325124979,
+        "yaw_rate_rad_s": 0.014360482138581574
+      },
+      {
+        "owner": "microduck_scoot_sym_flat/mujoco",
+        "overrides": [],
+        "command_m_s": 0.05,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 10.0,
+        "num_envs": 128,
+        "seed": 101,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": 0.028912038814276456,
+        "yaw_rate_rad_s": -0.058216221082024275
+      },
+      {
+        "owner": "microduck_scoot_sym_flat/mujoco",
+        "overrides": [],
+        "command_m_s": 0.05,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 10.0,
+        "num_envs": 128,
+        "seed": 202,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": 0.035930974923074246,
+        "yaw_rate_rad_s": -0.07226662272494286
+      },
+      {
+        "owner": "microduck_scoot_sym_flat/mujoco",
+        "overrides": [],
+        "command_m_s": 0.05,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 10.0,
+        "num_envs": 128,
+        "seed": 303,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": 0.03212413016706705,
+        "yaw_rate_rad_s": -0.07072896058764308
+      },
+      {
+        "owner": "microduck_scoot_sym_flat/mujoco",
+        "overrides": [],
+        "command_m_s": 0.0,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 10.0,
+        "num_envs": 128,
+        "seed": 101,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": -0.004227877509314567,
+        "yaw_rate_rad_s": 0.006840210393769666
+      },
+      {
+        "owner": "microduck_scoot_sym_flat/mujoco",
+        "overrides": [],
+        "command_m_s": 0.0,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 10.0,
+        "num_envs": 128,
+        "seed": 202,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": -0.0011141813044378069,
+        "yaw_rate_rad_s": -0.0036624526109080764
+      },
+      {
+        "owner": "microduck_scoot_sym_flat/mujoco",
+        "overrides": [],
+        "command_m_s": 0.0,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 10.0,
+        "num_envs": 128,
+        "seed": 303,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": -0.002871058491524309,
+        "yaw_rate_rad_s": 0.0024447934388881548
+      }
+    ]
+  }
+}

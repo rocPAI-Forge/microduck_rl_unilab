@@ -3,7 +3,8 @@
 After Vottivott/microduck-playground's MicroDock v2 training: a seated duck
 backs into the dock and scoots out. Owners build on the ground-contact standup
 owner (`microduck_scoot_flat`, see its header for the reward layer). Accepted:
-round 4, `microduck_scoot_sym_flat` `model_2999`.
+round 4, `microduck_scoot_sym_flat` `model_2999`, published as
+[`examples/scoot/`](../../examples/scoot/) since 0.5.1.
 
 ## Rounds
 

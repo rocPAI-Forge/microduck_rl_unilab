@@ -1,0 +1,107 @@
+{
+  "label": "sitstand",
+  "task": "MicroduckSitStandFlat",
+  "train_owner": "microduck_sitstand_fix_flat/mujoco",
+  "checkpoint": "examples/sitstand/model_6500.pt",
+  "source_run": "2026-11-16_17-25-42_mujoco",
+  "source_iteration": 6500,
+  "training": {
+    "backend": "mujoco",
+    "rounds": "5 (see docs/audits/sitstand.md)",
+    "round_5": "microduck_sitstand_fix_flat, 2000 iterations from round 4",
+    "final_mean_reward": 116.74
+  },
+  "playback": {
+    "video": "examples/sitstand/play_video.mp4",
+    "duration_s": 15,
+    "schedule": "stand 3 s, sit 6 s, stand"
+  },
+  "evaluation": {
+    "script": "scripts/eval_sitstand.py",
+    "num_envs": 512,
+    "schedule": "stand 1 s, sit until 7 s, stand until 12 s",
+    "runs": [
+      {
+        "owner": "microduck_sitstand_fix_flat/mujoco",
+        "num_envs": 512,
+        "seed": 101,
+        "schedule_s": {
+          "sit_at": 1.0,
+          "stand_at": 7.0,
+          "end": 12.0
+        },
+        "sit_success": 0.87890625,
+        "seated_hold_fraction": 0.8772786458333333,
+        "rise_success": 0.970703125,
+        "fall_fraction": 0.0,
+        "descent_speed_p95_m_s": 0.8740243136882782,
+        "rise_speed_p95_m_s": 0.42773924916982653,
+        "final_z_mean_m": 0.11809846013784409,
+        "final_z_p10_p50_p90_m": [
+          0.1175779640674591,
+          0.11828712746500969,
+          0.11890411525964736
+        ],
+        "final_tilt_p50_p90_deg": [
+          1.249025285243988,
+          3.3708823919296265
+        ],
+        "seated_z_at_stand_cmd_p50_m": 0.06001026928424835
+      },
+      {
+        "owner": "microduck_sitstand_fix_flat/mujoco",
+        "num_envs": 512,
+        "seed": 202,
+        "schedule_s": {
+          "sit_at": 1.0,
+          "stand_at": 7.0,
+          "end": 12.0
+        },
+        "sit_success": 0.892578125,
+        "seated_hold_fraction": 0.8924609375,
+        "rise_success": 0.974609375,
+        "fall_fraction": 0.0,
+        "descent_speed_p95_m_s": 0.8828048497438431,
+        "rise_speed_p95_m_s": 0.4333515658974647,
+        "final_z_mean_m": 0.11809487640857697,
+        "final_z_p10_p50_p90_m": [
+          0.11756861209869385,
+          0.1182677373290062,
+          0.11883078143000603
+        ],
+        "final_tilt_p50_p90_deg": [
+          1.277021884918213,
+          3.325196862220765
+        ],
+        "seated_z_at_stand_cmd_p50_m": 0.06003490090370178
+      },
+      {
+        "owner": "microduck_sitstand_fix_flat/mujoco",
+        "num_envs": 512,
+        "seed": 303,
+        "schedule_s": {
+          "sit_at": 1.0,
+          "stand_at": 7.0,
+          "end": 12.0
+        },
+        "sit_success": 0.8515625,
+        "seated_hold_fraction": 0.8517057291666666,
+        "rise_success": 0.97265625,
+        "fall_fraction": 0.001953125,
+        "descent_speed_p95_m_s": 0.8781183987855911,
+        "rise_speed_p95_m_s": 0.4298735052347183,
+        "final_z_mean_m": 0.11800681054592133,
+        "final_z_p10_p50_p90_m": [
+          0.1175098717212677,
+          0.11827920377254486,
+          0.11884653568267822
+        ],
+        "final_tilt_p50_p90_deg": [
+          1.2238132953643799,
+          3.3130435943603516
+        ],
+        "seated_z_at_stand_cmd_p50_m": 0.06003763526678085
+      }
+    ]
+  }
+}

@@ -5,8 +5,9 @@ fixed stand → sit → stand schedule it sits 85–89% of the time, stands back
 97% of the time, stands upright (tilt p90 3.3°), and almost never falls
 (≤ 0.2%, 512 environments, three seeds). It is not gentle at the end of the
 descent: the trunk peaks at about 0.88 m/s, a drop of the last ~4 cm onto the
-seat. Simulation only; no checkpoint is published (there is no MotrixSim owner
-for this task yet, so the sim2sim gate cannot run).
+seat. Simulation only, with no MotrixSim gate (there is no MotrixSim owner for
+this task yet). The checkpoint is published as
+[`examples/sitstand/`](../../examples/sitstand/) since 0.5.1.
 
 ## Recipe
 

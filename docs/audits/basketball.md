@@ -20,7 +20,8 @@ commands weakly, and collapses under large switching commands.
   commands combined with switching (see the ablation below). Playground b11
   reports 97% under its protocol.
 
-Accepted checkpoint: round 10 (`microduck_basketball_ft9_flat`, `model_12491`):
+Accepted checkpoint: round 10 (`microduck_basketball_ft9_flat`, `model_12491`,
+published as [`examples/basketball/`](../../examples/basketball/) since 0.5.1):
 survival 98% to 99% at 60 s, forward slope about 0.48 (vx -0.024 / +0.023 /
 +0.071 at -0.10 / 0 / +0.10 m/s), yaw slope about 0.58, yaw error about 0.33.
 Zero command still drifts at about +0.023 m/s.

@@ -45,6 +45,7 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
     total = args.duration + 1.0
     with open_dict(cfg):
         cfg.algo.seed = args.seed
+        cfg.env.seed = args.seed
         cfg.env.max_episode_seconds = total + 1.0
         twist = cfg.env.commands.twist
         twist.ranges.lin_vel_x = [args.speed, args.speed]
