@@ -2,9 +2,11 @@
 
 A real kick: the duck stands with a 70 mm, 15 g ball in front of one foot,
 swings that leg, sends the ball forward at about 1.3 m/s, and stands back up.
-One policy per foot. Simulation only; no MotrixSim check, no robot run.
+One policy per foot. Simulation only; no robot run.
 [`play_video_right.mp4`](play_video_right.mp4) and
 [`play_video_left.mp4`](play_video_left.mp4) are 6 s at 2× slow.
+
+MotrixSim cross-check: passes (ball past 0.5 m and standing 94.5-99.2% on Motrix, 100% on MuJoCo; [`docs/audits/sim2sim_tricks.md`](../../docs/audits/sim2sim_tricks.md)).
 
 | File | Contents |
 |---|---|

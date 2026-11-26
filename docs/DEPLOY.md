@@ -216,8 +216,9 @@ uv run --no-sync scripts/make_ballkick_scene.py
 uv run --no-sync scripts/deploy_switch_sim.py --num-envs 32 --seed 101 --video switch.mp4
 ```
 
-The tricks are simulation results: none has a MotrixSim check or a robot run,
-so they are not cleared for hardware the way `sprint_stand` is.
+The roulade, tumble and kick pass the MotrixSim cross-check and sit/stand does
+not ([`audits/sim2sim_tricks.md`](audits/sim2sim_tricks.md)). None has run on a
+robot, so none is cleared for hardware the way `sprint_stand` is.
 
 ## Known limits
 

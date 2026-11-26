@@ -77,9 +77,11 @@ its metrics and reproduce commands.
 
 ### Added in 0.4.0 and after (simulation only)
 
-Eight more motions, none checked on MotrixSim or run on a robot yet. Each clip
-links to its example (weights, metrics, reproduce commands), which links its
-study.
+Eight more motions, none run on a robot yet. Five pass the MotrixSim
+cross-check (roulade, tumble, ball kick, scoot, stilts); sit/stand, dribbling
+and basketball do not ([`docs/audits/sim2sim_tricks.md`](docs/audits/sim2sim_tricks.md)).
+Each clip links to its example (weights, metrics, reproduce commands), which
+links its study.
 
 <table>
   <tr>

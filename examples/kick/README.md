@@ -1,8 +1,10 @@
 # Ball dribbling example
 
 The duck walks to a free ball and pushes it along a goal direction with its
-feet. It dribbles; it does not strike the ball. Simulation only; no MotrixSim
-check, no robot run. [`play_video.mp4`](play_video.mp4) is a 12 s tracking view.
+feet. It dribbles; it does not strike the ball. Simulation only; no robot
+run. [`play_video.mp4`](play_video.mp4) is a 12 s tracking view.
+
+MotrixSim cross-check: **fails** (ball past 0.5 m 18.0-23.4% on Motrix against 56.2-57.8% on MuJoCo; [`docs/audits/sim2sim_tricks.md`](../../docs/audits/sim2sim_tricks.md)).
 
 | File | Contents |
 |---|---|

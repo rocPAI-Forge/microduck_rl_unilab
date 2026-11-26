@@ -3,8 +3,10 @@
 Balancing on a free basketball, after Vottivott/microduck-playground's b11.
 **Partial result**: it balances well under small commands and follows them
 weakly, but collapses under large switching commands. Simulation only; no
-MotrixSim check, no robot run. [`play_video.mp4`](play_video.mp4) is 15 s on a
+robot run. [`play_video.mp4`](play_video.mp4) is 15 s on a
 free ball: still 5 s, forward 0.10 m/s 5 s, turning +0.3 rad/s 5 s.
+
+MotrixSim cross-check: **fails** (60 s survival 7.8-10.9% on Motrix against 99.2-100% on MuJoCo; [`docs/audits/sim2sim_tricks.md`](../../docs/audits/sim2sim_tricks.md)).
 
 | File | Contents |
 |---|---|

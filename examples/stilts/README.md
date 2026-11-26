@@ -1,9 +1,11 @@
 # Stilts example
 
 Walking on 10 cm stilts (peg ends), after Vottivott/microduck-playground.
-Simulation only; no MotrixSim check, no robot run.
+Simulation only; no robot run.
 [`play_video.mp4`](play_video.mp4) is 15 s: 0.15 m/s for 9 s, then 0.10 m/s
 while turning left at 0.4 rad/s.
+
+MotrixSim cross-check: passes (60 s survival 99.2-100% on both; [`docs/audits/sim2sim_tricks.md`](../../docs/audits/sim2sim_tricks.md)).
 
 | File | Contents |
 |---|---|

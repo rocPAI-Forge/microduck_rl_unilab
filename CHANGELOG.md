@@ -6,6 +6,12 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
 
 ## Unreleased
 
+- MotrixSim cross-check for the motion examples (`scripts/sim2sim_tricks.py`,
+  `docs/audits/sim2sim_tricks.md`): each checkpoint runs on MuJoCo and Motrix
+  with the same protocol. Roulade, tumble, ball kick, scoot and stilts pass
+  (within 10 points of MuJoCo, three seeds). Sit/stand (63–73% against
+  81–89%), the dribble (18–23% against 56–58%) and basketball (8–11% against
+  99–100%) fail.
 - Policy switching (`docs/DEPLOY.md#switching-policies`): ONNX exports for
   velstand, the roulade, the tumble, sit/stand and both kicks;
   `Controller.take_over` hands over with the last action kept; and
