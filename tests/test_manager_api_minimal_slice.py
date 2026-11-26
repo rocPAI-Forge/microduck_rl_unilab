@@ -226,6 +226,7 @@ def test_posture_commands_reject_invalid_tuning() -> None:
 
 @pytest.mark.slow
 def test_minimal_microduck_owners_reset_and_step_on_mjwarp() -> None:
+    pytest.importorskip("mujoco_warp", reason="needs the optional mujoco-warp dependency (uv sync --extra mjwarp)")
     dependencies = load_mjwarp_dependencies()
     if not bool(dependencies.warp.get_device().is_cuda):
         pytest.skip("minimal MicroDuck mjwarp smoke requires an active CUDA Warp device")
