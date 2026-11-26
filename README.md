@@ -77,7 +77,7 @@ its metrics and reproduce commands.
 
 ### Added in 0.4.0 and after (simulation only)
 
-Seven more motions, none checked on MotrixSim or run on a robot yet. Each clip
+Eight more motions, none checked on MotrixSim or run on a robot yet. Each clip
 links to its example (weights, metrics, reproduce commands), which links its
 study.
 
@@ -122,7 +122,11 @@ study.
       <b>Tumble and get up</b> (<code>microduck_tumble_flat</code>)<br>
       Fast forward tumble in 0.56 s, then stands, 100%; 2× slow
     </td>
-    <td></td>
+    <td align="center">
+      <a href="examples/ballkick/"><img src="docs/media/ballkick.gif" width="260" alt="Ball kick"></a><br>
+      <b>Ball kick</b> (<code>microduck_ballkick_flat</code>)<br>
+      Kicks a 70 mm ball forward at 1.3 m/s and stands, 99-100%; upstream's policy; 2× slow
+    </td>
     <td></td>
   </tr>
 </table>
@@ -195,6 +199,7 @@ revisited once on-robot data exists.
 | `microduck_scoot_flat`, `microduck_scoot_straight_flat`, `microduck_scoot_sym_flat` (seated scooting; [study](docs/audits/scoot.md), [example](examples/scoot/)) | mujoco | — |
 | `microduck_basketball_flat` and its fine-tunes `microduck_basketball_ft_flat` … `ft12_flat` (balancing on a free ball; [study](docs/audits/basketball.md), [example](examples/basketball/)) | mujoco | — |
 | `microduck_roulade_flat` (forward roll over the head; [study](docs/audits/roulade.md), [example](examples/roulade/)), `microduck_roll_flat`, `microduck_tumble_flat` ([example](examples/tumble/)) | mujoco | — |
+| `microduck_ballkick_flat` (ball kick from a standing start, upstream's policy; [example](examples/ballkick/)) | mujoco | — |
 | `microduck_kick_flat` (ball dribbling on the `sprint_stand` gait; [study](docs/audits/kick.md), [example](examples/kick/)) | mujoco | — |
 | `microduck_ground_pick_flat` | mjwarp | — |
 
@@ -220,6 +225,7 @@ Training reproduction status (complete requires both metrics and inference video
 | `microduck_basketball_flat` PPO (`ft9` owner) | Partial. 98-99% for 60 s on a free ball under small commands; 3.5% under the playground protocol ([study](docs/audits/basketball.md)) | [`examples/basketball/model_12491.pt`](examples/basketball/model_12491.pt) / [`play_video.mp4`](examples/basketball/play_video.mp4) |
 | `microduck_roulade_flat` PPO | Complete in simulation. Forward roll over the head, lands on the feet: 100% from standing over three seeds, standing at 1.04 s. Fine-tuned from upstream's published `roulade.onnx`; our own training did not get over the head ([study](docs/audits/roulade.md)) | [`examples/roulade/model_999.pt`](examples/roulade/model_999.pt) / [`play_video.mp4`](examples/roulade/play_video.mp4) |
 | `microduck_tumble_flat` PPO | Complete in simulation. Fast forward tumble in 0.56 s, then stands: 100% over three seeds. Not the roulade | [`examples/tumble/model_17997.pt`](examples/tumble/model_17997.pt) / [`play_video.mp4`](examples/tumble/play_video.mp4) |
+| `microduck_ballkick_flat` (upstream policy) | Complete in simulation. Kicks a 70 mm ball forward at 1.3 m/s from a standing start and stands back up: 99.2-100% kicked, 98-100% standing, both feet. Upstream's published policies converted, not retrained ([study](docs/audits/kick.md)) | [`examples/ballkick/model_right.pt`](examples/ballkick/model_right.pt) / [`play_video_right.mp4`](examples/ballkick/play_video_right.mp4) |
 | `microduck_kick_flat` PPO | Partial. Dribbles the ball along a goal (median 1.0–1.4 m in 12 s, 99.6–100% survival); does not strike it ([study](docs/audits/kick.md)) | [`examples/kick/model_60499.pt`](examples/kick/model_60499.pt) / [`play_video.mp4`](examples/kick/play_video.mp4) |
 | `microduck_velocity_flat` SAC | **Failed validation**; all 5000 iterations completed, but inference repeatedly falls and resets, so this is not a usable policy. The failure clip stays in local `logs/` and is not published | — |
 | `sprint_speed_1p68` PPO | Complete, about 1.68 m/s. Sprint is not an upstream microduck_rl task; it is a gait that exists only in this repo | [`examples/sprint_speed_1p68/model_11997.pt`](examples/sprint_speed_1p68/model_11997.pt) |

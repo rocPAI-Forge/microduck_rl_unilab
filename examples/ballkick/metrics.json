@@ -1,0 +1,113 @@
+{
+  "label": "ballkick",
+  "task": "MicroduckKickFlat",
+  "train_owner": "microduck_ballkick_flat/mujoco",
+  "checkpoints": {
+    "right": "examples/ballkick/model_right.pt",
+    "left": "examples/ballkick/model_left.pt"
+  },
+  "source": {
+    "actor": "pollen-robotics/microduck-policies ball_kick_right.onnx / ball_kick_left.onnx (revision 236d1835, Apache-2.0), converted with scripts/onnx_to_rsl_rl.py; not fine-tuned",
+    "critic": "examples/standup/model_14999.pt (same observation layout; only needed to resume training)"
+  },
+  "scene": {
+    "script": "scripts/make_ballkick_scene.py",
+    "model_file": "assets/robots/microduck/generated/scene_ballkick.xml"
+  },
+  "playback": {
+    "videos": [
+      "examples/ballkick/play_video_right.mp4",
+      "examples/ballkick/play_video_left.mp4"
+    ],
+    "slow_factor": 2
+  },
+  "evaluation": {
+    "script": "scripts/eval_ballkick.py",
+    "num_envs": 256,
+    "duration_s": 4,
+    "runs": {
+      "right": [
+        {
+          "owner": "microduck_ballkick_flat/mujoco",
+          "foot": "right",
+          "num_envs": 256,
+          "seed": 101,
+          "policy_s": 4.0,
+          "duration_s": 4.0,
+          "kicked": 1.0,
+          "peak_ball_speed_m_s_median": 1.3262442962944516,
+          "ball_along_m_median": 4.063027679861835,
+          "ball_across_m_mean_abs": 0.7778411702277299,
+          "standing_at_end": 1.0
+        },
+        {
+          "owner": "microduck_ballkick_flat/mujoco",
+          "foot": "right",
+          "num_envs": 256,
+          "seed": 202,
+          "policy_s": 4.0,
+          "duration_s": 4.0,
+          "kicked": 1.0,
+          "peak_ball_speed_m_s_median": 1.297339968520633,
+          "ball_along_m_median": 4.00380285705988,
+          "ball_across_m_mean_abs": 0.7594972266346334,
+          "standing_at_end": 0.9921875
+        },
+        {
+          "owner": "microduck_ballkick_flat/mujoco",
+          "foot": "right",
+          "num_envs": 256,
+          "seed": 303,
+          "policy_s": 4.0,
+          "duration_s": 4.0,
+          "kicked": 1.0,
+          "peak_ball_speed_m_s_median": 1.295906957531884,
+          "ball_along_m_median": 4.032213238718244,
+          "ball_across_m_mean_abs": 0.755256934963493,
+          "standing_at_end": 0.99609375
+        }
+      ],
+      "left": [
+        {
+          "owner": "microduck_ballkick_flat/mujoco",
+          "foot": "left",
+          "num_envs": 256,
+          "seed": 101,
+          "policy_s": 4.0,
+          "duration_s": 4.0,
+          "kicked": 0.99609375,
+          "peak_ball_speed_m_s_median": 1.3271759044185498,
+          "ball_along_m_median": 4.067513879303707,
+          "ball_across_m_mean_abs": 0.5242741251618455,
+          "standing_at_end": 0.9921875
+        },
+        {
+          "owner": "microduck_ballkick_flat/mujoco",
+          "foot": "left",
+          "num_envs": 256,
+          "seed": 202,
+          "policy_s": 4.0,
+          "duration_s": 4.0,
+          "kicked": 0.9921875,
+          "peak_ball_speed_m_s_median": 1.2837165002928816,
+          "ball_along_m_median": 3.9985457461115796,
+          "ball_across_m_mean_abs": 0.5391483266390066,
+          "standing_at_end": 0.98046875
+        },
+        {
+          "owner": "microduck_ballkick_flat/mujoco",
+          "foot": "left",
+          "num_envs": 256,
+          "seed": 303,
+          "policy_s": 4.0,
+          "duration_s": 4.0,
+          "kicked": 0.9921875,
+          "peak_ball_speed_m_s_median": 1.3006486820250625,
+          "ball_along_m_median": 3.9885001410169485,
+          "ball_across_m_mean_abs": 0.5606098361639147,
+          "standing_at_end": 0.98046875
+        }
+      ]
+    }
+  }
+}
