@@ -3,7 +3,8 @@
 **Result:** the walking policy carried through the stilt curriculum to 10 cm
 stilts with a 17 × 22 mm tip. It walks straight at 0.15–0.25 m/s with 99–100%
 survival over 60 s, but steering is biased: it drifts right at a standstill and
-barely turns left. Simulation only; no checkpoint is published.
+barely turns left. Simulation only; the stage-7 checkpoint is published as
+[`examples/stilts/`](../../examples/stilts/) since 0.5.1.
 
 ## Source
 

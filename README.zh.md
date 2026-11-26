@@ -71,29 +71,29 @@ owner 配置和机器人 XML 资产。
 
 ### 0.4.0 起新增的动作（仅仿真）
 
-又新增了七个动作，都还没做 MotrixSim 验证，也没上过真机。已发布权重的动作点击会进入示例目录，其余进入研究记录。
+又新增了七个动作，都还没做 MotrixSim 验证，也没上过真机。点击动画进入对应的示例目录（权重、指标、复现命令），示例里再链接到研究记录。
 
 <table>
   <tr>
     <td align="center" width="33%">
-      <a href="docs/audits/stilts.md"><img src="docs/media/stilts.gif" width="260" alt="踩高跷行走"></a><br>
+      <a href="examples/stilts/"><img src="docs/media/stilts.gif" width="260" alt="踩高跷行走"></a><br>
       <b>踩高跷行走</b>（<code>microduck_stilt_flat</code>）<br>
       10 cm 高跷，0.15 m/s 下存活 100%；转向偏右
     </td>
     <td align="center" width="33%">
-      <a href="docs/audits/sitstand.md"><img src="docs/media/sitstand.gif" width="260" alt="坐下与站起"></a><br>
+      <a href="examples/sitstand/"><img src="docs/media/sitstand.gif" width="260" alt="坐下与站起"></a><br>
       <b>坐下与站起</b>（<code>microduck_sitstand_flat</code>）<br>
       按指令坐下 85–89%，站起 97%
     </td>
     <td align="center" width="33%">
-      <a href="docs/audits/scoot.md"><img src="docs/media/scoot.gif" width="260" alt="坐姿挪动"></a><br>
+      <a href="examples/scoot/"><img src="docs/media/scoot.gif" width="260" alt="坐姿挪动"></a><br>
       <b>坐姿挪动</b>（<code>microduck_scoot_sym_flat</code>）<br>
       坐着后退，速度为指令的 56–80%
     </td>
   </tr>
   <tr>
     <td align="center">
-      <a href="docs/audits/basketball.md"><img src="docs/media/basketball.gif" width="260" alt="篮球上平衡"></a><br>
+      <a href="examples/basketball/"><img src="docs/media/basketball.gif" width="260" alt="篮球上平衡"></a><br>
       <b>篮球上平衡</b>（<code>microduck_basketball_ft9_flat</code>）<br>
       小指令下在自由球上 60 秒存活 98–99%；大幅切换指令仍会失败
     </td>
@@ -150,12 +150,12 @@ uv run --no-sync scripts/sim2sim_check.py examples/sprint_stand/model_59000.pt
 |------|-----|-----|
 | `microduck_velocity_flat` | mujoco, motrix | mujoco, motrix |
 | `microduck_velstand_flat` | mujoco | — |
-| `microduck_stilt_flat`（踩高跷行走；[研究记录](docs/audits/stilts.md)） | mujoco | — |
+| `microduck_stilt_flat`（踩高跷行走；[研究记录](docs/audits/stilts.md)、[示例](examples/stilts/)） | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
 | `microduck_sprint_flat` 及其 23 个续训 owner（`robust`、`gaitfix`、`rollfix`、`steerfix`、`straightfix`、`straightspeed`、`straighthold`、`straightcmd`、`straightrange`、`straightclip`、`straightneck`、`straighthead`、`steer`、`steermix`、`stand`、`standturn`、`pivot`、`pivothold`、`pivotsym`、`standwide`、`standwidefast`、`pivotyaw`、`standbacklash`） | mujoco | — |
-| `microduck_sitstand_flat`（上游完整的坐下起立方法，MuJoCo 版；[研究记录](docs/audits/sitstand.md)） | mujoco, mjwarp | — |
-| `microduck_scoot_flat`、`microduck_scoot_straight_flat`、`microduck_scoot_sym_flat`（坐姿挪动；[研究记录](docs/audits/scoot.md)） | mujoco | — |
-| `microduck_basketball_flat` 及其续训 owner `microduck_basketball_ft_flat` … `ft12_flat`（在自由球上平衡；[研究记录](docs/audits/basketball.md)） | mujoco | — |
+| `microduck_sitstand_flat`（上游完整的坐下起立方法，MuJoCo 版；[研究记录](docs/audits/sitstand.md)、[示例](examples/sitstand/)） | mujoco, mjwarp | — |
+| `microduck_scoot_flat`、`microduck_scoot_straight_flat`、`microduck_scoot_sym_flat`（坐姿挪动；[研究记录](docs/audits/scoot.md)、[示例](examples/scoot/)） | mujoco | — |
+| `microduck_basketball_flat` 及其续训 owner `microduck_basketball_ft_flat` … `ft12_flat`（在自由球上平衡；[研究记录](docs/audits/basketball.md)、[示例](examples/basketball/)） | mujoco | — |
 | `microduck_roulade_flat`（过头顶的前滚翻；[研究记录](docs/audits/roulade.md)、[示例](examples/roulade/)）、`microduck_roll_flat`、`microduck_tumble_flat`（[示例](examples/tumble/)） | mujoco | — |
 | `microduck_kick_flat`（在 `sprint_stand` 步态上带球；[研究记录](docs/audits/kick.md)、[示例](examples/kick/)） | mujoco | — |
 | `microduck_ground_pick_flat` | mjwarp | — |
@@ -175,6 +175,10 @@ uv run --no-sync scripts/sim2sim_check.py examples/sprint_stand/model_59000.pt
 |---|---|---|
 | `microduck_standup_flat` PPO | 完成；15000 轮。慢放侧面近景依次是趴着撑起、仰着翻身站起、坐着站起 | [`examples/standup/model_14999.pt`](examples/standup/model_14999.pt) / [`play_video.mp4`](examples/standup/play_video.mp4) |
 | `microduck_velstand_flat` PPO | 完成。64 次强制跌倒中，趴下和仰躺都在 8 秒内站起（末态倾角 1.2°），原地指令和默认行走指令都成立 | [`examples/velstand_getup/model_12498.pt`](examples/velstand_getup/model_12498.pt) / [`play_video_getup.mp4`](examples/velstand_getup/play_video_getup.mp4) |
+| `microduck_stilt_flat` PPO | 仿真中完成。10 cm 高跷：站立、0.15 和 0.25 m/s 下 60 秒存活 99.2–100%；站立时向前漂，转向偏右（[研究记录](docs/audits/stilts.md)） | [`examples/stilts/model_4091.pt`](examples/stilts/model_4091.pt) / [`play_video.mp4`](examples/stilts/play_video.mp4) |
+| `microduck_sitstand_flat` PPO（`fix` owner） | 仿真中完成。按指令坐下 85–89%、站起 97%，摔倒 ≤ 0.2%；坐下最后约 4 cm 是掉下去的（[研究记录](docs/audits/sitstand.md)） | [`examples/sitstand/model_6500.pt`](examples/sitstand/model_6500.pt) / [`play_video.mp4`](examples/sitstand/play_video.mp4) |
+| `microduck_scoot_flat` PPO（`sym` owner） | 仿真中完成。坐着后退，速度为指令的 82–88%，存活 100%；前进较弱（[研究记录](docs/audits/scoot.md)） | [`examples/scoot/model_2999.pt`](examples/scoot/model_2999.pt) / [`play_video.mp4`](examples/scoot/play_video.mp4) |
+| `microduck_basketball_flat` PPO（`ft9` owner） | 部分完成。小指令下在自由球上 60 秒存活 98–99%；playground 协议下 3.5%（[研究记录](docs/audits/basketball.md)） | [`examples/basketball/model_12491.pt`](examples/basketball/model_12491.pt) / [`play_video.mp4`](examples/basketball/play_video.mp4) |
 | `microduck_roulade_flat` PPO | 仿真中完成。以头顶为支点前滚翻并用脚落地：三个种子下从站立出发 100% 成功，1.04 秒站起。由上游发布的 `roulade.onnx` 微调而来；我们自己的训练没能翻过头顶（[研究记录](docs/audits/roulade.md)） | [`examples/roulade/model_999.pt`](examples/roulade/model_999.pt) / [`play_video.mp4`](examples/roulade/play_video.mp4) |
 | `microduck_tumble_flat` PPO | 仿真中完成。0.56 秒快速向前翻滚后站起：三个种子下 100%。这不是 roulade | [`examples/tumble/model_17997.pt`](examples/tumble/model_17997.pt) / [`play_video.mp4`](examples/tumble/play_video.mp4) |
 | `microduck_kick_flat` PPO | 部分完成。沿目标方向带球（12 秒内中位 1.0–1.4 m，存活 99.6–100%），不会抽射（[研究记录](docs/audits/kick.md)） | [`examples/kick/model_60499.pt`](examples/kick/model_60499.pt) / [`play_video.mp4`](examples/kick/play_video.mp4) |
@@ -270,7 +274,7 @@ uv run --no-sync scripts/train_sprint_robust.py \
 | [`examples/sprint_stand/`](examples/sprint_stand/) | 0–1.0 m/s 和 ±0.4 rad/s | 直行 300 s 95.1–100%；转弯 98–100% | ≤ 0.01% | 在 `sprint_steer` 基础上加原地站立。不会原地转向（用 `[0.2, 0, ±0.4]` 掉头）；站立时 300 秒内航向平均漂移约 6.5°。评测和回放需加 `--clip-targets`。ONNX 导出在 `deploy/`。 |
 
 每个目录含 `model_*.pt`、可视化、`metrics.json` 和复现命令。
-`model.pt` 约 4.7 MB，直接入 git。
+`model_*.pt` 约 4.7 MB（篮球的 LSTM 检查点约 10 MB），直接入 git。
 
 ### 冲刺系列对比
 

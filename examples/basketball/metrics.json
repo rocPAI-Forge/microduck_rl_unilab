@@ -1,0 +1,404 @@
+{
+  "label": "basketball",
+  "task": "MicroduckBasketballFlat",
+  "train_owner": "microduck_basketball_ft9_flat/mujoco",
+  "checkpoint": "examples/basketball/model_12491.pt",
+  "source_run": "2026-11-19_22-00-59_mujoco",
+  "source_iteration": 12491,
+  "scene": {
+    "script": "scripts/make_basketball_scene.py",
+    "model_file": "assets/robots/microduck/generated/scene_basketball.xml"
+  },
+  "training": {
+    "backend": "mujoco",
+    "num_envs": 4096,
+    "rounds": "10 (see docs/audits/basketball.md)",
+    "round_10": "microduck_basketball_ft9_flat, 500 iterations from round 9",
+    "final_mean_reward": 16.68
+  },
+  "playback": {
+    "video": "examples/basketball/play_video.mp4",
+    "duration_s": 15,
+    "schedule": "still 5 s, forward 0.10 m/s 5 s, +0.3 rad/s 5 s; free ball"
+  },
+  "evaluation": {
+    "fixed_commands": {
+      "script": "scripts/eval_basketball.py",
+      "num_envs": 256,
+      "duration_s": 60,
+      "hold": 0,
+      "runs": [
+        {
+          "command": [
+            -0.1,
+            0.0,
+            0.0
+          ],
+          "hold": 0.0,
+          "push": true,
+          "duration_s": 60.0,
+          "num_envs": 256,
+          "seed": 101,
+          "survival_10s": 0.96875,
+          "survival_20s": 0.96875,
+          "survival_60s": 0.96875,
+          "survival_end": 0.96875,
+          "forward_speed_m_s": -0.02166859893357089,
+          "yaw_rate_abs_error": 0.31114306802589764,
+          "yaw_rate_mean": 0.08512794281102117
+        },
+        {
+          "command": [
+            -0.1,
+            0.0,
+            0.0
+          ],
+          "hold": 0.0,
+          "push": true,
+          "duration_s": 60.0,
+          "num_envs": 256,
+          "seed": 202,
+          "survival_10s": 0.97265625,
+          "survival_20s": 0.97265625,
+          "survival_60s": 0.97265625,
+          "survival_end": 0.97265625,
+          "forward_speed_m_s": -0.025459391640537225,
+          "yaw_rate_abs_error": 0.3123000932963861,
+          "yaw_rate_mean": 0.08119992087326756
+        },
+        {
+          "command": [
+            -0.1,
+            0.0,
+            0.0
+          ],
+          "hold": 0.0,
+          "push": true,
+          "duration_s": 60.0,
+          "num_envs": 256,
+          "seed": 303,
+          "survival_10s": 0.99609375,
+          "survival_20s": 0.99609375,
+          "survival_60s": 0.99609375,
+          "survival_end": 0.99609375,
+          "forward_speed_m_s": -0.024100167689511214,
+          "yaw_rate_abs_error": 0.31385682788466057,
+          "yaw_rate_mean": 0.07786099053449787
+        },
+        {
+          "command": [
+            0.1,
+            0.0,
+            0.0
+          ],
+          "hold": 0.0,
+          "push": true,
+          "duration_s": 60.0,
+          "num_envs": 256,
+          "seed": 101,
+          "survival_10s": 0.984375,
+          "survival_20s": 0.9765625,
+          "survival_60s": 0.96875,
+          "survival_end": 0.96875,
+          "forward_speed_m_s": 0.07380631686199375,
+          "yaw_rate_abs_error": 0.41464019483482417,
+          "yaw_rate_mean": 0.11445995925911985
+        },
+        {
+          "command": [
+            0.1,
+            0.0,
+            0.0
+          ],
+          "hold": 0.0,
+          "push": true,
+          "duration_s": 60.0,
+          "num_envs": 256,
+          "seed": 202,
+          "survival_10s": 0.98828125,
+          "survival_20s": 0.984375,
+          "survival_60s": 0.98046875,
+          "survival_end": 0.98046875,
+          "forward_speed_m_s": 0.06919896352593505,
+          "yaw_rate_abs_error": 0.40255445254408284,
+          "yaw_rate_mean": 0.10370349297504602
+        },
+        {
+          "command": [
+            0.1,
+            0.0,
+            0.0
+          ],
+          "hold": 0.0,
+          "push": true,
+          "duration_s": 60.0,
+          "num_envs": 256,
+          "seed": 303,
+          "survival_10s": 0.99609375,
+          "survival_20s": 0.99609375,
+          "survival_60s": 0.98828125,
+          "survival_end": 0.98828125,
+          "forward_speed_m_s": 0.07040952667135988,
+          "yaw_rate_abs_error": 0.4105123379545219,
+          "yaw_rate_mean": 0.1072485443977964
+        },
+        {
+          "command": [
+            0.0,
+            0.0,
+            -0.3
+          ],
+          "hold": 0.0,
+          "push": true,
+          "duration_s": 60.0,
+          "num_envs": 256,
+          "seed": 101,
+          "survival_10s": 0.98828125,
+          "survival_20s": 0.98828125,
+          "survival_60s": 0.984375,
+          "survival_end": 0.984375,
+          "forward_speed_m_s": 0.026681932959419806,
+          "yaw_rate_abs_error": 0.37474226002796945,
+          "yaw_rate_mean": -0.09072151262599293
+        },
+        {
+          "command": [
+            0.0,
+            0.0,
+            -0.3
+          ],
+          "hold": 0.0,
+          "push": true,
+          "duration_s": 60.0,
+          "num_envs": 256,
+          "seed": 202,
+          "survival_10s": 0.9921875,
+          "survival_20s": 0.9921875,
+          "survival_60s": 0.9921875,
+          "survival_end": 0.9921875,
+          "forward_speed_m_s": 0.021896442680054227,
+          "yaw_rate_abs_error": 0.3666492635646291,
+          "yaw_rate_mean": -0.10406237806095177
+        },
+        {
+          "command": [
+            0.0,
+            0.0,
+            -0.3
+          ],
+          "hold": 0.0,
+          "push": true,
+          "duration_s": 60.0,
+          "num_envs": 256,
+          "seed": 303,
+          "survival_10s": 1.0,
+          "survival_20s": 1.0,
+          "survival_60s": 1.0,
+          "survival_end": 1.0,
+          "forward_speed_m_s": 0.023556829703315817,
+          "yaw_rate_abs_error": 0.3740233559904968,
+          "yaw_rate_mean": -0.09779316074268843
+        },
+        {
+          "command": [
+            0.0,
+            0.0,
+            0.3
+          ],
+          "hold": 0.0,
+          "push": true,
+          "duration_s": 60.0,
+          "num_envs": 256,
+          "seed": 101,
+          "survival_10s": 0.984375,
+          "survival_20s": 0.984375,
+          "survival_60s": 0.98046875,
+          "survival_end": 0.98046875,
+          "forward_speed_m_s": 0.024814011011280182,
+          "yaw_rate_abs_error": 0.3259738997757998,
+          "yaw_rate_mean": 0.2579051479405216
+        },
+        {
+          "command": [
+            0.0,
+            0.0,
+            0.3
+          ],
+          "hold": 0.0,
+          "push": true,
+          "duration_s": 60.0,
+          "num_envs": 256,
+          "seed": 202,
+          "survival_10s": 0.9921875,
+          "survival_20s": 0.9921875,
+          "survival_60s": 0.9921875,
+          "survival_end": 0.9921875,
+          "forward_speed_m_s": 0.019803378043892057,
+          "yaw_rate_abs_error": 0.3175640841392894,
+          "yaw_rate_mean": 0.24848648468788742
+        },
+        {
+          "command": [
+            0.0,
+            0.0,
+            0.3
+          ],
+          "hold": 0.0,
+          "push": true,
+          "duration_s": 60.0,
+          "num_envs": 256,
+          "seed": 303,
+          "survival_10s": 0.98828125,
+          "survival_20s": 0.98828125,
+          "survival_60s": 0.98828125,
+          "survival_end": 0.98828125,
+          "forward_speed_m_s": 0.021397659745316953,
+          "yaw_rate_abs_error": 0.3250950359684147,
+          "yaw_rate_mean": 0.2496108285398566
+        },
+        {
+          "command": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "hold": 0.0,
+          "push": true,
+          "duration_s": 60.0,
+          "num_envs": 256,
+          "seed": 101,
+          "survival_10s": 0.984375,
+          "survival_20s": 0.984375,
+          "survival_60s": 0.984375,
+          "survival_end": 0.984375,
+          "forward_speed_m_s": 0.025764712268186586,
+          "yaw_rate_abs_error": 0.33053767773170384,
+          "yaw_rate_mean": 0.08197162524760705
+        },
+        {
+          "command": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "hold": 0.0,
+          "push": true,
+          "duration_s": 60.0,
+          "num_envs": 256,
+          "seed": 202,
+          "survival_10s": 0.9921875,
+          "survival_20s": 0.9921875,
+          "survival_60s": 0.98828125,
+          "survival_end": 0.98828125,
+          "forward_speed_m_s": 0.020327113563970427,
+          "yaw_rate_abs_error": 0.3222029000103912,
+          "yaw_rate_mean": 0.06961076908973084
+        },
+        {
+          "command": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "hold": 0.0,
+          "push": true,
+          "duration_s": 60.0,
+          "num_envs": 256,
+          "seed": 303,
+          "survival_10s": 1.0,
+          "survival_20s": 1.0,
+          "survival_60s": 1.0,
+          "survival_end": 1.0,
+          "forward_speed_m_s": 0.022473842509673412,
+          "yaw_rate_abs_error": 0.33014035619787746,
+          "yaw_rate_mean": 0.07238816864299674
+        }
+      ]
+    },
+    "playground_protocol": {
+      "script": "scripts/eval_basketball_playground.py",
+      "num_envs": 1024,
+      "duration_s": 60,
+      "runs": [
+        {
+          "owner": "microduck_basketball_ft9_flat/mujoco",
+          "num_envs": 1024,
+          "duration_s": 60.0,
+          "push": {
+            "interval_s": [
+              0.5,
+              1.0
+            ],
+            "velocity": 0.09
+          },
+          "seed": 101,
+          "survival_10s": 0.521484375,
+          "survival_20s": 0.291015625,
+          "survival_60s": 0.03515625,
+          "samples": 787782,
+          "forward_mae": 0.1064864572684616,
+          "forward_mae_zero_predictor": 0.14355489213115194,
+          "forward_mae_constant_predictor": 0.09241576840467444,
+          "forward_mean_vx": 0.026397850355557813,
+          "yaw_mae": 0.5950484869533975,
+          "yaw_mae_zero_predictor": 0.505768137616812,
+          "yaw_mae_constant_predictor": 0.6059617068638536,
+          "yaw_mean_wz": 0.08931559798866029,
+          "condition": "seed101"
+        },
+        {
+          "owner": "microduck_basketball_ft9_flat/mujoco",
+          "num_envs": 1024,
+          "duration_s": 60.0,
+          "push": {
+            "interval_s": [
+              3.0,
+              6.0
+            ],
+            "velocity": 0.09
+          },
+          "seed": 101,
+          "survival_10s": 0.8056640625,
+          "survival_20s": 0.6669921875,
+          "survival_60s": 0.3212890625,
+          "samples": 1740641,
+          "forward_mae": 0.09481345197618933,
+          "forward_mae_zero_predictor": 0.14491676323891836,
+          "forward_mae_constant_predictor": 0.07786270786995361,
+          "forward_mean_vx": 0.028862934016658827,
+          "yaw_mae": 0.5077260736492988,
+          "yaw_mae_zero_predictor": 0.5032875829185632,
+          "yaw_mae_constant_predictor": 0.5313992517085896,
+          "yaw_mean_wz": 0.09264474699126182,
+          "condition": "push3to6"
+        },
+        {
+          "owner": "microduck_basketball_ft9_flat/mujoco",
+          "num_envs": 1024,
+          "duration_s": 60.0,
+          "push": {
+            "interval_s": [
+              0.5,
+              1.0
+            ],
+            "velocity": 0.0
+          },
+          "seed": 101,
+          "survival_10s": 0.8408203125,
+          "survival_20s": 0.7353515625,
+          "survival_60s": 0.43359375,
+          "samples": 1970106,
+          "forward_mae": 0.0939846816040237,
+          "forward_mae_zero_predictor": 0.1474055993207311,
+          "forward_mae_constant_predictor": 0.07604404871058165,
+          "forward_mean_vx": 0.02990281815838788,
+          "yaw_mae": 0.4923783305783736,
+          "yaw_mae_zero_predictor": 0.4997258630007535,
+          "yaw_mae_constant_predictor": 0.5171570051872363,
+          "yaw_mean_wz": 0.09848509637644541,
+          "condition": "nopush"
+        }
+      ]
+    }
+  }
+}

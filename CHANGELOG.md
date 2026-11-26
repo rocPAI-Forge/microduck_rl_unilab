@@ -4,6 +4,19 @@ Versions follow `project.version` in `pyproject.toml`. Each release is a git
 tag `v<version>` with a matching GitHub release. Checkpoints live in
 `examples/` and are versioned with the code that reproduces them.
 
+## Unreleased
+
+- Checkpoints published for the four 0.4.0 motions, each as an example with
+  weights, a 15 s clip, `metrics.json` and reproduce commands, re-evaluated on
+  three seeds: `examples/stilts/` (10 cm stilts, 99.2–100% over 60 s),
+  `examples/sitstand/` (sits 85–89%, stands 97%), `examples/scoot/` (backs up
+  at 82–88% of the command), and `examples/basketball/` (partial: 98–99% for
+  60 s under small commands, 3.5% under the playground protocol). The README
+  clip table and status table link them; the studies point at them.
+- Fix: `scripts/eval_walk.py` now seeds the environment as well as the
+  algorithm, so `--seed` changes the randomization (before, every seed gave
+  the same environments).
+
 ## 0.5.0
 
 Three more motions, all in simulation on MuJoCo, and this time with published
