@@ -6,6 +6,8 @@ and back in about half a second rather than planting the top of the head and
 going through a headstand. Simulation only; it has not run on a robot.
 [`play_video.mp4`](play_video.mp4) is a 2× slow side view from a standing start.
 
+MotrixSim cross-check: passes (full turn and standing 97.7-99.2% on Motrix, 96.1-100% on MuJoCo; [`docs/audits/sim2sim_tricks.md`](../../docs/audits/sim2sim_tricks.md)).
+
 | File | Contents |
 |---|---|
 | [`model_17997.pt`](model_17997.pt) | Final weights, iteration 17997 |

@@ -2,8 +2,10 @@
 
 Forward roll over the flat top of the head, landing on the feet, in one
 policy: upstream microduck_rl's roulade, reproduced on MuJoCo. Simulation only;
-no MotrixSim gate exists for this task, and it has not run on a robot.
+it has not run on a robot.
 [`play_video.mp4`](play_video.mp4) is a 2× slow side view from a standing start.
+
+MotrixSim cross-check: passes (full turn and standing 99.2% on Motrix, 94.5-95.3% on MuJoCo; [`docs/audits/sim2sim_tricks.md`](../../docs/audits/sim2sim_tricks.md)).
 
 | File | Contents |
 |---|---|

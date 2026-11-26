@@ -2,8 +2,10 @@
 
 Commanded sit and stand in one policy, after upstream microduck_rl's sitstand
 recipe. The command is a posture flag in `twist.vx` (1 sit, 0 stand), slewed
-over 2 s. Simulation only; no MotrixSim check, no robot run.
+over 2 s. Simulation only; no robot run.
 [`play_video.mp4`](play_video.mp4) is 15 s: stand 3 s, sit 6 s, stand.
+
+MotrixSim cross-check: **fails** (seated and standing again 63.3-73.4% on Motrix against 81.2-89.1% on MuJoCo; [`docs/audits/sim2sim_tricks.md`](../../docs/audits/sim2sim_tricks.md)).
 
 | File | Contents |
 |---|---|

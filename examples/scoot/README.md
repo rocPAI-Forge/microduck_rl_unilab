@@ -2,8 +2,10 @@
 
 Seated scooting ("butt walk"), after Vottivott/microduck-playground's MicroDock
 v2 training: the duck sits and moves backward or forward on command.
-Simulation only; no MotrixSim check, no robot run.
+Simulation only; no robot run.
 [`play_video.mp4`](play_video.mp4) is 15 s: backward 0.10 m/s for 10 s, then stop.
+
+MotrixSim cross-check: passes (95.3-98.4% on Motrix, 100% on MuJoCo; [`docs/audits/sim2sim_tricks.md`](../../docs/audits/sim2sim_tricks.md)).
 
 | File | Contents |
 |---|---|
