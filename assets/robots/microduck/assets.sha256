@@ -1,5 +1,6 @@
 # SHA-256 manifest for unilabsim/unilab-robots/robots/microduck/assets.
-# Source: https://github.com/pollen-robotics/microduck_rl (Apache-2.0).
+# Source: https://github.com/pollen-robotics/microduck_rl. Meshes are CC BY-NC-SA 4.0
+# (see LICENSE-MODELS.pollen-robotics.md).
 02bc777ce76a31b3d5c415188f8268b989f4eca57bc440a2900825ac459dec38  hip_l.stl
 0608b3cc7d15e479ae3a275c03096df44322ed06a8dbfc59fe790c46b3690753  pcb__raspberry_pi_zero_2_w.stl
 154412afeab1875acfc8bbd437f193f02c86cdd6a556395db10bb7126c545c6e  seeed_bearing__configuration__22x16x4.stl

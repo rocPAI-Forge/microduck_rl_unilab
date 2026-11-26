@@ -1,0 +1,22 @@
+# @package _global_
+# Basketball round 12, stage 1 of a forward-command curriculum.
+#
+# The playground-protocol ablation (docs/audits/basketball.md) showed that
+# large forward commands (+-0.30 m/s) and command switching together are what
+# fails: 67% survival at 60 s versus 95% for +-0.30 held fixed and 98% for
+# +-0.15 switched. Stage 1 trains with forward +-0.20 (between the two safe
+# points), with switching kept. Stage 2 (ft12) restores +-0.30. Warm start from
+# round 10 model_12491; max_iterations counts additional iterations.
+defaults:
+  - /task/microduck_basketball_ft9_flat/mujoco
+  - _self_
+
+algo:
+  experiment_name: microduck_basketball_ft11
+  run_name: microduck_basketball_ft11
+
+env:
+  commands:
+    twist:
+      ranges:
+        lin_vel_x: [-0.20, 0.20]

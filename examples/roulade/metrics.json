@@ -1,0 +1,80 @@
+{
+  "label": "roulade",
+  "task": "MicroduckStandupFlat",
+  "train_owner": "microduck_roulade_flat/mujoco",
+  "checkpoint": "examples/roulade/model_999.pt",
+  "source_run": "2026-11-21_10-09-34_mujoco",
+  "source_iteration": 999,
+  "initialization": {
+    "actor": "pollen-robotics/microduck-policies roulade.onnx (revision 236d1835, Apache-2.0) via scripts/onnx_to_rsl_rl.py",
+    "critic": "microduck_roulade_flat from-scratch run, model_6000",
+    "initial_action_std": 0.2
+  },
+  "training": {
+    "backend": "mujoco",
+    "num_envs": 4096,
+    "completed_iterations": 1000,
+    "learning_rate": 0.0001,
+    "final_mean_reward": 32.88,
+    "mean_episode_length": 250.0
+  },
+  "playback": {
+    "video": "examples/roulade/play_video.mp4",
+    "slow_factor": 2,
+    "start": "standing"
+  },
+  "evaluation": {
+    "script": "scripts/eval_roll.py",
+    "start": "standing",
+    "runs": [
+      {
+        "owner": "microduck_roulade_flat/mujoco",
+        "num_envs": 512,
+        "seed": 101,
+        "duration_s": 4.9,
+        "roll_complete": 1.0,
+        "time_to_complete_s_median": 0.86,
+        "rotation_max_deg_median": 341.059788206426,
+        "rotation_max_deg_p90": 353.78230790349505,
+        "more_than_one_turn": 0.0,
+        "peak_pitch_rate_median": 7.877545118331909,
+        "stood_up_after_roll": 1.0,
+        "time_to_stand_s_median": 1.04,
+        "standing_at_end": 1.0,
+        "head_top_latch": 1.0
+      },
+      {
+        "owner": "microduck_roulade_flat/mujoco",
+        "num_envs": 512,
+        "seed": 202,
+        "duration_s": 4.9,
+        "roll_complete": 1.0,
+        "time_to_complete_s_median": 0.86,
+        "rotation_max_deg_median": 340.4089404074268,
+        "rotation_max_deg_p90": 353.2812850031638,
+        "more_than_one_turn": 0.0,
+        "peak_pitch_rate_median": 7.909305095672607,
+        "stood_up_after_roll": 1.0,
+        "time_to_stand_s_median": 1.04,
+        "standing_at_end": 1.0,
+        "head_top_latch": 1.0
+      },
+      {
+        "owner": "microduck_roulade_flat/mujoco",
+        "num_envs": 512,
+        "seed": 303,
+        "duration_s": 4.9,
+        "roll_complete": 1.0,
+        "time_to_complete_s_median": 0.86,
+        "rotation_max_deg_median": 340.3972791065289,
+        "rotation_max_deg_p90": 352.72630547316476,
+        "more_than_one_turn": 0.0,
+        "peak_pitch_rate_median": 7.863016128540039,
+        "stood_up_after_roll": 1.0,
+        "time_to_stand_s_median": 1.04,
+        "standing_at_end": 1.0,
+        "head_top_latch": 1.0
+      }
+    ]
+  }
+}

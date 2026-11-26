@@ -75,21 +75,78 @@ its metrics and reproduce commands.
   </tr>
 </table>
 
+### Added in 0.4.0 and after (simulation only)
+
+Seven more motions, none checked on MotrixSim or run on a robot yet. Each clip
+links to its example (weights, metrics, reproduce commands), which links its
+study.
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <a href="examples/stilts/"><img src="docs/media/stilts.gif" width="260" alt="Walking on stilts"></a><br>
+      <b>Walking on stilts</b> (<code>microduck_stilt_flat</code>)<br>
+      10 cm stilts, 100% survival at 0.15 m/s; steers with a right bias
+    </td>
+    <td align="center" width="33%">
+      <a href="examples/sitstand/"><img src="docs/media/sitstand.gif" width="260" alt="Sit and stand"></a><br>
+      <b>Sit and stand</b> (<code>microduck_sitstand_flat</code>)<br>
+      Sits 85–89% and stands 97% on command
+    </td>
+    <td align="center" width="33%">
+      <a href="examples/scoot/"><img src="docs/media/scoot.gif" width="260" alt="Seated scooting"></a><br>
+      <b>Seated scooting</b> (<code>microduck_scoot_sym_flat</code>)<br>
+      Backs up while seated at 56–80% of the command
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="examples/basketball/"><img src="docs/media/basketball.gif" width="260" alt="Basketball balance"></a><br>
+      <b>Basketball balance</b> (<code>microduck_basketball_ft9_flat</code>)<br>
+      98–99% for 60 s on a free ball under small commands; large switching commands still fail
+    </td>
+    <td align="center">
+      <a href="examples/kick/"><img src="docs/media/kick.gif" width="260" alt="Ball dribbling"></a><br>
+      <b>Ball dribbling</b> (<code>microduck_kick_flat</code>)<br>
+      Walks to the ball and pushes it along a goal, no falls; dribbles, does not strike
+    </td>
+    <td align="center">
+      <a href="examples/roulade/"><img src="docs/media/roulade.gif" width="260" alt="Roulade"></a><br>
+      <b>Roulade</b> (<code>microduck_roulade_flat</code>)<br>
+      Forward roll over the head, lands on the feet, 100% from standing; fine-tuned from upstream's policy; 2× slow
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="examples/tumble/"><img src="docs/media/tumble.gif" width="260" alt="Tumble and get up"></a><br>
+      <b>Tumble and get up</b> (<code>microduck_tumble_flat</code>)<br>
+      Fast forward tumble in 0.56 s, then stands, 100%; 2× slow
+    </td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>
+
 The sprint gaits exist only in this repo; upstream microduck_rl has no sprint
 task. How the sprint checkpoints differ is under
-[Sprint lineage](#sprint-lineage). What is not available yet (velocity SAC,
-MJWarp-only tasks) is listed in
-[`CHANGELOG.md`](CHANGELOG.md#known-limitations).
+[Sprint lineage](#sprint-lineage). What is not available yet (turning in
+place, 1.0 m/s on MotrixSim, velocity SAC, MJWarp-only tasks) is listed in
+[`CHANGELOG.md`](CHANGELOG.md#known-limitations) and tracked in
+[`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 To run a policy on the robot, see [`docs/DEPLOY.md`](docs/DEPLOY.md): the
 observation and action contract, the exported ONNX in
-[`examples/sprint_stand/deploy/`](examples/sprint_stand/deploy/), the reference
-onboard runtime, and the known sim-to-real limits. Before the first run on the
-robot, go through [`docs/HARDWARE_BRINGUP.md`](docs/HARDWARE_BRINGUP.md).
+[`examples/sprint_stand/deploy/`](examples/sprint_stand/deploy/), the
+reference onboard runtime (`microduck_rl_unilab.deploy`, numpy and onnxruntime
+only, checked closed-loop on both simulators), and the known sim-to-real
+limits. The same ONNX loads unchanged into Pollen's onboard daemon `robotd`;
+the guide lists the `[policy]` settings that run it as trained. No on-robot
+run has been done yet; before the first one, go through
+[`docs/HARDWARE_BRINGUP.md`](docs/HARDWARE_BRINGUP.md).
 
 ## Version
 
-Current release: **0.2.0** (git tag `v0.2.0`). Release contents, checked
+Current release: **0.5.1** (git tag `v0.5.1`). Release contents, checked
 policies, and known limitations are in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Simulators: train on MuJoCo, check on MotrixSim
@@ -105,8 +162,11 @@ independent of what the policy was fitted to.
   [`docs/audits/motrix_crosscheck.md`](docs/audits/motrix_crosscheck.md) found
   the 1.0 m/s gait loses 16–36 points of survival there.
 - Training on Motrix as well moves the overfit instead of removing it (see
-  [PR #11](https://github.com/rocPAI-Forge/microduck_rl_unilab/pull/11)), and
-  would spend the only held-out simulator.
+  [PR #11](https://github.com/rocPAI-Forge/microduck_rl_unilab/pull/11), closed
+  and kept as a record), and would spend the only held-out simulator.
+- Widening the MuJoCo servo and contact randomization makes 1.0 m/s sturdier
+  on Motrix only by slowing it down
+  ([`docs/audits/motrix_topspeed.md`](docs/audits/motrix_topspeed.md)).
 
 A checkpoint is published only after it passes the Motrix gate:
 
@@ -128,9 +188,15 @@ revisited once on-robot data exists.
 |------|-----|-----|
 | `microduck_velocity_flat` | mujoco, motrix | mujoco, motrix |
 | `microduck_velstand_flat` | mujoco | — |
+| `microduck_stilt_flat` (walking on stilts; [study](docs/audits/stilts.md), [example](examples/stilts/)) | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
-| `microduck_sprint_flat` and its 19 continuation owners (`robust`, `gaitfix`, `rollfix`, `steerfix`, `straightfix`, `straightspeed`, `straighthold`, `straightcmd`, `straightrange`, `straightclip`, `straightneck`, `straighthead`, `steer`, `steermix`, `stand`, `standturn`, `pivot`, `pivothold`, `pivotsym`) | mujoco | — |
-| `microduck_ground_pick_flat`, `microduck_sitstand_flat` | mjwarp | — |
+| `microduck_sprint_flat` and its 23 continuation owners (`robust`, `gaitfix`, `rollfix`, `steerfix`, `straightfix`, `straightspeed`, `straighthold`, `straightcmd`, `straightrange`, `straightclip`, `straightneck`, `straighthead`, `steer`, `steermix`, `stand`, `standturn`, `pivot`, `pivothold`, `pivotsym`, `standwide`, `standwidefast`, `pivotyaw`, `standbacklash`) | mujoco | — |
+| `microduck_sitstand_flat` (full upstream sit/stand recipe on mujoco; [study](docs/audits/sitstand.md), [example](examples/sitstand/)) | mujoco, mjwarp | — |
+| `microduck_scoot_flat`, `microduck_scoot_straight_flat`, `microduck_scoot_sym_flat` (seated scooting; [study](docs/audits/scoot.md), [example](examples/scoot/)) | mujoco | — |
+| `microduck_basketball_flat` and its fine-tunes `microduck_basketball_ft_flat` … `ft12_flat` (balancing on a free ball; [study](docs/audits/basketball.md), [example](examples/basketball/)) | mujoco | — |
+| `microduck_roulade_flat` (forward roll over the head; [study](docs/audits/roulade.md), [example](examples/roulade/)), `microduck_roll_flat`, `microduck_tumble_flat` ([example](examples/tumble/)) | mujoco | — |
+| `microduck_kick_flat` (ball dribbling on the `sprint_stand` gait; [study](docs/audits/kick.md), [example](examples/kick/)) | mujoco | — |
+| `microduck_ground_pick_flat` | mjwarp | — |
 
 Each sprint continuation owner is `microduck_sprint_<name>_flat`; the example
 README that used it lists the exact commands.
@@ -148,6 +214,13 @@ Training reproduction status (complete requires both metrics and inference video
 |---|---|---|
 | `microduck_standup_flat` PPO | Complete; 15000 iterations. Slow side views, in order: prone push-up, supine roll-up, sit-to-stand | [`examples/standup/model_14999.pt`](examples/standup/model_14999.pt) / [`play_video.mp4`](examples/standup/play_video.mp4) |
 | `microduck_velstand_flat` PPO | Complete. On 64 forced falls, face-down and face-up both stand within 8 s (mean tilt 1.2°), with stand-still and with the default walk commands | [`examples/velstand_getup/model_12498.pt`](examples/velstand_getup/model_12498.pt) / [`play_video_getup.mp4`](examples/velstand_getup/play_video_getup.mp4) |
+| `microduck_stilt_flat` PPO | Complete in simulation. 10 cm stilts: 99.2-100% survival over 60 s at stand, 0.15 and 0.25 m/s; drifts forward at a standstill and steers right ([study](docs/audits/stilts.md)) | [`examples/stilts/model_4091.pt`](examples/stilts/model_4091.pt) / [`play_video.mp4`](examples/stilts/play_video.mp4) |
+| `microduck_sitstand_flat` PPO (`fix` owner) | Complete in simulation. Sits 85-89% and stands 97% on command, falls ≤ 0.2%; drops the last ~4 cm onto the seat ([study](docs/audits/sitstand.md)) | [`examples/sitstand/model_6500.pt`](examples/sitstand/model_6500.pt) / [`play_video.mp4`](examples/sitstand/play_video.mp4) |
+| `microduck_scoot_flat` PPO (`sym` owner) | Complete in simulation. Backs up while seated at 82-88% of the command, 100% survival; forward is weaker ([study](docs/audits/scoot.md)) | [`examples/scoot/model_2999.pt`](examples/scoot/model_2999.pt) / [`play_video.mp4`](examples/scoot/play_video.mp4) |
+| `microduck_basketball_flat` PPO (`ft9` owner) | Partial. 98-99% for 60 s on a free ball under small commands; 3.5% under the playground protocol ([study](docs/audits/basketball.md)) | [`examples/basketball/model_12491.pt`](examples/basketball/model_12491.pt) / [`play_video.mp4`](examples/basketball/play_video.mp4) |
+| `microduck_roulade_flat` PPO | Complete in simulation. Forward roll over the head, lands on the feet: 100% from standing over three seeds, standing at 1.04 s. Fine-tuned from upstream's published `roulade.onnx`; our own training did not get over the head ([study](docs/audits/roulade.md)) | [`examples/roulade/model_999.pt`](examples/roulade/model_999.pt) / [`play_video.mp4`](examples/roulade/play_video.mp4) |
+| `microduck_tumble_flat` PPO | Complete in simulation. Fast forward tumble in 0.56 s, then stands: 100% over three seeds. Not the roulade | [`examples/tumble/model_17997.pt`](examples/tumble/model_17997.pt) / [`play_video.mp4`](examples/tumble/play_video.mp4) |
+| `microduck_kick_flat` PPO | Partial. Dribbles the ball along a goal (median 1.0–1.4 m in 12 s, 99.6–100% survival); does not strike it ([study](docs/audits/kick.md)) | [`examples/kick/model_60499.pt`](examples/kick/model_60499.pt) / [`play_video.mp4`](examples/kick/play_video.mp4) |
 | `microduck_velocity_flat` SAC | **Failed validation**; all 5000 iterations completed, but inference repeatedly falls and resets, so this is not a usable policy. The failure clip stays in local `logs/` and is not published | — |
 | `sprint_speed_1p68` PPO | Complete, about 1.68 m/s. Sprint is not an upstream microduck_rl task; it is a gait that exists only in this repo | [`examples/sprint_speed_1p68/model_11997.pt`](examples/sprint_speed_1p68/model_11997.pt) |
 | `sprint_head_upright` PPO | Complete, about 1.32 m/s with the head up. Same: this repo only | [`examples/sprint_head_upright/model_14500.pt`](examples/sprint_head_upright/model_14500.pt) |
@@ -156,8 +229,8 @@ Training reproduction status (complete requires both metrics and inference video
 | `sprint_straight_cmd` PPO | Complete, follows a 0.3–1.2 m/s forward command (measured 0.31–1.12 m/s), 300 s straight-pose pass 90–99.6% across speeds. Same: this repo only | [`examples/sprint_straight_cmd/model_32250.pt`](examples/sprint_straight_cmd/model_32250.pt) / [`play_video_side_v0.6.mp4`](examples/sprint_straight_cmd/play_video_side_v0.6.mp4) |
 | `sprint_straight_head` PPO | Complete, 0.3–1.0 m/s command with position targets clamped to the joint range and the head over the trunk (about 3 cm ahead instead of 9). 300 s straight-pose pass 93.6–100%. Same: this repo only | [`examples/sprint_straight_head/model_52250.pt`](examples/sprint_straight_head/model_52250.pt) / [`play_video_side_v0.5.mp4`](examples/sprint_straight_head/play_video_side_v0.5.mp4) |
 | `sprint_steer` PPO | Complete. Forward speed 0.3–1.0 m/s and yaw rate both commanded, servo-clamped targets, head over the trunk. Yaw-rate error ≤ 0.05 rad/s at ±0.2 and ±0.4 rad/s, 97–100% survival while turning. Same: this repo only | [`examples/sprint_steer/model_55999.pt`](examples/sprint_steer/model_55999.pt) / [`play_video_turn_left_v0.5.mp4`](examples/sprint_steer/play_video_turn_left_v0.5.mp4) |
-| `sprint_stand` PPO | Complete. Adds a stand-still command to `sprint_steer`: 0–1.0 m/s forward, yaw rate, servo-clamped targets. 99.8% survival standing for 300 s with 9 cm drift. Does not turn in place. Same: this repo only | [`examples/sprint_stand/model_59000.pt`](examples/sprint_stand/model_59000.pt) / [`play_video_stand.mp4`](examples/sprint_stand/play_video_stand.mp4) |
-| `sprint_steerfix_flat` PPO | Not trained; superseded by `sprint_steer`. Same: this repo only; the config exists and there are no weights | — |
+| `sprint_stand` PPO | Complete. Adds a stand-still command to `sprint_steer`: 0–1.0 m/s forward, yaw rate, servo-clamped targets. 99.8% survival standing for 300 s with 9 cm drift. Does not turn in place; turns around with a 0.5 m radius turn (`[0.2, 0, ±0.4]`). Passes the MotrixSim gate. Same: this repo only | [`examples/sprint_stand/model_59000.pt`](examples/sprint_stand/model_59000.pt) / [`play_video_stand.mp4`](examples/sprint_stand/play_video_stand.mp4) |
+| `sprint_steerfix_flat` PPO | Intermediate stage of `sprint_straight_long` (see its README); no separate weights are published. Same: this repo only | — |
 
 Tasks stay 1:1 with upstream microduck_rl: BAM (bam xl330-m6 voltage servo,
 `BamVoltageAction` per-substep torque path) is the only upstream actuator
@@ -171,7 +244,7 @@ backend does not expose.
 ## Install
 
 ```bash
-git clone https://github.com/unilabsim/microduck_rl_unilab.git
+git clone https://github.com/rocPAI-Forge/microduck_rl_unilab.git
 cd microduck_rl_unilab
 # ROCm (default): Linux x86_64 resolves torch 2.11.0 and triton-rocm 3.6.0
 # from the ROCm 7.2 index. Requires ROCm >= 7.1.
@@ -245,10 +318,11 @@ uv run --no-sync scripts/train_sprint_robust.py \
 | [`examples/sprint_straight_cmd/`](examples/sprint_straight_cmd/) | 0.3–1.2 m/s command | 300 s 94.7–99.6% | ≤ 0.4% | Speed follows the command. Straight-pose pass 97.5 / 99.6 / 96.9 / 90.0% at 0.3 / 0.6 / 0.9 / 1.2 m/s; stress survival ≥ 95%. Slow falls happen only in the first 6 s. Unclamped targets; head on its stop. |
 | [`examples/sprint_straight_head/`](examples/sprint_straight_head/) | 0.3–1.0 m/s command | 300 s 94.9–100% | ≤ 0.01% | Targets clamped to the joint range (real-servo behavior), head back over the trunk. No falls in 300 s at 0.3–0.75 m/s; 1.0 m/s runs 0.93 m/s. Eval and play need `--clip-targets`. |
 | [`examples/sprint_steer/`](examples/sprint_steer/) | 0.3–1.0 m/s and ±0.4 rad/s | straight 300 s 93.4–100%; turns 96.7–100% | ≤ 0.01% | Adds yaw-rate steering to `sprint_straight_head`. Straight walking uses the spawn-heading loop as an external yaw controller. Eval and play need `--clip-targets`. |
-| [`examples/sprint_stand/`](examples/sprint_stand/) | 0–1.0 m/s and ±0.4 rad/s | straight 300 s 95.1–100%; turns 98–100% | ≤ 0.01% | Adds standing still to `sprint_steer`. No turning in place; heading drifts about 6.5° over 300 s while standing. Eval and play need `--clip-targets`. |
+| [`examples/sprint_stand/`](examples/sprint_stand/) | 0–1.0 m/s and ±0.4 rad/s | straight 300 s 95.1–100%; turns 98–100% | ≤ 0.01% | Adds standing still to `sprint_steer`. No turning in place (turn around with `[0.2, 0, ±0.4]`); heading drifts about 6.5° over 300 s while standing. Eval and play need `--clip-targets`. Exported to ONNX in `deploy/`. |
 
 Each directory has `model_*.pt`, visualizations, `metrics.json`, and
-reproduce commands. `model.pt` is about 4.7 MB and is stored in git.
+reproduce commands. A `model_*.pt` is about 4.7 MB (the basketball LSTM
+checkpoint about 10 MB) and is stored in git.
 
 ### Sprint lineage
 
@@ -359,6 +433,9 @@ Short PPO throughput notes live in [`benchmark/`](benchmark/README.md). On 2026-
 uv run pytest tests/ -x -q
 ```
 
+The two MJWarp tests need a CUDA Warp device; on ROCm or CPU-only machines run
+`uv run pytest tests/ -q -k "not mjwarp"`.
+
 `tests/conftest.py` recreates both seams: it sets
 `UNILAB_EXTRA_REGISTRY_PACKAGES` and uses a Hydra `SearchPathPlugin` to append
 this repo's `conf/<algo>` to the config search path (tests do not go through
@@ -366,14 +443,24 @@ the CLI, so they cannot use `--config-dir`).
 
 ## Asset policy
 
-All MicroDuck assets (7 XML + 47 STL + upstream LICENSE + sha256 manifest)
+All MicroDuck assets (11 XML + 47 STL + upstream licenses + sha256 manifest)
 are in git and work out of the box. `assets.py` is a fallback only: missing
 files are filled from the Hugging Face dataset
 [`unilabsim/unilab-robots`](https://huggingface.co/datasets/unilabsim/unilab-robots)
-(cold path). STLs come from upstream pollen-robotics/microduck_rl
-(Apache-2.0, see `assets/robots/microduck/LICENSE.pollen-robotics.txt`).
+(cold path). STLs are unmodified copies of upstream pollen-robotics/microduck_rl
+(export `a8321d2`).
 Integrity is checked by `assets/robots/microduck/assets.sha256` and
 `tests/test_asset_contract.py`.
+
+## License
+
+The code in this repository is Apache-2.0 ([`LICENSE`](LICENSE)). The 47
+MicroDuck STL meshes are Pollen Robotics' and are licensed **CC BY-NC-SA 4.0**
+(no commercial use; adaptations under the same license; credit Pollen
+Robotics): see
+[`assets/robots/microduck/LICENSE-MODELS.pollen-robotics.md`](assets/robots/microduck/LICENSE-MODELS.pollen-robotics.md).
+The upstream MJCF robot descriptions are Apache-2.0
+([`LICENSE.pollen-robotics.txt`](assets/robots/microduck/LICENSE.pollen-robotics.txt)).
 
 ## Layout
 
@@ -383,6 +470,7 @@ src/microduck_rl_unilab/
 ├── assets.py                       # cold-path asset materialization (snapshot_download fallback)
 ├── cli.py                          # microduck-train / microduck-eval: env var + --config-dir injection
 ├── conf_searchpath.py              # Hydra SearchPathPlugin (programmatic compose for tests/scripts)
+├── deploy/runtime.py               # onboard runtime (numpy + onnxruntime only)
 ├── conf/
 │   ├── ppo/task/microduck_{velocity_flat,velstand_flat,standup_flat,ground_pick_flat,sitstand_flat,sprint_*_flat}/
 │   └── sac/task/microduck_velocity_flat/
@@ -393,13 +481,17 @@ src/microduck_rl_unilab/
         ├── manager_terms.py        # velocity command / reward terms
         ├── sprint_terms.py         # sprint speed/heading rewards and speed curriculum
         ├── recovery_terms.py       # velstand fall-recovery terms
-        ├── standup_terms.py        # standup / ground_pick / sitstand terms
+        ├── standup_terms.py        # standup / ground_pick terms
+        ├── sitstand_terms.py       # commanded sit <-> stand terms
         ├── bam_action.py           # BAM voltage-servo action term
         ├── deploy_contract.py      # obs/action dimension contract
+        ├── symmetry.py             # sagittal mirror of the 61-D contract
         ├── alignment_contract.py   # upstream microduck_rl @ 29e887e alignment table
         └── sim2real_notes.py       # sim2real notes
 benchmark/                          # throughput notes (hardware, scale, comparison)
+docs/DEPLOY.md, docs/ROADMAP.md     # onboard contract and runtime; roadmap and item status
+docs/audits/                        # target, Motrix, turning-in-place, top-speed, backlash, stilt, sit/stand, scoot, friction, basketball, forward-roll, and kick studies
 docs/media/                         # README preview GIFs cut from the example clips
 tests/                              # contract/alignment suite migrated from UniLab
-scripts/                            # alignment audit / compare / rollout scripts
+scripts/                            # training drivers, eval, sim2sim gate, export, deploy sim loop, audits
 ```

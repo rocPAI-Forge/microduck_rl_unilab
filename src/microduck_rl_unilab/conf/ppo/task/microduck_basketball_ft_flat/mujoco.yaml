@@ -1,0 +1,33 @@
+# @package _global_
+# Basketball round 2: fine-tune round 1 on the last hold levels.
+#
+# Round 1 (6000 iterations) stalled at a mean hold level of 3.95 of 5: free
+# ball 58% at 2 s and 0% at 5 s, hold 0.03 81% at 5 s. Here, after the
+# playground's free-ball continuations (b9-b11):
+#   - the action-rate cost is fixed at -0.2 instead of the walking recipe's
+#     ramp to -1.0, which taxes the quick corrections balance needs;
+#   - the hold table is 0.1 -> 0.03 -> 0: a warm start resets every env to the
+#     first level, where round 1 already survives 79% at 5 s, so the run is
+#     spent on the free ball.
+# Warm start: algo.load_run=<round 1 run dir> algo.checkpoint=5999.
+defaults:
+  - /task/microduck_basketball_flat/mujoco
+  - _self_
+
+algo:
+  experiment_name: microduck_basketball_ft
+  run_name: microduck_basketball_ft
+
+env:
+  actions:
+    ball_hold:
+      levels: [0.1, 0.03, 0.0]
+  curriculum:
+    action_rate_weight: null
+    basketball_hold:
+      params:
+        levels: [0.1, 0.03, 0.0]
+
+reward:
+  action_rate:
+    weight: -0.2

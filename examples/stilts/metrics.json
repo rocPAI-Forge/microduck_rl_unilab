@@ -1,0 +1,207 @@
+{
+  "label": "stilts",
+  "task": "MicroduckVelocityFlat",
+  "train_owner": "microduck_stilt_flat/mujoco",
+  "checkpoint": "examples/stilts/model_4091.pt",
+  "source_run": "2026-11-16_11-51-31_mujoco",
+  "source_iteration": 4091,
+  "scene": {
+    "script": "scripts/make_stilt_robot.py --height-cm 10 --blend 0.5",
+    "model_file": "assets/robots/microduck/generated/scene_flat_bam_stilt_h10_b050.xml"
+  },
+  "training": {
+    "backend": "mujoco",
+    "driver": "scripts/train_stilts.py",
+    "start": "examples/velocity_flat_mujoco/model_499.pt",
+    "stages_height_cm_blend_iterations": [
+      [
+        2.0,
+        0.0,
+        800
+      ],
+      [
+        2.0,
+        0.25,
+        200
+      ],
+      [
+        2.0,
+        0.5,
+        200
+      ],
+      [
+        3.0,
+        0.5,
+        200
+      ],
+      [
+        4.0,
+        0.5,
+        200
+      ],
+      [
+        5.0,
+        0.5,
+        1500
+      ],
+      [
+        7.5,
+        0.5,
+        200
+      ],
+      [
+        10.0,
+        0.5,
+        300
+      ]
+    ],
+    "stage_7_final_mean_reward": 46.38
+  },
+  "playback": {
+    "video": "examples/stilts/play_video.mp4",
+    "duration_s": 15,
+    "schedule": "0.15 m/s for 9 s, then 0.10 m/s with +0.4 rad/s"
+  },
+  "evaluation": {
+    "script": "scripts/eval_walk.py",
+    "num_envs": 128,
+    "duration_s": 60,
+    "runs": [
+      {
+        "owner": "microduck_stilt_flat/mujoco",
+        "overrides": [
+          "env.scene.model_file=assets/robots/microduck/generated/scene_flat_bam_stilt_h10_b050.xml",
+          "env.scene.fragment_files=[assets/robots/microduck/generated/locomotion_task_stilt_h10_b050.xml]"
+        ],
+        "command_m_s": 0.15,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 60.0,
+        "num_envs": 128,
+        "seed": 101,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": 0.18156557512283325,
+        "yaw_rate_rad_s": -0.15482538081829747
+      },
+      {
+        "owner": "microduck_stilt_flat/mujoco",
+        "overrides": [
+          "env.scene.model_file=assets/robots/microduck/generated/scene_flat_bam_stilt_h10_b050.xml",
+          "env.scene.fragment_files=[assets/robots/microduck/generated/locomotion_task_stilt_h10_b050.xml]"
+        ],
+        "command_m_s": 0.15,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 60.0,
+        "num_envs": 128,
+        "seed": 202,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": 0.168683745354414,
+        "yaw_rate_rad_s": -0.16018858621657517
+      },
+      {
+        "owner": "microduck_stilt_flat/mujoco",
+        "overrides": [
+          "env.scene.model_file=assets/robots/microduck/generated/scene_flat_bam_stilt_h10_b050.xml",
+          "env.scene.fragment_files=[assets/robots/microduck/generated/locomotion_task_stilt_h10_b050.xml]"
+        ],
+        "command_m_s": 0.15,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 60.0,
+        "num_envs": 128,
+        "seed": 303,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": 0.17041021366914114,
+        "yaw_rate_rad_s": -0.1444302799597693
+      },
+      {
+        "owner": "microduck_stilt_flat/mujoco",
+        "overrides": [
+          "env.scene.model_file=assets/robots/microduck/generated/scene_flat_bam_stilt_h10_b050.xml",
+          "env.scene.fragment_files=[assets/robots/microduck/generated/locomotion_task_stilt_h10_b050.xml]"
+        ],
+        "command_m_s": 0.25,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 60.0,
+        "num_envs": 128,
+        "seed": 101,
+        "survival_fraction": 0.9921875,
+        "forward_speed_m_s": 0.24873395949602517,
+        "yaw_rate_rad_s": -0.14551609114948072
+      },
+      {
+        "owner": "microduck_stilt_flat/mujoco",
+        "overrides": [
+          "env.scene.model_file=assets/robots/microduck/generated/scene_flat_bam_stilt_h10_b050.xml",
+          "env.scene.fragment_files=[assets/robots/microduck/generated/locomotion_task_stilt_h10_b050.xml]"
+        ],
+        "command_m_s": 0.25,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 60.0,
+        "num_envs": 128,
+        "seed": 202,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": 0.23915171076357364,
+        "yaw_rate_rad_s": -0.13952451062435284
+      },
+      {
+        "owner": "microduck_stilt_flat/mujoco",
+        "overrides": [
+          "env.scene.model_file=assets/robots/microduck/generated/scene_flat_bam_stilt_h10_b050.xml",
+          "env.scene.fragment_files=[assets/robots/microduck/generated/locomotion_task_stilt_h10_b050.xml]"
+        ],
+        "command_m_s": 0.25,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 60.0,
+        "num_envs": 128,
+        "seed": 303,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": 0.2431322915951411,
+        "yaw_rate_rad_s": -0.13668406019887577
+      },
+      {
+        "owner": "microduck_stilt_flat/mujoco",
+        "overrides": [
+          "env.scene.model_file=assets/robots/microduck/generated/scene_flat_bam_stilt_h10_b050.xml",
+          "env.scene.fragment_files=[assets/robots/microduck/generated/locomotion_task_stilt_h10_b050.xml]"
+        ],
+        "command_m_s": 0.0,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 60.0,
+        "num_envs": 128,
+        "seed": 101,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": 0.08133226112524668,
+        "yaw_rate_rad_s": -0.10073695200510945
+      },
+      {
+        "owner": "microduck_stilt_flat/mujoco",
+        "overrides": [
+          "env.scene.model_file=assets/robots/microduck/generated/scene_flat_bam_stilt_h10_b050.xml",
+          "env.scene.fragment_files=[assets/robots/microduck/generated/locomotion_task_stilt_h10_b050.xml]"
+        ],
+        "command_m_s": 0.0,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 60.0,
+        "num_envs": 128,
+        "seed": 202,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": 0.0682611288925012,
+        "yaw_rate_rad_s": -0.09637192497076466
+      },
+      {
+        "owner": "microduck_stilt_flat/mujoco",
+        "overrides": [
+          "env.scene.model_file=assets/robots/microduck/generated/scene_flat_bam_stilt_h10_b050.xml",
+          "env.scene.fragment_files=[assets/robots/microduck/generated/locomotion_task_stilt_h10_b050.xml]"
+        ],
+        "command_m_s": 0.0,
+        "command_yaw_rate_rad_s": 0.0,
+        "duration_s": 60.0,
+        "num_envs": 128,
+        "seed": 303,
+        "survival_fraction": 1.0,
+        "forward_speed_m_s": 0.06352071797599396,
+        "yaw_rate_rad_s": -0.11015843411379804
+      }
+    ]
+  }
+}

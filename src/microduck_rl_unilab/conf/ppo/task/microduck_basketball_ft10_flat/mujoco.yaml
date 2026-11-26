@@ -1,0 +1,23 @@
+# @package _global_
+# Basketball round 11, rejected: lower the centering reward so rolling can pay.
+#
+# Trained (model_12990) and discarded. 60 s survival fell to 0-15%. The
+# centering reward is load-bearing for balance, not just a tracking obstacle.
+#
+# Round 10 widened the centered kernel from 0.04 m to 0.08 m and the policy
+# stayed on the peak (per-step centered reward still about 1.92 of weight 2,
+# an offset of about 1.6 cm). Forward slope moved only from 0.44 to 0.48.
+# Here the weight goes from 2.0 to 0.5, so sitting dead centre is worth about
+# 0.5 per step instead of 2. Tracking weights are unchanged. Warm start from
+# round 10 model_12491.
+defaults:
+  - /task/microduck_basketball_ft9_flat/mujoco
+  - _self_
+
+algo:
+  experiment_name: microduck_basketball_ft10
+  run_name: microduck_basketball_ft10
+
+reward:
+  centered:
+    weight: 0.5

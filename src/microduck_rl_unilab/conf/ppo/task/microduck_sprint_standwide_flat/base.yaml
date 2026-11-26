@@ -1,0 +1,29 @@
+# @package _global_
+# Wider servo and contact randomization for the standing sprint.
+#
+# sprint_stand/model_59000 survives 98% for 60 s at 1.0 m/s on MuJoCo but 85%
+# on MotrixSim (67% over 300 s). Pinning one MuJoCo parameter at a time shows
+# the top-speed gait only fits a narrow band of servo dynamics: armature x0.5
+# or 0-2 substeps of servo delay drop 60 s survival to 0%, x1.6 armature to
+# 60%, 7-9 substeps of delay to 15%, x1.6 servo friction to 56%, and foot
+# friction 1.8 to 10%, while low friction and +12% mass are harmless. Motrix
+# also runs faster (0.91 vs 0.88 m/s), the same direction as a quicker servo.
+# Training here widens those ranges around the stand recipe; MotrixSim stays
+# held out and judges the result.
+defaults:
+  - /task/microduck_sprint_standturn_flat/base
+  - _self_
+
+env:
+  actions:
+    joint_pos:
+      delay_min_lag: 2
+      delay_max_lag: 8
+      friction_scale_range: [0.75, 1.35]
+  events:
+    randomize_armature:
+      params:
+        ranges: [0.7, 1.4]
+    foot_friction:
+      params:
+        ranges: [0.6, 1.5]

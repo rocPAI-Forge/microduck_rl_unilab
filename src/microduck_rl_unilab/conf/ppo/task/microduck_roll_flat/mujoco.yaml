@@ -1,0 +1,80 @@
+# @package _global_
+# Forward roll, feasibility round, on the standup base.
+#
+# Starts standing and pays for forward rotation about the episode's lateral
+# axis up to one full turn, then for being done and still. Getting back up is
+# left to the published standup policy (examples/standup, the warm start here),
+# so all standing and posture rewards are off: they would pay for not rolling.
+# Kept: action rate (fixed, no curriculum), self collisions, joint limits.
+# Scene: the convex-hull ground-contact duck (scripts/make_hull_robot.py),
+# which fits 4096 envs; contact friction is unchanged (not the _prio variant).
+defaults:
+  - /task/microduck_standup_flat/mujoco
+  - _self_
+
+algo:
+  num_envs: 4096
+  max_iterations: 1500
+  save_interval: 250
+  experiment_name: microduck_roll
+  run_name: microduck_roll
+
+env:
+  max_episode_seconds: 5.0
+  scene:
+    model_file: assets/robots/microduck/generated/scene_flat_groundcontact_bam_hull.xml
+  events:
+    set_ground_state:
+      params:
+        face_down_prob: 0.0
+        face_up_prob: 0.0
+        sitting_prob: 0.0
+        standing_prob: 1.0
+    push_robot: null
+  curriculum:
+    ground_state_mix: null
+    head_pose_range: null
+    base_com_range: null
+    head_com_range: null
+    push_magnitude: null
+    action_rate_weight: null
+    arrival_damping_weight: null
+    head_pose_bias_weight: null
+    torque_rate_weight: null
+    body_pose_tracking_weight: null
+    body_pose_range: null
+    height_stand_sharp_weight: null
+    upright_sharp_weight: null
+    standing_composite_weight: null
+
+reward:
+  pose_stand_legs: null
+  head_pose_tracking: null
+  head_pose_bias: null
+  pose_stand_l1: null
+  height_stand: null
+  height_stand_sharp: null
+  height_stand_l1: null
+  com_upward_velocity: null
+  gentle_rise: null
+  arrival_damping: null
+  upright_linear: null
+  upright_sharp: null
+  standing_composite: null
+  body_pose_tracking: null
+  joint_torque_rate_l2: null
+  body_ang_vel: null
+  angular_momentum: null
+  roll_progress:
+    func: microduck_rl_unilab.tasks.microduck.roll_terms.roll_progress
+    weight: 1.0
+    params: {cap: 6.0}
+  roll_complete:
+    func: microduck_rl_unilab.tasks.microduck.roll_terms.roll_complete
+    weight: 4.0
+  roll_settle:
+    func: microduck_rl_unilab.tasks.microduck.roll_terms.roll_settle
+    weight: 1.0
+  roll_off_axis:
+    func: microduck_rl_unilab.tasks.microduck.roll_terms.roll_off_axis
+    weight: -0.2

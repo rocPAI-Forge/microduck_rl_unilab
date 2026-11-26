@@ -1,0 +1,75 @@
+{
+  "label": "tumble",
+  "task": "MicroduckStandupFlat",
+  "train_owner": "microduck_tumble_flat/mujoco",
+  "checkpoint": "examples/tumble/model_17997.pt",
+  "source_run": "2026-11-21_11-14-31_mujoco",
+  "source_iteration": 17997,
+  "initialization": {
+    "stage_1": "microduck_roll_flat, 1500 iterations from examples/standup/model_14999.pt (run 2026-11-20_13-59-08_mujoco, model_16498)",
+    "stage_2": "microduck_tumble_flat, 1500 iterations from stage 1"
+  },
+  "training": {
+    "backend": "mujoco",
+    "num_envs": 4096,
+    "completed_iterations": 1500,
+    "final_mean_reward": 23.58,
+    "mean_episode_length": 250.0
+  },
+  "playback": {
+    "video": "examples/tumble/play_video.mp4",
+    "slow_factor": 2,
+    "start": "standing"
+  },
+  "evaluation": {
+    "script": "scripts/eval_roll.py",
+    "start": "standing",
+    "runs": [
+      {
+        "owner": "microduck_tumble_flat/mujoco",
+        "num_envs": 512,
+        "seed": 101,
+        "duration_s": 4.9,
+        "roll_complete": 1.0,
+        "time_to_complete_s_median": 0.56,
+        "rotation_max_deg_median": 416.0277071970005,
+        "rotation_max_deg_p90": 441.7402226083902,
+        "more_than_one_turn": 0.0,
+        "peak_pitch_rate_median": 9.728524684906006,
+        "stood_up_after_roll": 1.0,
+        "time_to_stand_s_median": 0.8,
+        "standing_at_end": 1.0
+      },
+      {
+        "owner": "microduck_tumble_flat/mujoco",
+        "num_envs": 512,
+        "seed": 202,
+        "duration_s": 4.9,
+        "roll_complete": 1.0,
+        "time_to_complete_s_median": 0.56,
+        "rotation_max_deg_median": 415.9947378066209,
+        "rotation_max_deg_p90": 440.0158389856171,
+        "more_than_one_turn": 0.0,
+        "peak_pitch_rate_median": 9.836360454559326,
+        "stood_up_after_roll": 1.0,
+        "time_to_stand_s_median": 0.78,
+        "standing_at_end": 1.0
+      },
+      {
+        "owner": "microduck_tumble_flat/mujoco",
+        "num_envs": 512,
+        "seed": 303,
+        "duration_s": 4.9,
+        "roll_complete": 1.0,
+        "time_to_complete_s_median": 0.56,
+        "rotation_max_deg_median": 416.1103693348985,
+        "rotation_max_deg_p90": 440.42028203602086,
+        "more_than_one_turn": 0.0,
+        "peak_pitch_rate_median": 9.878024101257324,
+        "stood_up_after_roll": 1.0,
+        "time_to_stand_s_median": 0.78,
+        "standing_at_end": 1.0
+      }
+    ]
+  }
+}

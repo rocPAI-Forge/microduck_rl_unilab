@@ -69,13 +69,63 @@ owner 配置和机器人 XML 资产。
   </tr>
 </table>
 
-冲刺步态是本仓库独有的，上游 microduck_rl 没有冲刺任务。各冲刺权重之间的区别见[冲刺系列对比](#冲刺系列对比)。尚未完成的部分（平地速度 SAC、只支持 MJWarp 的任务）列在 [`CHANGELOG.md`](CHANGELOG.md#known-limitations) 里。
+### 0.4.0 起新增的动作（仅仿真）
 
-要把策略部署到实机，见 [`docs/DEPLOY.md`](docs/DEPLOY.md)：观测和动作的接口约定、导出好的 ONNX（在 [`examples/sprint_stand/deploy/`](examples/sprint_stand/deploy/)），机载参考运行时，以及已知的 sim2real 限制。第一次上真机前，先按 [`docs/HARDWARE_BRINGUP.md`](docs/HARDWARE_BRINGUP.md) 逐项检查。
+又新增了七个动作，都还没做 MotrixSim 验证，也没上过真机。点击动画进入对应的示例目录（权重、指标、复现命令），示例里再链接到研究记录。
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <a href="examples/stilts/"><img src="docs/media/stilts.gif" width="260" alt="踩高跷行走"></a><br>
+      <b>踩高跷行走</b>（<code>microduck_stilt_flat</code>）<br>
+      10 cm 高跷，0.15 m/s 下存活 100%；转向偏右
+    </td>
+    <td align="center" width="33%">
+      <a href="examples/sitstand/"><img src="docs/media/sitstand.gif" width="260" alt="坐下与站起"></a><br>
+      <b>坐下与站起</b>（<code>microduck_sitstand_flat</code>）<br>
+      按指令坐下 85–89%，站起 97%
+    </td>
+    <td align="center" width="33%">
+      <a href="examples/scoot/"><img src="docs/media/scoot.gif" width="260" alt="坐姿挪动"></a><br>
+      <b>坐姿挪动</b>（<code>microduck_scoot_sym_flat</code>）<br>
+      坐着后退，速度为指令的 56–80%
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="examples/basketball/"><img src="docs/media/basketball.gif" width="260" alt="篮球上平衡"></a><br>
+      <b>篮球上平衡</b>（<code>microduck_basketball_ft9_flat</code>）<br>
+      小指令下在自由球上 60 秒存活 98–99%；大幅切换指令仍会失败
+    </td>
+    <td align="center">
+      <a href="examples/kick/"><img src="docs/media/kick.gif" width="260" alt="带球"></a><br>
+      <b>带球</b>（<code>microduck_kick_flat</code>）<br>
+      走到球后把球沿目标方向推走，不摔倒；是带球，不是抽射
+    </td>
+    <td align="center">
+      <a href="examples/roulade/"><img src="docs/media/roulade.gif" width="260" alt="前滚翻"></a><br>
+      <b>前滚翻</b>（<code>microduck_roulade_flat</code>）<br>
+      以头顶为支点前滚翻并用脚落地，从站立出发 100% 成功；由上游策略微调而来；2 倍慢放
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="examples/tumble/"><img src="docs/media/tumble.gif" width="260" alt="翻滚起身"></a><br>
+      <b>翻滚起身</b>（<code>microduck_tumble_flat</code>）<br>
+      0.56 秒快速向前翻滚后站起，100%；2 倍慢放
+    </td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>
+
+冲刺步态是本仓库独有的，上游 microduck_rl 没有冲刺任务。各冲刺权重之间的区别见[冲刺系列对比](#冲刺系列对比)。尚未完成的部分（原地转向、MotrixSim 上的 1.0 m/s、平地速度 SAC、只支持 MJWarp 的任务）列在 [`CHANGELOG.md`](CHANGELOG.md#known-limitations) 里，进度在 [`docs/ROADMAP.md`](docs/ROADMAP.md) 跟踪。
+
+要把策略部署到实机，见 [`docs/DEPLOY.md`](docs/DEPLOY.md)：观测和动作的接口约定、导出好的 ONNX（在 [`examples/sprint_stand/deploy/`](examples/sprint_stand/deploy/)）、参考机载运行时（`microduck_rl_unilab.deploy`，只依赖 numpy 和 onnxruntime，已在两个仿真器上闭环验证），以及已知的 sim2real 限制。同一个 ONNX 可以原样加载进 Pollen 官方的机载守护进程 `robotd`，文档里列出了按训练方式运行所需的 `[policy]` 设置。目前还没有在实机上跑过；第一次上真机前，先按 [`docs/HARDWARE_BRINGUP.md`](docs/HARDWARE_BRINGUP.md) 逐项检查。
 
 ## 版本
 
-当前版本：**0.2.0**（git 标签 `v0.2.0`）。这一版包含哪些内容、哪些策略已验证、有哪些已知限制，见 [`CHANGELOG.md`](CHANGELOG.md)。
+当前版本：**0.5.1**（git 标签 `v0.5.1`）。这一版包含哪些内容、哪些策略已验证、有哪些已知限制，见 [`CHANGELOG.md`](CHANGELOG.md)。
 
 ## 仿真器分工：MuJoCo 训练，MotrixSim 验证
 
@@ -83,7 +133,8 @@ owner 配置和机器人 XML 资产。
 
 - MuJoCo 支持步态依赖的全部随机化（定时推力、关节电枢、脚底摩擦、刚体惯量），Motrix 不支持这四项。
 - Motrix 的接触模型和 MuJoCo 不同，能发现依赖 MuJoCo 特有细节的步态。[`docs/audits/motrix_crosscheck.md`](docs/audits/motrix_crosscheck.md) 里的交叉验证发现，1.0 m/s 步态在 Motrix 上存活率掉 16–36 个点。
-- 把 Motrix 也拿来训练只会转移过拟合、不会消除它（见 [PR #11](https://github.com/rocPAI-Forge/microduck_rl_unilab/pull/11)），还会用掉唯一一个留作验证的仿真器。
+- 把 Motrix 也拿来训练只会转移过拟合、不会消除它（见 [PR #11](https://github.com/rocPAI-Forge/microduck_rl_unilab/pull/11)，已关闭，留作记录），还会用掉唯一一个留作验证的仿真器。
+- 在 MuJoCo 里加宽舵机和接触随机化，能让 1.0 m/s 在 Motrix 上更稳，但代价是跑得更慢（见 [`docs/audits/motrix_topspeed.md`](docs/audits/motrix_topspeed.md)）。
 
 模型必须先通过 Motrix 验证门槛才能发布：
 
@@ -99,9 +150,15 @@ uv run --no-sync scripts/sim2sim_check.py examples/sprint_stand/model_59000.pt
 |------|-----|-----|
 | `microduck_velocity_flat` | mujoco, motrix | mujoco, motrix |
 | `microduck_velstand_flat` | mujoco | — |
+| `microduck_stilt_flat`（踩高跷行走；[研究记录](docs/audits/stilts.md)、[示例](examples/stilts/)） | mujoco | — |
 | `microduck_standup_flat` | mujoco | — |
-| `microduck_sprint_flat` 及其 19 个续训 owner（`robust`、`gaitfix`、`rollfix`、`steerfix`、`straightfix`、`straightspeed`、`straighthold`、`straightcmd`、`straightrange`、`straightclip`、`straightneck`、`straighthead`、`steer`、`steermix`、`stand`、`standturn`、`pivot`、`pivothold`、`pivotsym`） | mujoco | — |
-| `microduck_ground_pick_flat`、`microduck_sitstand_flat` | mjwarp | — |
+| `microduck_sprint_flat` 及其 23 个续训 owner（`robust`、`gaitfix`、`rollfix`、`steerfix`、`straightfix`、`straightspeed`、`straighthold`、`straightcmd`、`straightrange`、`straightclip`、`straightneck`、`straighthead`、`steer`、`steermix`、`stand`、`standturn`、`pivot`、`pivothold`、`pivotsym`、`standwide`、`standwidefast`、`pivotyaw`、`standbacklash`） | mujoco | — |
+| `microduck_sitstand_flat`（上游完整的坐下起立方法，MuJoCo 版；[研究记录](docs/audits/sitstand.md)、[示例](examples/sitstand/)） | mujoco, mjwarp | — |
+| `microduck_scoot_flat`、`microduck_scoot_straight_flat`、`microduck_scoot_sym_flat`（坐姿挪动；[研究记录](docs/audits/scoot.md)、[示例](examples/scoot/)） | mujoco | — |
+| `microduck_basketball_flat` 及其续训 owner `microduck_basketball_ft_flat` … `ft12_flat`（在自由球上平衡；[研究记录](docs/audits/basketball.md)、[示例](examples/basketball/)） | mujoco | — |
+| `microduck_roulade_flat`（过头顶的前滚翻；[研究记录](docs/audits/roulade.md)、[示例](examples/roulade/)）、`microduck_roll_flat`、`microduck_tumble_flat`（[示例](examples/tumble/)） | mujoco | — |
+| `microduck_kick_flat`（在 `sprint_stand` 步态上带球；[研究记录](docs/audits/kick.md)、[示例](examples/kick/)） | mujoco | — |
+| `microduck_ground_pick_flat` | mjwarp | — |
 
 每个冲刺续训 owner 的完整名字是 `microduck_sprint_<名字>_flat`，用到它的示例 README 里有具体命令。
 
@@ -118,6 +175,13 @@ uv run --no-sync scripts/sim2sim_check.py examples/sprint_stand/model_59000.pt
 |---|---|---|
 | `microduck_standup_flat` PPO | 完成；15000 轮。慢放侧面近景依次是趴着撑起、仰着翻身站起、坐着站起 | [`examples/standup/model_14999.pt`](examples/standup/model_14999.pt) / [`play_video.mp4`](examples/standup/play_video.mp4) |
 | `microduck_velstand_flat` PPO | 完成。64 次强制跌倒中，趴下和仰躺都在 8 秒内站起（末态倾角 1.2°），原地指令和默认行走指令都成立 | [`examples/velstand_getup/model_12498.pt`](examples/velstand_getup/model_12498.pt) / [`play_video_getup.mp4`](examples/velstand_getup/play_video_getup.mp4) |
+| `microduck_stilt_flat` PPO | 仿真中完成。10 cm 高跷：站立、0.15 和 0.25 m/s 下 60 秒存活 99.2–100%；站立时向前漂，转向偏右（[研究记录](docs/audits/stilts.md)） | [`examples/stilts/model_4091.pt`](examples/stilts/model_4091.pt) / [`play_video.mp4`](examples/stilts/play_video.mp4) |
+| `microduck_sitstand_flat` PPO（`fix` owner） | 仿真中完成。按指令坐下 85–89%、站起 97%，摔倒 ≤ 0.2%；坐下最后约 4 cm 是掉下去的（[研究记录](docs/audits/sitstand.md)） | [`examples/sitstand/model_6500.pt`](examples/sitstand/model_6500.pt) / [`play_video.mp4`](examples/sitstand/play_video.mp4) |
+| `microduck_scoot_flat` PPO（`sym` owner） | 仿真中完成。坐着后退，速度为指令的 82–88%，存活 100%；前进较弱（[研究记录](docs/audits/scoot.md)） | [`examples/scoot/model_2999.pt`](examples/scoot/model_2999.pt) / [`play_video.mp4`](examples/scoot/play_video.mp4) |
+| `microduck_basketball_flat` PPO（`ft9` owner） | 部分完成。小指令下在自由球上 60 秒存活 98–99%；playground 协议下 3.5%（[研究记录](docs/audits/basketball.md)） | [`examples/basketball/model_12491.pt`](examples/basketball/model_12491.pt) / [`play_video.mp4`](examples/basketball/play_video.mp4) |
+| `microduck_roulade_flat` PPO | 仿真中完成。以头顶为支点前滚翻并用脚落地：三个种子下从站立出发 100% 成功，1.04 秒站起。由上游发布的 `roulade.onnx` 微调而来；我们自己的训练没能翻过头顶（[研究记录](docs/audits/roulade.md)） | [`examples/roulade/model_999.pt`](examples/roulade/model_999.pt) / [`play_video.mp4`](examples/roulade/play_video.mp4) |
+| `microduck_tumble_flat` PPO | 仿真中完成。0.56 秒快速向前翻滚后站起：三个种子下 100%。这不是 roulade | [`examples/tumble/model_17997.pt`](examples/tumble/model_17997.pt) / [`play_video.mp4`](examples/tumble/play_video.mp4) |
+| `microduck_kick_flat` PPO | 部分完成。沿目标方向带球（12 秒内中位 1.0–1.4 m，存活 99.6–100%），不会抽射（[研究记录](docs/audits/kick.md)） | [`examples/kick/model_60499.pt`](examples/kick/model_60499.pt) / [`play_video.mp4`](examples/kick/play_video.mp4) |
 | `microduck_velocity_flat` SAC | **未通过**；5000 轮训练完成，但推理反复倒地重置，不能作为成品策略。失败样本留在本地 `logs/`，不入库 | — |
 | `sprint_speed_1p68` PPO | 完成，约 1.68 m/s。Sprint 不是上游 microduck_rl 的官方任务，是本仓库独有的冲刺步态 | [`examples/sprint_speed_1p68/model_11997.pt`](examples/sprint_speed_1p68/model_11997.pt) |
 | `sprint_head_upright` PPO | 完成，约 1.32 m/s，头朝上。同上，本仓库独有 | [`examples/sprint_head_upright/model_14500.pt`](examples/sprint_head_upright/model_14500.pt) |
@@ -126,8 +190,8 @@ uv run --no-sync scripts/sim2sim_check.py examples/sprint_stand/model_59000.pt
 | `sprint_straight_cmd` PPO | 完成，跟随 0.3–1.2 m/s 前进速度命令（实测 0.31–1.12 m/s），各档 300 秒直线通过率 90–99.6%。同上，本仓库独有 | [`examples/sprint_straight_cmd/model_32250.pt`](examples/sprint_straight_cmd/model_32250.pt) / [`play_video_side_v0.6.mp4`](examples/sprint_straight_cmd/play_video_side_v0.6.mp4) |
 | `sprint_straight_head` PPO | 完成，0.3–1.0 m/s 速度命令，位置目标裁剪到关节行程内，头回到躯干上方（前伸约 3 cm，原来约 9 cm）。300 秒直线通过率 93.6–100%。同上，本仓库独有 | [`examples/sprint_straight_head/model_52250.pt`](examples/sprint_straight_head/model_52250.pt) / [`play_video_side_v0.5.mp4`](examples/sprint_straight_head/play_video_side_v0.5.mp4) |
 | `sprint_steer` PPO | 完成。前进速度 0.3–1.0 m/s 和偏航角速度都可控，目标角按舵机裁剪，头在躯干上方。±0.2、±0.4 rad/s 的偏航误差 ≤ 0.05 rad/s，转弯存活 97–100%。同上，本仓库独有 | [`examples/sprint_steer/model_55999.pt`](examples/sprint_steer/model_55999.pt) / [`play_video_turn_left_v0.5.mp4`](examples/sprint_steer/play_video_turn_left_v0.5.mp4) |
-| `sprint_stand` PPO | 完成。在 `sprint_steer` 基础上加原地站立：前进 0–1.0 m/s、偏航角速度都可控，目标角按舵机裁剪。站立 300 秒存活 99.8%，位置漂移 9 cm。不会原地转向。同上，本仓库独有 | [`examples/sprint_stand/model_59000.pt`](examples/sprint_stand/model_59000.pt) / [`play_video_stand.mp4`](examples/sprint_stand/play_video_stand.mp4) |
-| `sprint_steerfix_flat` PPO | 未训练，已被 `sprint_steer` 取代。同上，本仓库独有；配置在，没有权重 | — |
+| `sprint_stand` PPO | 完成。在 `sprint_steer` 基础上加原地站立：前进 0–1.0 m/s、偏航角速度都可控，目标角按舵机裁剪。站立 300 秒存活 99.8%，位置漂移 9 cm。不会原地转向，用 0.5 m 半径转弯（`[0.2, 0, ±0.4]`）掉头。通过 MotrixSim 验证门槛。同上，本仓库独有 | [`examples/sprint_stand/model_59000.pt`](examples/sprint_stand/model_59000.pt) / [`play_video_stand.mp4`](examples/sprint_stand/play_video_stand.mp4) |
+| `sprint_steerfix_flat` PPO | `sprint_straight_long` 的中间训练阶段（见其 README），没有单独发布权重。同上，本仓库独有 | — |
 
 任务与上游 microduck_rl 保持 1:1：BAM（bam xl330-m6 电压伺服模型，
 `BamVoltageAction` 逐 substep 力矩路径）是上游唯一的驱动器模型，因此本仓库
@@ -138,7 +202,7 @@ motrix 后端可用。motrix 上关掉了该后端没有的速度推力、关节
 ## 安装
 
 ```bash
-git clone https://github.com/unilabsim/microduck_rl_unilab.git
+git clone https://github.com/rocPAI-Forge/microduck_rl_unilab.git
 cd microduck_rl_unilab
 # ROCm（默认）：Linux x86_64 从 ROCm 7.2 索引解析 torch 2.11.0 与 triton-rocm 3.6.0。
 # 需要系统 ROCm >= 7.1。
@@ -207,10 +271,10 @@ uv run --no-sync scripts/train_sprint_robust.py \
 | [`examples/sprint_straight_cmd/`](examples/sprint_straight_cmd/) | 0.3–1.2 m/s 命令 | 300 s 94.7–99.6% | ≤ 0.4% | 速度跟随命令。0.3 / 0.6 / 0.9 / 1.2 m/s 的直线通过率 97.5 / 99.6 / 96.9 / 90.0%；压测存活 ≥ 95%。慢速跌倒只发生在开场 6 秒内。目标不裁剪，头顶在限位上。 |
 | [`examples/sprint_straight_head/`](examples/sprint_straight_head/) | 0.3–1.0 m/s 命令 | 300 s 94.9–100% | ≤ 0.01% | 目标裁剪到关节行程内（接近真实舵机），头回到躯干上方。0.3–0.75 m/s 在 300 秒内无跌倒；1.0 m/s 命令实测 0.93 m/s。评测和回放需加 `--clip-targets`。 |
 | [`examples/sprint_steer/`](examples/sprint_steer/) | 0.3–1.0 m/s 和 ±0.4 rad/s | 直行 300 s 93.4–100%；转弯 96.7–100% | ≤ 0.01% | 在 `sprint_straight_head` 基础上加偏航转向。直行由出生航向闭环充当外部偏航控制器。评测和回放需加 `--clip-targets`。 |
-| [`examples/sprint_stand/`](examples/sprint_stand/) | 0–1.0 m/s 和 ±0.4 rad/s | 直行 300 s 95.1–100%；转弯 98–100% | ≤ 0.01% | 在 `sprint_steer` 基础上加原地站立。不会原地转向；站立时 300 秒内航向平均漂移约 6.5°。评测和回放需加 `--clip-targets`。 |
+| [`examples/sprint_stand/`](examples/sprint_stand/) | 0–1.0 m/s 和 ±0.4 rad/s | 直行 300 s 95.1–100%；转弯 98–100% | ≤ 0.01% | 在 `sprint_steer` 基础上加原地站立。不会原地转向（用 `[0.2, 0, ±0.4]` 掉头）；站立时 300 秒内航向平均漂移约 6.5°。评测和回放需加 `--clip-targets`。ONNX 导出在 `deploy/`。 |
 
 每个目录含 `model_*.pt`、可视化、`metrics.json` 和复现命令。
-`model.pt` 约 4.7 MB，直接入 git。
+`model_*.pt` 约 4.7 MB（篮球的 LSTM 检查点约 10 MB），直接入 git。
 
 ### 冲刺系列对比
 
@@ -293,18 +357,29 @@ uv run --no-sync scripts/eval_sprint_speed.py \
 uv run pytest tests/ -x -q
 ```
 
+两个 MJWarp 测试需要 CUDA 版 Warp 设备；在 ROCm 或纯 CPU 机器上运行 `uv run pytest tests/ -q -k "not mjwarp"`。
+
 `tests/conftest.py` 复现两个 seam：设置 `UNILAB_EXTRA_REGISTRY_PACKAGES` 并通过
 Hydra `SearchPathPlugin` 把本仓库 `conf/<algo>` 追加进 config search path
 （测试不经 CLI，无法用 `--config-dir`）。
 
 ## 资产策略
 
-全部 MicroDuck 资产（7 个 XML + 47 个 STL + 上游 LICENSE + sha256 清单）随仓库
+全部 MicroDuck 资产（11 个 XML + 47 个 STL + 上游许可证 + sha256 清单）随仓库
 入 git，开箱即用；`assets.py` 仅作为兜底——文件缺失时才从 Hugging Face 数据集
 [`unilabsim/unilab-robots`](https://huggingface.co/datasets/unilabsim/unilab-robots)
-补齐（冷路径）。STL 来源为上游 pollen-robotics/microduck_rl（Apache-2.0，
-见 `assets/robots/microduck/LICENSE.pollen-robotics.txt`），完整性由
-`assets/robots/microduck/assets.sha256` 与 `tests/test_asset_contract.py` 保证。
+补齐（冷路径）。STL 是上游 pollen-robotics/microduck_rl 的原样拷贝（导出版本
+`a8321d2`），完整性由 `assets/robots/microduck/assets.sha256` 与
+`tests/test_asset_contract.py` 保证。
+
+## 许可证
+
+本仓库代码采用 Apache-2.0（[`LICENSE`](LICENSE)）。47 个 MicroDuck STL 网格归
+Pollen Robotics 所有，采用 **CC BY-NC-SA 4.0** 许可（禁止商用；改编作品须以相同
+许可发布；须署名 Pollen Robotics），见
+[`assets/robots/microduck/LICENSE-MODELS.pollen-robotics.md`](assets/robots/microduck/LICENSE-MODELS.pollen-robotics.md)。
+上游的 MJCF 机器人描述文件采用 Apache-2.0
+（[`LICENSE.pollen-robotics.txt`](assets/robots/microduck/LICENSE.pollen-robotics.txt)）。
 
 ## 仓库结构
 
@@ -314,6 +389,7 @@ src/microduck_rl_unilab/
 ├── assets.py                       # 冷路径资产物化（snapshot_download 兜底）
 ├── cli.py                          # microduck-train / microduck-eval：env var + --config-dir 注入
 ├── conf_searchpath.py              # Hydra SearchPathPlugin（测试/脚本的程序化 compose 用）
+├── deploy/runtime.py               # 机载运行时（只依赖 numpy + onnxruntime）
 ├── conf/
 │   ├── ppo/task/microduck_{velocity_flat,velstand_flat,standup_flat,ground_pick_flat,sitstand_flat,sprint_*_flat}/
 │   └── sac/task/microduck_velocity_flat/
@@ -324,13 +400,17 @@ src/microduck_rl_unilab/
         ├── manager_terms.py        # velocity command / 奖励 terms
         ├── sprint_terms.py         # sprint 速度/航向奖励与速度课程
         ├── recovery_terms.py       # velstand 跌倒恢复 terms
-        ├── standup_terms.py        # standup / ground_pick / sitstand terms
+        ├── standup_terms.py        # standup / ground_pick terms
+        ├── sitstand_terms.py       # 坐下 <-> 起立 指令任务的奖励项
         ├── bam_action.py           # BAM 电压驱动 action term
         ├── deploy_contract.py      # obs/action 维度契约
+        ├── symmetry.py             # 61 维接口的左右镜像
         ├── alignment_contract.py   # 上游 microduck_rl @ 29e887e 对齐契约表
         └── sim2real_notes.py       # sim2real 注意事项
 benchmark/                          # 吞吐实测（硬件、规模、对照）
+docs/DEPLOY.md, docs/ROADMAP.md     # 机载接口与运行时；路线图和各项状态
+docs/audits/                        # 目标角、Motrix、原地转向、高速、回差、高跷、坐下起立、坐姿挪动、摩擦、篮球、前滚翻、踢球等专项研究
 docs/media/                         # README 预览动图，从示例视频剪辑而来
 tests/                              # 迁移自 UniLab 的契约/对齐测试套件
-scripts/                            # 对齐审计 / 对比 / rollout 脚本
+scripts/                            # 训练驱动、评测、sim2sim 门槛、导出、部署闭环、审计脚本
 ```

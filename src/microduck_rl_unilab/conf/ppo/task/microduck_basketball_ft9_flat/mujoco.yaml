@@ -1,0 +1,20 @@
+# @package _global_
+# Basketball round 10: let the duck leave the ball centre enough to roll it.
+#
+# Round 9 (model_11992) tracks forward commands at a slope of about 0.44 and
+# holds 97-99% survival, but the centered reward (std 0.04 m, weight 2) pays
+# about 1.8 per step, which is a duck sitting within about 1 cm of the ball
+# centre. Rolling the ball needs a larger offset. Here the centered std goes
+# to 0.08 m. Tracking weights stay at round 9. Warm start from model_11992.
+defaults:
+  - /task/microduck_basketball_ft8_flat/mujoco
+  - _self_
+
+algo:
+  experiment_name: microduck_basketball_ft9
+  run_name: microduck_basketball_ft9
+
+reward:
+  centered:
+    params:
+      std: 0.08

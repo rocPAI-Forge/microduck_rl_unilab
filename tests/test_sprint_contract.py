@@ -37,6 +37,7 @@ from microduck_rl_unilab.tasks.microduck.sprint_terms import (
     running_spawn_progress,
     running_straightness_cost,
     running_stride_length,
+    track_yaw_rate,
     turn_in_place_curriculum,
 )
 from microduck_rl_unilab.tasks.microduck.manager_terms import (
@@ -688,6 +689,29 @@ def test_sprint_standturn_owner_adds_turn_in_place() -> None:
     assert twist.rel_standing_envs == pytest.approx(0.1)
 
 
+def test_sprint_standwide_owner_widens_servo_and_contact_randomization() -> None:
+    GlobalHydra.instance().clear()
+    with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
+        cfg = compose("config", overrides=["task=microduck_sprint_standwide_flat/mujoco"])
+    registry.ensure_registries()
+    env_cfg = registry.materialize_env_config("MicroduckSprintFlat")
+    apply_cfg_overrides(
+        env_cfg,
+        BackendAdapter(
+            cfg, root_dir=ROOT_DIR, algo_name="ppo"
+        ).build_task_env_cfg_override(),
+    )
+    env_cfg.validate()
+
+    action = env_cfg.actions["joint_pos"]
+    assert (action.delay_min_lag, action.delay_max_lag) == (2, 8)
+    assert list(action.friction_scale_range) == [0.75, 1.35]
+    assert action.clip_target_to_joint_limits is True
+    assert list(env_cfg.events["randomize_armature"].params["ranges"]) == [0.7, 1.4]
+    assert list(env_cfg.events["foot_friction"].params["ranges"]) == [0.6, 1.5]
+    assert env_cfg.commands["twist"].turn_in_place_fraction == pytest.approx(0.1)
+
+
 def test_sprint_pivot_owner_bridges_turns_down_to_a_pivot() -> None:
     GlobalHydra.instance().clear()
     with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
@@ -725,6 +749,46 @@ def test_sprint_pivotsym_owner_mirrors_the_61d_contract() -> None:
     )
     stages = cfg.env.curriculum.turn_in_place.params.stages
     assert stages[-1].lin_max == pytest.approx(0.0)
+
+
+def test_track_yaw_rate_ignores_roll_and_pitch_rates() -> None:
+    ang_vel = np.asarray([[0.0, 0.0, 0.4], [0.5, -0.5, 0.4], [0.0, 0.0, 0.0]], dtype=np.float32)
+    env = cast(
+        ManagerBasedRlEnv,
+        SimpleNamespace(
+            num_envs=3,
+            scene={"robot": SimpleNamespace(data=SimpleNamespace(root_link_ang_vel_b=ang_vel))},
+            command_manager=SimpleNamespace(
+                get_command=lambda name: np.asarray([[0.0, 0.0, 0.4]] * 3, dtype=np.float32)
+            ),
+        ),
+    )
+    reward = track_yaw_rate(env, std=0.35)
+    np.testing.assert_allclose(reward[:2], 1.0, rtol=1e-6)
+    assert reward[2] == pytest.approx(math.exp(-((0.4 / 0.35) ** 2)), rel=1e-5)
+
+
+def test_sprint_pivotyaw_owner_uses_the_yaw_only_fine_term() -> None:
+    GlobalHydra.instance().clear()
+    with initialize_config_dir(config_dir=str(CONF_DIR), version_base="1.3"):
+        cfg = compose("config", overrides=["task=microduck_sprint_pivotyaw_flat/mujoco"])
+    registry.ensure_registries()
+    env_cfg = registry.materialize_env_config("MicroduckSprintFlat")
+    apply_cfg_overrides(
+        env_cfg,
+        BackendAdapter(
+            cfg, root_dir=ROOT_DIR, algo_name="ppo"
+        ).build_task_env_cfg_override(),
+    )
+    env_cfg.validate()
+
+    fine = env_cfg.rewards["tracking_ang_vel_fine"]
+    assert fine.func is track_yaw_rate
+    assert fine.params["std"] == pytest.approx(0.35)
+    assert env_cfg.rewards["tracking_ang_vel"].weight == pytest.approx(12.0)
+    twist = env_cfg.commands["twist"]
+    assert twist.turn_in_place_fraction == pytest.approx(0.2)
+    assert twist.turn_in_place_ang_min == pytest.approx(0.1)
 
 
 def test_turn_in_place_bucket_draws_forward_speed_below_the_ceiling(

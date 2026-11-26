@@ -1,0 +1,174 @@
+# @package _global_
+# Roulade: forward roll over the flat top of the head, landing on the feet,
+# in one policy. Port of pollen-robotics/microduck_rl microduck_roulade_env_cfg
+# (develop; its fifth run), on the standup base and warm-started from the
+# published standup policy (examples/standup): the second half of a roulade is
+# the face-up get-up it already knows.
+#
+# Upstream's lessons, kept as designed (see roulade_terms.py):
+#   - rotation counts only while some geom touches the floor and the lateral
+#     axis stays near horizontal (no airborne whip, no shoulder roll);
+#   - progress pays increments of the running maximum, at most 5 rad/s, with a
+#     quadratic tax above 7 rad/s;
+#   - landing terms open after ~260 deg and only if the flat top of the head
+#     touched the floor in the first half of the roll;
+#   - after completion every step below standing height costs;
+#   - half the episodes start 50-340 deg into the roll, tucked, with forward
+#     angular velocity (reverse curriculum), shifting to standing starts;
+#   - action rate from step 0, impact and settle costs introduced later,
+#     mirror loss on.
+# Scene: the convex-hull ground-contact duck (4096 envs fit) with head and
+# whole-robot floor contact sensors (roulade_task.xml).
+defaults:
+  - /task/microduck_standup_flat/mujoco
+  - _self_
+
+algo:
+  num_envs: 4096
+  max_iterations: 3000
+  save_interval: 250
+  experiment_name: microduck_roulade
+  run_name: microduck_roulade
+  algorithm:
+    symmetry_cfg:
+      use_data_augmentation: false
+      use_mirror_loss: true
+      mirror_loss_coeff: 0.5
+      data_augmentation_func: microduck_rl_unilab.tasks.microduck.symmetry.microduck_velocity_symmetry
+
+env:
+  max_episode_seconds: 5.0
+  scene:
+    model_file: assets/robots/microduck/generated/scene_flat_groundcontact_bam_hull.xml
+    fragment_files: [assets/robots/microduck/roulade_task.xml]
+  events:
+    set_ground_state: null
+    push_robot: null
+    reset_roulade:
+      func: microduck_rl_unilab.tasks.microduck.roulade_terms.reset_roulade_state
+      mode: reset
+      params:
+        standing_prob: 0.5
+        midroll_prob: 0.5
+        tuck_overrides:
+          left_hip_pitch: -1.15
+          left_knee: 1.25
+          left_ankle: 1.05
+          neck_pitch: -1.0
+          head_pitch: 1.0
+          right_hip_pitch: 1.15
+          right_knee: -1.25
+          right_ankle: -1.05
+  curriculum:
+    ground_state_mix: null
+    head_pose_range: null
+    push_magnitude: null
+    head_pose_bias_weight: null
+    body_pose_tracking_weight: null
+    body_pose_range: null
+    height_stand_sharp_weight: null
+    upright_sharp_weight: null
+    standing_composite_weight: null
+    roulade_spawn_mix:
+      func: unilab.envs.mdp.event_curriculum
+      params:
+        event_name: reset_roulade
+        stages:
+          - {step: 0, params: {standing_prob: 0.50, midroll_prob: 0.50}}
+          - {step: 72000, params: {standing_prob: 0.65, midroll_prob: 0.35}}
+          - {step: 144000, params: {standing_prob: 0.80, midroll_prob: 0.20}}
+    action_rate_weight:
+      params:
+        stages:
+          - {step: 0, weight: -0.1}
+          - {step: 36000, weight: -0.2}
+          - {step: 72000, weight: -0.4}
+    arrival_damping_weight:
+      params:
+        stages:
+          - {step: 0, weight: 0.0}
+          - {step: 60000, weight: -0.025}
+          - {step: 84000, weight: -0.05}
+    torque_rate_weight:
+      params:
+        stages:
+          - {step: 0, weight: 0.0}
+          - {step: 60000, weight: -0.0005}
+          - {step: 84000, weight: -0.001}
+    gentle_landing_weight:
+      func: unilab.envs.mdp.reward_curriculum
+      params:
+        reward_name: gentle_rise
+        stages:
+          - {step: 0, weight: 0.002}
+          - {step: 60000, weight: 0.005}
+
+reward:
+  pose_stand_legs: null
+  head_pose_tracking: null
+  head_pose_bias: null
+  pose_stand_l1: null
+  height_stand: null
+  height_stand_sharp: null
+  height_stand_l1: null
+  com_upward_velocity: null
+  upright_linear: null
+  upright_sharp: null
+  standing_composite: null
+  body_pose_tracking: null
+  gentle_rise:
+    weight: 0.002
+  body_ang_vel:
+    weight: -0.002
+  angular_momentum:
+    weight: -0.001
+  self_collisions:
+    weight: -0.1
+  roulade_progress:
+    func: microduck_rl_unilab.tasks.microduck.roulade_terms.roulade_progress
+    weight: 8.0
+    params: {max_paid_rate: 5.0}
+  roulade_overspeed:
+    func: microduck_rl_unilab.tasks.microduck.roulade_terms.roulade_overspeed_penalty
+    weight: -0.1
+    params: {omega_max: 7.0}
+  roulade_head_pivot:
+    func: microduck_rl_unilab.tasks.microduck.roulade_terms.roulade_head_pivot
+    weight: 0.5
+  roulade_landing_composite:
+    func: microduck_rl_unilab.tasks.microduck.roulade_terms.roulade_landing_composite
+    weight: 4.0
+    params:
+      target_height: 0.115
+      height_std: 0.04
+      upright_std: 0.4
+      pose_std: 0.4
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+        joint_names: [left_hip_yaw, left_hip_roll, left_hip_pitch, left_knee, left_ankle, right_hip_yaw, right_hip_roll, right_hip_pitch, right_knee, right_ankle]
+        preserve_order: true
+  roulade_upright_after_roll:
+    func: microduck_rl_unilab.tasks.microduck.roulade_terms.roulade_upright_after_roll
+    weight: 1.5
+  roulade_height_after_roll:
+    func: microduck_rl_unilab.tasks.microduck.roulade_terms.roulade_height_after_roll
+    weight: 1.0
+  roulade_landing_sharp:
+    func: microduck_rl_unilab.tasks.microduck.roulade_terms.roulade_landing_sharp
+    weight: 2.0
+  roulade_stand_tax:
+    func: microduck_rl_unilab.tasks.microduck.roulade_terms.roulade_stand_tax
+    weight: 5.0
+  roulade_rise_velocity:
+    func: microduck_rl_unilab.tasks.microduck.roulade_terms.roulade_rise_velocity
+    weight: 0.75
+  roulade_sagittal:
+    func: microduck_rl_unilab.tasks.microduck.roulade_terms.roulade_sagittal_penalty
+    weight: -0.1
+  roulade_lateral_vel:
+    func: microduck_rl_unilab.tasks.microduck.roulade_terms.roulade_lateral_velocity_penalty
+    weight: -0.5
+  roulade_flatness:
+    func: microduck_rl_unilab.tasks.microduck.roulade_terms.roulade_flatness_penalty
+    weight: -0.5

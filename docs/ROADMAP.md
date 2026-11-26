@@ -1,0 +1,145 @@
+# Roadmap after 0.1.0
+
+The policy closest to hardware at 0.1.0 was
+[`sprint_straight_head`](../examples/sprint_straight_head/): servo-clamped
+position targets and the head over the trunk, but forward-only, with a speed
+command that started at 0.3 m/s, checked on MuJoCo only. The items below close
+those gaps first, then validate for hardware, then clean up infrastructure.
+
+Each item lists what "done" means. Training rounds use 2048 environments:
+on the current 8-core, 59 GB machine, 2048 environments already take about
+26 GB, 3072 ran slower (27.3k vs 29.8k steps/s), and 4096 ran out of memory.
+Decisions between close checkpoints use 512-environment batteries.
+
+**Where things stand (0.5.1).** Every item that does not need hardware is done
+or parked, except item 12, which is open. 0.4.0 added four simulation-only
+motion tasks (stilts, sit/stand, scooting, basketball), 0.5.0 the roulade, a
+tumble and ball dribbling, and 0.5.1 publishes checkpoints for all seven. None
+of them has a MotrixSim gate or a robot run. Item 5's hardware side is next, and its
+results decide whether items 8, 10, and 11 are reopened.
+
+## Status
+
+| Item | State | PR |
+|---|---|---|
+| 1. Steering | Merged | #7 |
+| 2. Standing and low speed | Merged | #8 |
+| 3. Cross-simulator check | Merged | #9 |
+| 4. Position-target audit | Merged | #6 |
+| 5. Deployment path | Software side merged (export, runtime, closed-loop check, robotd settings); hardware side open | #10, #15, #23 |
+| 6. MJWarp | Blocked: needs an NVIDIA GPU | — |
+| 7. Leftovers | Settled: SAC documented as failed, `steerfix` kept for reproduction; MJWarp tasks wait on item 6 | #19 |
+| 8. Turning in place (new) | Parked: left pivot only after four rounds; use the 0.5 m radius turn | #14, #21 |
+| 9. Motrix in the training loop (new) | Closed: train on MuJoCo only, Motrix is the held-out gate | #11 (closed, record), #13 (rule) |
+| 10. Top speed on Motrix (new) | Parked: wider randomization trades speed for Motrix margin | #18 |
+| 11. Gearbox backlash (new) | Parked: modeled; training on it fails the stiff-robot gate | #22 |
+| 12. Foot friction below 1.0 (new) | Open: found by scoot; fixed for scoot only, walking tasks need a retrain and the Motrix gate | #27 |
+
+**Simulator rule.** Sprint policies train on MuJoCo only. MotrixSim is held
+out for the sim2sim check (`scripts/sim2sim_check.py`), and a checkpoint is
+published only after it passes. Failures are fixed on the MuJoCo side.
+
+## Priority 1: complete the motion interface
+
+- [x] **1. Steering** (#7). `sprint_steer/model_55999` tracks ±0.2 and
+  ±0.4 rad/s yaw within about 0.05 rad/s at 0.3–1.0 m/s, with 97–100%
+  survival while turning. Turning was learned with the spawn-heading loop off
+  (`microduck_sprint_steer_flat`); mixing 30% loop-held episodes back in, with
+  the spawn-ray costs gated to those episodes (`microduck_sprint_steermix_flat`),
+  recovered most of the 1.0 m/s straight-line margin.
+- [x] **2. Standing and low speed** (#8). `sprint_stand/model_59000` holds a
+  zero command for 300 s at 99.8% survival with about 9 cm of drift and walks
+  0.15–1.0 m/s, keeping the steering. A 1.0 m/s command runs 0.88 m/s. It is
+  now the recommended starting point for hardware.
+- [ ] **8. Turning in place (new).** `model_59000` measures about 0 rad/s for
+  a yaw command at zero forward speed, so the heading loop cannot hold heading
+  while standing (6.5° mean drift over 300 s on MuJoCo). Ten percent
+  turn-in-place commands for 2000 iterations did not teach a pivot.
+  **Parked (#14).** Three more rounds (a forward-speed curriculum down to a
+  pivot, a longer stay at zero, then mirror symmetry) did not teach a pivot
+  either. A fourth (#21) found that the fine yaw-tracking term folds in the
+  roll and pitch rates that stepping makes, as upstream microduck_rl found;
+  with a yaw-only term it learned a left pivot only (+0.22 rad/s for 0.4) and
+  kept the slow turns. Turning around uses `[0.2, 0, ±0.4]`, a 0.5 m radius
+  turn at 100% survival on MuJoCo and MotrixSim. Revisit after the first
+  hardware run: the yaw-only term with mirror symmetry, a separate
+  stand-and-turn policy, or a foot-yaw reward.
+
+## Priority 2: validate for hardware
+
+- [x] **3. Cross-simulator check** (#9). The clamp-trained checkpoints
+  transfer to MotrixSim at 0–0.6 m/s (98.6–100% over 300 s), but not at
+  1.0 m/s (57–80%, against 93–97% on MuJoCo). Cap hardware commands near
+  0.6 m/s at first.
+- [x] **9. Motrix in the training loop (new), closed.** Motrix-only
+  fine-tuning moved the overfit to Motrix (MuJoCo 1.0 m/s survival fell to
+  7.4%), and alternating held 84–88% on both but spends the only held-out
+  simulator (#11, kept as a record). Decision (#13): train on MuJoCo only and
+  gate releases on Motrix over 0–0.6 m/s; 1.0 m/s is reported, not gated.
+- [ ] **10. Top speed on Motrix (new).** Under the simulator rule, close the
+  1.0 m/s gap (`sprint_stand`: 67.4% over 300 s on Motrix, 95.1% on MuJoCo)
+  from the MuJoCo side only, by widening the contact and servo randomization,
+  and check it with `scripts/sim2sim_check.py`. **Parked (#18).** A one-at-a-time
+  sweep showed the gait is most sensitive to armature, servo delay, servo gain,
+  and foot friction. Widening those raised 60 s Motrix survival at 1.0 m/s
+  from 85% to 92–94% only by slowing the gait to 0.76–0.82 m/s; heavier
+  top-speed tracking brought 0.85 m/s back and the margin with it
+  ([`audits/motrix_topspeed.md`](audits/motrix_topspeed.md)). Revisit after
+  hardware data; servo-gain randomization is untried.
+- [ ] **11. Gearbox backlash (new), parked (#22).** `scripts/add_backlash.py`
+  (after upstream microduck_rl) adds a passive ±1° hinge per servo. On it
+  `model_59000` loses 3.5–4 points of 60 s survival at 0–0.6 m/s and 22 at
+  1.0 m/s. Training on it recovers that but stands at 89.5% on MotrixSim,
+  below the gate ([`audits/backlash.md`](audits/backlash.md)). Next: train
+  across backlash amounts, then measure the real play on hardware.
+- [ ] **12. Foot friction randomization below 1.0 (new), open.** The floor's
+  1.0 friction wins MuJoCo's max-combination, so the walking tasks' 0.7–1.3
+  foot friction has only ever trained 1.0–1.3
+  ([`audits/friction_combination.md`](audits/friction_combination.md)).
+  Contact priority fixes it; applying it to sprint needs a retrain and the
+  Motrix gate.
+- [x] **4. Position-target audit** (#6). Only the sprint lineage leans on the
+  joint stops; the walk, stand-up, and get-up checkpoints finish their tasks
+  with the goal-position clamp on. None needs retraining.
+- [ ] **5. Deployment path** (#10, #15, and #23 for the software side).
+  - [x] ONNX export with an onnxruntime check: largest action difference
+    2.4e-6 over 8000 observations.
+  - [x] `deploy_manifest.json` and `docs/DEPLOY.md`: observation and action
+    order, units, clamp, rate, commands, training noise and delay, known
+    limits.
+  - [x] Reference onboard runtime (`microduck_rl_unilab.deploy`, numpy and
+    onnxruntime only), run closed-loop on MuJoCo and MotrixSim by
+    `scripts/deploy_sim_loop.py`: observation within 1e-6 of the training
+    contract, 100% survival standing, walking straight, and turning around.
+  - [x] Pollen's `robotd` builds the same 61-D observation; `docs/DEPLOY.md`
+    gives the `[policy]` settings that run the policy as trained (its default
+    action scale and low-pass slow every gait by 7–15%). Open on the robot:
+    the target clamp, which `robotd` does not apply.
+  - [ ] Calibrate the IMU and servo noise and delay envelopes on hardware.
+  - [ ] First on-robot run.
+
+## Priority 3: infrastructure and leftovers
+
+- [ ] **6. MJWarp (GPU physics).** Blocked on this machine. `warp-lang`
+  1.19 sees only the CPU next to the Radeon AI PRO R9700; Warp's GPU backend
+  is CUDA-only. Both MJWarp tests require "an active CUDA Warp device". This
+  needs an NVIDIA machine.
+- [x] **7. Leftovers, settled (#19).**
+  - Velocity SAC trains but falls repeatedly at inference. The code stays and
+    the READMEs list it as failed validation; no SAC policy is published.
+  - `microduck_sprint_steerfix_flat` is the first stage of the
+    `sprint_straight_long` reproduce chain, so it stays; it has no separate
+    weights.
+  - `microduck_ground_pick_flat` is MJWarp-only and waits on item 6.
+    `microduck_sitstand_flat` now also runs the full upstream recipe on
+    MuJoCo ([`audits/sitstand.md`](audits/sitstand.md)): one policy sits
+    85–89% and stands 97% on command, upright, but drops the last ~4 cm onto
+    the seat.
+
+## Open questions
+
+- No MicroDuck is available yet (2026-11-16). Item 5's hardware side, and
+  the bring-up checklist in #16, wait on one.
+- On hardware, which simulator does the robot resemble more? That decides
+  whether item 10 matters and whether item 8 is worth reopening. How much
+  backlash do its servos have? That sizes item 11.

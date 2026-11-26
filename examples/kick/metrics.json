@@ -1,0 +1,98 @@
+{
+  "label": "kick",
+  "task": "MicroduckKickFlat",
+  "train_owner": "microduck_kick_flat/mujoco",
+  "checkpoint": "examples/kick/model_60499.pt",
+  "source_run": "2026-11-20_13-52-32_mujoco",
+  "source_iteration": 60499,
+  "initialization": "examples/sprint_stand/model_59000.pt",
+  "training": {
+    "backend": "mujoco",
+    "num_envs": 2048,
+    "completed_iterations": 1500
+  },
+  "playback": {
+    "video": "examples/kick/play_video.mp4",
+    "duration_s": 12
+  },
+  "evaluation": {
+    "script": "scripts/eval_kick.py",
+    "pushes": false,
+    "runs": [
+      {
+        "owner": "microduck_kick_flat/mujoco",
+        "num_envs": 256,
+        "seed": 101,
+        "duration_s": 12.0,
+        "survival": 1.0,
+        "touched": 0.9921875,
+        "ball_along_goal_m_median_all": 1.262207454361839,
+        "ball_along_goal_m_median_survivors": 1.262207454361839,
+        "ball_past_0p5m_all": 0.609375,
+        "ball_across_goal_m_mean_abs": 0.223420644100893
+      },
+      {
+        "owner": "microduck_kick_flat/mujoco",
+        "num_envs": 256,
+        "seed": 202,
+        "duration_s": 12.0,
+        "survival": 0.99609375,
+        "touched": 0.9765625,
+        "ball_along_goal_m_median_all": 1.0210270546210434,
+        "ball_along_goal_m_median_survivors": 1.0282811662581133,
+        "ball_past_0p5m_all": 0.56640625,
+        "ball_across_goal_m_mean_abs": 0.2258384609152963
+      },
+      {
+        "owner": "microduck_kick_flat/mujoco",
+        "num_envs": 256,
+        "seed": 303,
+        "duration_s": 12.0,
+        "survival": 1.0,
+        "touched": 0.98828125,
+        "ball_along_goal_m_median_all": 1.414198410094706,
+        "ball_along_goal_m_median_survivors": 1.414198410094706,
+        "ball_past_0p5m_all": 0.67578125,
+        "ball_across_goal_m_mean_abs": 0.22599832324232205
+      }
+    ],
+    "baseline_untrained_sprint_stand": [
+      {
+        "owner": "microduck_kick_flat/mujoco",
+        "num_envs": 256,
+        "seed": 101,
+        "duration_s": 12.0,
+        "survival": 0.6640625,
+        "touched": 0.90234375,
+        "ball_along_goal_m_median_all": 1.055108731794951,
+        "ball_along_goal_m_median_survivors": 2.250576782546772,
+        "ball_past_0p5m_all": 0.5859375,
+        "ball_across_goal_m_mean_abs": 0.4552981080837905
+      },
+      {
+        "owner": "microduck_kick_flat/mujoco",
+        "num_envs": 256,
+        "seed": 202,
+        "duration_s": 12.0,
+        "survival": 0.703125,
+        "touched": 0.921875,
+        "ball_along_goal_m_median_all": 1.2148993305381026,
+        "ball_along_goal_m_median_survivors": 2.1577829797064125,
+        "ball_past_0p5m_all": 0.56640625,
+        "ball_across_goal_m_mean_abs": 0.3693394161268069
+      },
+      {
+        "owner": "microduck_kick_flat/mujoco",
+        "num_envs": 256,
+        "seed": 303,
+        "duration_s": 12.0,
+        "survival": 0.7109375,
+        "touched": 0.94921875,
+        "ball_along_goal_m_median_all": 1.5480349043079027,
+        "ball_along_goal_m_median_survivors": 2.2931605315591757,
+        "ball_past_0p5m_all": 0.6484375,
+        "ball_across_goal_m_mean_abs": 0.45530171492036864
+      }
+    ]
+  }
+}

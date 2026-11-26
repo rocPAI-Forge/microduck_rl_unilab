@@ -1,0 +1,14 @@
+# @package _global_
+# MuJoCo evaluation owner on the backlash robot: every servo joint drives its
+# link through a passive +-1 deg hinge (scripts/add_backlash.py, after upstream
+# pollen-robotics/microduck_rl). BAM drives and the encoder reads the servo
+# side, so the 61-D observation is unchanged.
+defaults:
+  - /task/microduck_sprint_straightspeed_flat/mujoco
+  - _self_
+
+env:
+  scene:
+    model_file: assets/robots/microduck/scene_flat_bam_backlash.xml
+    fragment_files:
+      - assets/robots/microduck/locomotion_task_backlash.xml

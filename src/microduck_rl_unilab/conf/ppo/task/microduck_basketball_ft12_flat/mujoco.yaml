@@ -1,0 +1,16 @@
+# @package _global_
+# Basketball round 12, stage 2 of the forward-command curriculum.
+#
+# Stage 1 (ft11, model_12990) trained at forward +-0.20 with switching. At
+# its own range it survives 70% at 60 s, the same as round 10 (72%), so
+# narrowing the range did not by itself teach the transition. Stage 2 restores
+# forward +-0.30 from stage 1, keeping lateral +-0.2 and yaw +-1.0 from the
+# owner. Warm start from ft11 model_12990; max_iterations counts additional
+# iterations.
+defaults:
+  - /task/microduck_basketball_ft9_flat/mujoco
+  - _self_
+
+algo:
+  experiment_name: microduck_basketball_ft12
+  run_name: microduck_basketball_ft12

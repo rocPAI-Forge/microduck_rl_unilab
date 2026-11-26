@@ -1,0 +1,34 @@
+# @package _global_
+# Basketball round 3: a short fine-tune of round 2 that widens the commands
+# and strengthens speed tracking.
+#
+# Round 2 (model_8998) balances on a free ball (92% at 10 s, 72% at 60 s) but
+# does not follow the twist command: it drifts forward at about 0.055 m/s
+# whatever is commanded, and its yaw error stays near 0.8 rad/s. Here:
+#   - the twist ranges are doubled to the playground's evaluation scale
+#     (forward +-0.30, lateral +-0.20, yaw +-1.0 rad/s);
+#   - speed tracking is 2.5x round 2's weights (linear 2.5, angular 1.25).
+# Everything else (action-rate -0.2, hold levels 0.1/0.03/0, pushes) is
+# inherited from round 2. Warm start from round 2 model_8998; max_iterations
+# counts additional iterations, so 500 gives about 9498.
+defaults:
+  - /task/microduck_basketball_ft_flat/mujoco
+  - _self_
+
+algo:
+  experiment_name: microduck_basketball_ft2
+  run_name: microduck_basketball_ft2
+
+env:
+  commands:
+    twist:
+      ranges:
+        lin_vel_x: [-0.30, 0.30]
+        lin_vel_y: [-0.20, 0.20]
+        ang_vel_z: [-1.0, 1.0]
+
+reward:
+  tracking_lin_vel:
+    weight: 2.5
+  tracking_ang_vel:
+    weight: 1.25

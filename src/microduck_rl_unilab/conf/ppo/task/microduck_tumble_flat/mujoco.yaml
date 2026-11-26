@@ -1,0 +1,46 @@
+# @package _global_
+# Forward tumble and get up, in one policy.
+#
+# microduck_roll_flat (round 1, model_16498) tumbles forward a full turn in
+# about 0.8 s (a fast whole-body tumble, not upstream's over-the-head roulade)
+# and then lies curled; getting up took a switch to the standup policy. Here the
+# same policy is also paid to stand up afterwards, with terms gated on the
+# completed turn (after upstream's roulade landing set): the standing composite
+# score, linear upright, upward velocity, and a tax on every step below standing
+# height. roll_settle (paid for lying still after the turn) is off and
+# roll_complete is cut to 1.0. Warm start from model_16498.
+defaults:
+  - /task/microduck_roll_flat/mujoco
+  - _self_
+
+algo:
+  max_iterations: 1500
+  experiment_name: microduck_tumble
+  run_name: microduck_tumble
+
+reward:
+  roll_settle: null
+  roll_complete:
+    weight: 1.0
+  roll_landing_composite:
+    func: microduck_rl_unilab.tasks.microduck.roll_terms.roll_landing_composite
+    weight: 4.0
+    params:
+      target_height: 0.115
+      height_std: 0.04
+      upright_std: 0.4
+      pose_std: 0.4
+      asset_cfg:
+        _target_: unilab.managers.SceneEntityCfg
+        name: robot
+        joint_names: [left_hip_yaw, left_hip_roll, left_hip_pitch, left_knee, left_ankle, right_hip_yaw, right_hip_roll, right_hip_pitch, right_knee, right_ankle]
+        preserve_order: true
+  roll_upright_after:
+    func: microduck_rl_unilab.tasks.microduck.roll_terms.roll_upright_after
+    weight: 1.5
+  roll_stand_tax:
+    func: microduck_rl_unilab.tasks.microduck.roll_terms.roll_stand_tax
+    weight: 5.0
+  roll_rise_velocity:
+    func: microduck_rl_unilab.tasks.microduck.roll_terms.roll_rise_velocity
+    weight: 0.75

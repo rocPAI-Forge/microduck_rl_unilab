@@ -1,0 +1,28 @@
+# @package _global_
+# Scoot straight, and backward.
+#
+# The first scoot round sat still at every backward command (0.00 m/s for
+# -0.05 and -0.10) and spun at -0.7 to -0.9 rad/s while scooting forward. The
+# playground hit both on its undocking runs and added two options, both on
+# here: 30% of the resamples drive straight (no turn, |vx| >= 0.02 m/s, 75%
+# backward), and a linear yaw-rate cost where the narrow Gaussian has gone flat.
+defaults:
+  - /task/microduck_scoot_flat/mujoco
+  - _self_
+
+algo:
+  experiment_name: microduck_scoot_straight
+  run_name: microduck_scoot_straight
+
+env:
+  commands:
+    twist:
+      straight_fraction: 0.3
+      straight_min_speed: 0.02
+      straight_backward_prob: 0.75
+
+reward:
+  yaw_rate_l1:
+    func: microduck_rl_unilab.tasks.microduck.scoot_terms.yaw_rate_error_l1
+    weight: 1.0
+    params: {command_name: twist}
