@@ -179,6 +179,46 @@ Two gaps remain on the robot side:
 - **Straight-line hold.** `robotd` passes the pad's yaw command through; the
   heading hold above lives in the reference runtime only.
 
+## Switching policies
+
+Upstream microduck_rl's robot runs one walking policy and hot-swaps one-shot
+tricks behind a shared 61-D observation, handing back to the walk policy when
+the trick ends. These exports share the joint order, default pose, action scale
+and control period with `sprint_stand`, so the reference runtime can do the same:
+
+| Export | Policy | Command |
+|---|---|---|
+| [`examples/velstand_getup/deploy/`](../examples/velstand_getup/deploy/) | walk and recover; holds the robot between tricks | stand |
+| [`examples/ballkick/deploy_right/`](../examples/ballkick/deploy_right/), [`deploy_left/`](../examples/ballkick/deploy_left/) | ball kick (upstream's policies) | stand |
+| [`examples/roulade/deploy/`](../examples/roulade/deploy/) | roulade | stand |
+| [`examples/sitstand/deploy/`](../examples/sitstand/deploy/) | sit and stand | `Command.walk(1.0)` sits, `Command.stand()` stands |
+| [`examples/tumble/deploy/`](../examples/tumble/deploy/) | tumble and get up | stand |
+
+A new `Controller` takes over from the running one with
+`next.take_over(previous, command)`. The last action stays in the observation,
+as one shared buffer would keep it, and the heading hold restarts.
+
+`scripts/deploy_switch_sim.py` rehearses it on one simulated robot: the
+ground-contact duck with a ball in front of its right foot. Every action comes
+from the runtime. The default sequence is stand, kick, stand, roulade, stand,
+sit, stand up, stand, tumble, stand (25.5 s). 32 envs, seeds 101 / 202 / 303:
+
+| Segment | Result |
+|---|---|
+| Kick (right) | peak ball speed 1.01–1.10 m/s; standing after 97–100% |
+| Roulade | full turn 97–100%; standing after 97–100% |
+| Sit, then stand up | seated 75–88%; standing after 91–100% |
+| Tumble | full turn 100%; standing after 100% |
+| End of the sequence | standing 100% |
+
+```bash
+uv run --no-sync scripts/make_ballkick_scene.py
+uv run --no-sync scripts/deploy_switch_sim.py --num-envs 32 --seed 101 --video switch.mp4
+```
+
+The tricks are simulation results: none has a MotrixSim check or a robot run,
+so they are not cleared for hardware the way `sprint_stand` is.
+
 ## Known limits
 
 - **Top speed is simulator-dependent.** At 0–0.6 m/s the policy behaves the
@@ -204,6 +244,14 @@ Two gaps remain on the robot side:
   0–0.6 m/s and 22 points at 1.0 m/s on MuJoCo
   ([`audits/backlash.md`](audits/backlash.md)). Measure the real play before
   trusting the higher speeds.
+- **`sprint_stand` assumes the walking model.** It was trained on a robot
+  whose only floor contacts are the feet. On the ground-contact model, where
+  the legs, hips and head shell also collide, 25–31% of envs fall within 2 s
+  of standing still (`scripts/deploy_switch_sim.py --sequence sprint_stand`),
+  against 100% for 5 s on its own model. `velstand_getup`, trained on the
+  ground-contact model, stands 100% there, which is why the rehearsal uses it.
+  The real robot collides everywhere, so check standing with the harness on
+  before anything else.
 - The noise and delay envelopes above have not been calibrated against
   hardware.
 - No turning in place; heading drifts about 6.5° over 300 s while standing

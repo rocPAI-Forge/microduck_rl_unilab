@@ -151,3 +151,18 @@ def test_straight_command_needs_a_heading() -> None:
     assert controller.last_obs is not None
     assert controller.last_obs[48] == pytest.approx(0.6)
     assert controller.last_obs[50] == pytest.approx(0.0, abs=1e-6)
+
+
+def test_take_over_keeps_the_last_action_and_restarts_the_heading_hold() -> None:
+    roulade_dir = Path(__file__).resolve().parents[1] / "examples" / "roulade" / "deploy"
+    walk = Controller(DEPLOY_DIR)
+    walk.set_command(Command.straight(0.3), heading=0.2)
+    reading = _reading(walk.manifest)
+    walk.step(reading, heading=0.2)
+    roll = Controller(roulade_dir)
+    roll.take_over(walk)
+    assert not roll.heading_hold.active
+    np.testing.assert_array_equal(roll.observations.last_action, walk.observations.last_action)
+    roll.step(reading)
+    np.testing.assert_array_equal(roll.last_obs[34:48], walk.observations.last_action)
+    np.testing.assert_array_equal(roll.last_obs[48:51], np.zeros(3, dtype=np.float32))

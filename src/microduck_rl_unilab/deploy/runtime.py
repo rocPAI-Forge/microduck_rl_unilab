@@ -257,6 +257,24 @@ class Controller:
         self._command = Command.stand()
         self._previous_targets = None
 
+    def take_over(self, previous: Controller, command: Command | None = None) -> None:
+        """Hand the robot over from ``previous`` (a policy switch).
+
+        The observation's last-action slot keeps ``previous``'s last action, so
+        the new policy's first observation is the one a single shared buffer
+        would give. The heading hold restarts. Policies must share the joint
+        order and default pose; their manifests are checked.
+        """
+        mine, theirs = self.manifest, previous.manifest
+        if mine.joint_names != theirs.joint_names or not np.allclose(
+            mine.default_joint_pos, theirs.default_joint_pos
+        ):
+            raise ValueError("take_over needs the same joint order and default pose")
+        self.observations.last_action = previous.observations.last_action.copy()
+        self._previous_targets = None if previous._previous_targets is None else previous._previous_targets.copy()
+        self.heading_hold = HeadingHold()
+        self._command = Command.stand() if command is None else command
+
     def set_command(
         self,
         command: Command,

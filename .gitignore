@@ -16,3 +16,6 @@ train_*.log
 
 # Stilt stages written by scripts/make_stilt_robot.py
 assets/robots/microduck/generated/
+
+# TorchScript copies written by scripts/export_policy.py; not needed onboard
+examples/*/deploy*/policy.pt
