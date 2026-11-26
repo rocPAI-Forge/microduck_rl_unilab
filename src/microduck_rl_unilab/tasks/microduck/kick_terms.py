@@ -150,6 +150,41 @@ def reset_kick(
     _state(env).goal[ids] = yaw + np.radians(rng.uniform(-goal_angle_deg, goal_angle_deg, size=n))
 
 
+def reset_ballkick(
+    env: ManagerBasedRlEnv,
+    env_ids: np.ndarray | None,
+    foot: str = "right",
+    offset_x: float = 0.09,
+    offset_abs_y: float = 0.042,
+    noise_xy: float = 0.015,
+    ball_radius: float = 0.035,
+    robot_cfg: SceneEntityCfg | None = None,
+    ball_cfg: SceneEntityCfg | None = None,
+) -> None:
+    """Ball just in front of the kicking foot, in the robot's staged yaw frame
+    (after upstream microduck_rl's ball-kick reset); the goal is the robot's
+    heading. Run after the events that stage the robot's root pose."""
+    if foot not in ("right", "left"):
+        raise ValueError(f"reset_ballkick foot must be 'right' or 'left', got {foot!r}")
+    ids = resolve_env_ids(env, env_ids)
+    if ids.size == 0:
+        return
+    robot = cast("Entity", env.scene[(robot_cfg or SceneEntityCfg("robot")).name])
+    ball = cast("Entity", env.scene[(ball_cfg or SceneEntityCfg("ball")).name])
+    n, dtype, rng = ids.size, get_global_dtype(), env.rng
+    pose = np.asarray(robot.read_reset_root_pose(env_ids=ids), dtype=np.float64)
+    w, x, y, z = pose[:, 3], pose[:, 4], pose[:, 5], pose[:, 6]
+    yaw = np.arctan2(2.0 * (w * z + x * y), 1.0 - 2.0 * (y * y + z * z))
+    local = np.tile([offset_x, -offset_abs_y if foot == "right" else offset_abs_y], (n, 1))
+    local += rng.uniform(-noise_xy, noise_xy, size=(n, 2))
+    xy = pose[:, :2] + _rotate_to_heading(local, -yaw)
+    origins_z = np.asarray(env.scene.env_origins, dtype=np.float64)[ids, 2:3]
+    ball_pose = np.concatenate((xy, origins_z + ball_radius + 0.001, np.tile([1.0, 0.0, 0.0, 0.0], (n, 1))), axis=1)
+    ball.write_root_link_pose_to_sim(ball_pose.astype(dtype), env_ids=ids)
+    ball.write_root_link_velocity_to_sim(np.zeros((n, 6), dtype=dtype), env_ids=ids)
+    _state(env).goal[ids] = yaw
+
+
 # --- observation --------------------------------------------------------------------
 
 
@@ -198,5 +233,6 @@ __all__ = [
     "kick_ball_obs",
     "kick_ball_off_goal",
     "kick_ball_velocity",
+    "reset_ballkick",
     "reset_kick",
 ]

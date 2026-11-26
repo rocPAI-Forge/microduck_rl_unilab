@@ -1,7 +1,8 @@
 # Ball kicking: a dribble on the sprint gait
 
 Result: the duck walks to a free ball and dribbles it along a goal direction
-without falling; it does not strike the ball. Checkpoint
+without falling; it does not strike the ball. A real kick from a standing start
+is upstream's policy (below and `examples/ballkick/`). Checkpoint
 `examples/kick/model_60499.pt`, owner `microduck_kick_flat/mujoco`.
 
 ## Design
@@ -59,10 +60,17 @@ its ground-contact model (legs collide) with a 70 mm, 15 g ball and a
 ball-blind actor. A real kick here would need that model, which the
 `sprint_stand` gait was not trained on.
 
-## Open
+## A striking kick: upstream's policy
 
-- A striking kick: upstream's ground-contact recipe, or its published
-  `ball_kick_left/right.onnx` checked in this scene first, the same way the
-  roulade was (`docs/audits/roulade.md`).
+Upstream's published `ball_kick_right/left.onnx` run in a matching scene here
+(`microduck_ballkick_flat`, `scripts/make_ballkick_scene.py`: the
+ground-contact hull duck and a 70 mm, 15 g ball 9 cm ahead of the kicking
+foot), unchanged. 256 envs, 4 s, three seeds: kicked 99.2-100%, peak ball speed
+1.28-1.33 m/s, the ball 4 m forward and 0.5-0.8 m sideways, the duck standing
+at the end 98-100%. Converted with `scripts/onnx_to_rsl_rl.py`, they are
+published as [`examples/ballkick/`](../../examples/ballkick/). The dribble
+above stays: it walks to the ball, the kick does not.
+
+## Open
 - Goal directions beyond +-30 deg of the spawn heading, and walking around a
   ball that is on the wrong side (the pursuit target can pass through the ball).

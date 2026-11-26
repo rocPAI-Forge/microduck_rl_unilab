@@ -6,6 +6,14 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
 
 ## Unreleased
 
+- A real ball kick (`examples/ballkick/`): upstream microduck_rl's published
+  `ball_kick_right/left.onnx`, converted and not retrained, in a matching scene
+  (`microduck_ballkick_flat`, `scripts/make_ballkick_scene.py`: ground-contact
+  duck, 70 mm / 15 g ball, `reset_ballkick`). From standing: kicked 99.2–100%,
+  peak ball speed about 1.3 m/s, 98–100% standing after. `scripts/eval_ballkick.py`
+  scores a checkpoint or an ONNX.
+- CI: GitHub Actions runs the test suite on every PR and push to main (CPU
+  torch); the MJWarp smoke tests skip without `mujoco-warp`.
 - `docs/HARDWARE_BRINGUP.md` and `scripts/hardware_bringup.py` check the
   robot side before the first policy step: static IMU, IMU axes and signs,
   default pose (zero offsets, swapped IDs), per-joint direction with a by-eye

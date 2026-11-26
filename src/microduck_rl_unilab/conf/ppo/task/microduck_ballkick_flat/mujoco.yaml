@@ -1,0 +1,49 @@
+# @package _global_
+# Ball kick with the ground-contact duck, after upstream microduck_rl's
+# BallKick (microduck_ball_kick_env_cfg.py, develop, Apache-2.0).
+#
+# The duck starts standing with a 70 mm, 15 g ball just in front of the
+# kicking foot (9 cm ahead, 4.2 cm to the side, +-1.5 cm) and should kick it
+# forward along its heading. The actor is ball-blind, as upstream: the operator
+# aims the robot. Unlike microduck_kick_flat (walking model, soles only), the
+# legs collide with the ball, so a strike is possible.
+#
+# This owner is the scene, reset and observation layout for running upstream's
+# published ball_kick_right/left.onnx (scripts/eval_ballkick.py); it keeps the
+# standup reward set and adds no kick reward. Scene: scripts/make_ballkick_scene.py.
+defaults:
+  - /task/microduck_standup_flat/mujoco
+  - _self_
+
+training:
+  task_name: MicroduckKickFlat
+
+algo:
+  experiment_name: microduck_ballkick
+  run_name: microduck_ballkick
+
+env:
+  max_episode_seconds: 5.0
+  scene:
+    model_file: assets/robots/microduck/generated/scene_ballkick.xml
+    fragment_files: [assets/robots/microduck/generated/locomotion_task_ballkick.xml]
+    entities:
+      ball:
+        root_body_name: ball
+        body_names: [ball]
+  events:
+    set_ground_state:
+      params:
+        face_down_prob: 0.0
+        face_up_prob: 0.0
+        sitting_prob: 0.0
+        standing_prob: 1.0
+    push_robot: null
+    reset_ballkick:
+      func: microduck_rl_unilab.tasks.microduck.kick_terms.reset_ballkick
+      mode: reset
+      params:
+        foot: right
+  curriculum:
+    ground_state_mix: null
+    push_magnitude: null

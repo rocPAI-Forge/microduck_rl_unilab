@@ -71,7 +71,7 @@ owner 配置和机器人 XML 资产。
 
 ### 0.4.0 起新增的动作（仅仿真）
 
-又新增了七个动作，都还没做 MotrixSim 验证，也没上过真机。点击动画进入对应的示例目录（权重、指标、复现命令），示例里再链接到研究记录。
+又新增了八个动作，都还没做 MotrixSim 验证，也没上过真机。点击动画进入对应的示例目录（权重、指标、复现命令），示例里再链接到研究记录。
 
 <table>
   <tr>
@@ -114,7 +114,11 @@ owner 配置和机器人 XML 资产。
       <b>翻滚起身</b>（<code>microduck_tumble_flat</code>）<br>
       0.56 秒快速向前翻滚后站起，100%；2 倍慢放
     </td>
-    <td></td>
+    <td align="center">
+      <a href="examples/ballkick/"><img src="docs/media/ballkick.gif" width="260" alt="踢球"></a><br>
+      <b>踢球</b>（<code>microduck_ballkick_flat</code>）<br>
+      把 70 mm 的球以 1.3 m/s 向前踢出并站稳，99–100%；上游策略；2 倍慢放
+    </td>
     <td></td>
   </tr>
 </table>
@@ -157,6 +161,7 @@ uv run --no-sync scripts/sim2sim_check.py examples/sprint_stand/model_59000.pt
 | `microduck_scoot_flat`、`microduck_scoot_straight_flat`、`microduck_scoot_sym_flat`（坐姿挪动；[研究记录](docs/audits/scoot.md)、[示例](examples/scoot/)） | mujoco | — |
 | `microduck_basketball_flat` 及其续训 owner `microduck_basketball_ft_flat` … `ft12_flat`（在自由球上平衡；[研究记录](docs/audits/basketball.md)、[示例](examples/basketball/)） | mujoco | — |
 | `microduck_roulade_flat`（过头顶的前滚翻；[研究记录](docs/audits/roulade.md)、[示例](examples/roulade/)）、`microduck_roll_flat`、`microduck_tumble_flat`（[示例](examples/tumble/)） | mujoco | — |
+| `microduck_ballkick_flat`（站立踢球，上游策略；[示例](examples/ballkick/)） | mujoco | — |
 | `microduck_kick_flat`（在 `sprint_stand` 步态上带球；[研究记录](docs/audits/kick.md)、[示例](examples/kick/)） | mujoco | — |
 | `microduck_ground_pick_flat` | mjwarp | — |
 
@@ -181,6 +186,7 @@ uv run --no-sync scripts/sim2sim_check.py examples/sprint_stand/model_59000.pt
 | `microduck_basketball_flat` PPO（`ft9` owner） | 部分完成。小指令下在自由球上 60 秒存活 98–99%；playground 协议下 3.5%（[研究记录](docs/audits/basketball.md)） | [`examples/basketball/model_12491.pt`](examples/basketball/model_12491.pt) / [`play_video.mp4`](examples/basketball/play_video.mp4) |
 | `microduck_roulade_flat` PPO | 仿真中完成。以头顶为支点前滚翻并用脚落地：三个种子下从站立出发 100% 成功，1.04 秒站起。由上游发布的 `roulade.onnx` 微调而来；我们自己的训练没能翻过头顶（[研究记录](docs/audits/roulade.md)） | [`examples/roulade/model_999.pt`](examples/roulade/model_999.pt) / [`play_video.mp4`](examples/roulade/play_video.mp4) |
 | `microduck_tumble_flat` PPO | 仿真中完成。0.56 秒快速向前翻滚后站起：三个种子下 100%。这不是 roulade | [`examples/tumble/model_17997.pt`](examples/tumble/model_17997.pt) / [`play_video.mp4`](examples/tumble/play_video.mp4) |
+| `microduck_ballkick_flat`（上游策略） | 仿真中完成。从站立出发把 70 mm 的球以 1.3 m/s 向前踢出并重新站稳：左右脚踢中 99.2–100%，站立 98–100%。上游发布的策略经转换，未重新训练（[研究记录](docs/audits/kick.md)） | [`examples/ballkick/model_right.pt`](examples/ballkick/model_right.pt) / [`play_video_right.mp4`](examples/ballkick/play_video_right.mp4) |
 | `microduck_kick_flat` PPO | 部分完成。沿目标方向带球（12 秒内中位 1.0–1.4 m，存活 99.6–100%），不会抽射（[研究记录](docs/audits/kick.md)） | [`examples/kick/model_60499.pt`](examples/kick/model_60499.pt) / [`play_video.mp4`](examples/kick/play_video.mp4) |
 | `microduck_velocity_flat` SAC | **未通过**；5000 轮训练完成，但推理反复倒地重置，不能作为成品策略。失败样本留在本地 `logs/`，不入库 | — |
 | `sprint_speed_1p68` PPO | 完成，约 1.68 m/s。Sprint 不是上游 microduck_rl 的官方任务，是本仓库独有的冲刺步态 | [`examples/sprint_speed_1p68/model_11997.pt`](examples/sprint_speed_1p68/model_11997.pt) |
