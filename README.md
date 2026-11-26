@@ -146,7 +146,10 @@ only, checked closed-loop on both simulators), and the known sim-to-real
 limits. The same ONNX loads unchanged into Pollen's onboard daemon `robotd`;
 the guide lists the `[policy]` settings that run it as trained. No on-robot
 run has been done yet; before the first one, go through
-[`docs/HARDWARE_BRINGUP.md`](docs/HARDWARE_BRINGUP.md).
+[`docs/HARDWARE_BRINGUP.md`](docs/HARDWARE_BRINGUP.md). The roulade,
+tumble, sit/stand and kick policies are exported too, and
+`scripts/deploy_switch_sim.py` rehearses switching between them on one
+simulated robot ([Switching policies](docs/DEPLOY.md#switching-policies)).
 
 ## Version
 

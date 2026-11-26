@@ -6,6 +6,13 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
 
 ## Unreleased
 
+- Policy switching (`docs/DEPLOY.md#switching-policies`): ONNX exports for
+  velstand, the roulade, the tumble, sit/stand and both kicks;
+  `Controller.take_over` hands over with the last action kept; and
+  `scripts/deploy_switch_sim.py` rehearses stand → kick → roulade → sit/stand
+  → tumble on one simulated ground-contact robot (kick 1.0–1.1 m/s, roulade
+  97–100%, tumble 100%, standing 100% at the end, three seeds). It also found
+  that `sprint_stand` falls 25–31% within 2 s on the ground-contact model.
 - A real ball kick (`examples/ballkick/`): upstream microduck_rl's published
   `ball_kick_right/left.onnx`, converted and not retrained, in a matching scene
   (`microduck_ballkick_flat`, `scripts/make_ballkick_scene.py`: ground-contact
