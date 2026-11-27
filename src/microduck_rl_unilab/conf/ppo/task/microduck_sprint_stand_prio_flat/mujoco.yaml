@@ -1,0 +1,28 @@
+# @package _global_
+# sprint_stand with foot friction that takes effect (roadmap item 12).
+#
+# Every walking owner randomizes foot friction 0.7-1.3, but the floor's 1.0
+# wins MuJoCo's max-combination at equal priority, so no walking policy has
+# seen a floor contact below 1.0 (docs/audits/friction_combination.md). Here
+# the robot's collision geoms sit at contact priority 1
+# (scripts/make_prio_walk_robot.py), so their friction governs, and the range
+# widens to 0.4-1.3. Everything else is sprint_stand. Warm start from
+# examples/sprint_stand/model_59000.pt; max_iterations counts additional
+# iterations.
+defaults:
+  - /task/microduck_sprint_stand_flat/mujoco
+  - _self_
+
+algo:
+  max_iterations: 3000
+  save_interval: 250
+  experiment_name: microduck_sprint_stand_prio
+  run_name: microduck_sprint_stand_prio
+
+env:
+  scene:
+    model_file: assets/robots/microduck/generated/scene_flat_bam_prio.xml
+  events:
+    foot_friction:
+      params:
+        ranges: [0.4, 1.3]

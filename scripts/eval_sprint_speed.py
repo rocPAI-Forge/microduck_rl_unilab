@@ -85,6 +85,9 @@ def _compose_owner(
         twist.rel_standing_envs = 0.0
         twist.rel_forward_envs = 0.0
         twist.turn_in_place_fraction = 0.0
+        for key in ("high_speed_fraction", "straight_fraction"):
+            if key in twist:
+                twist[key] = 0.0
         twist.resampling_time_range = [duration_s + 1.0, duration_s + 1.0]
         if clip_targets:
             cfg.env.actions.joint_pos.clip_target_to_joint_limits = True
@@ -231,6 +234,7 @@ def evaluate(
         head_body_ids, _ = robot.find_bodies([HEAD_BODY, TRUNK_BODY], preserve_order=True)
         head_body_id, trunk_body_id = int(head_body_ids[0]), int(head_body_ids[1])
         neck_pitch_sum = np.zeros(num_envs, dtype=np.float64)
+        trunk_height_sum = np.zeros(num_envs, dtype=np.float64)
         head_forward_sum = np.zeros(num_envs, dtype=np.float64)
         action_term = raw_env.action_manager.get_term("joint_pos")
         action_joint_ids = np.asarray(action_term.joint_ids)
@@ -307,6 +311,10 @@ def evaluate(
             head_tilt_sum[alive] += head_tilt[alive]
             head_inverted_sum[alive] += (head_up_cos[alive] < 0.0).astype(np.float64)
             neck_pitch_sum[alive] += np.asarray(robot.data.joint_pos)[alive, head_ids[0]]
+            trunk_height_sum[alive] += (
+                np.asarray(robot.data.root_link_pos_w)[alive, 2]
+                - np.asarray(raw_env.scene.env_origins)[alive, 2]
+            )
             head_forward_sum[alive] += head_in_trunk[alive, 0]
             target = np.asarray(
                 getattr(action_term, "requested_target", action_term.processed_action)
@@ -473,6 +481,11 @@ def evaluate(
             # (about -0.01 m at home).
             "neck_pitch_deg": (
                 math.degrees(float(np.mean(neck_pitch_sum[sampled] / sample_count[sampled])))
+                if np.any(sampled)
+                else None
+            ),
+            "trunk_height_m": (
+                float(np.mean(trunk_height_sum[sampled] / sample_count[sampled]))
                 if np.any(sampled)
                 else None
             ),
