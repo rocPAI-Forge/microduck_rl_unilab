@@ -1,0 +1,45 @@
+# @package _global_
+# Microduck Arena `sprint-2m`: keep sprint_speed_1p68's speed and hold the
+# lane. In the Arena that checkpoint finishes 2 m in 1.42 s but falls on 3 of
+# 5 starts, each time into the 0.8 m lane's wall after turning away. This
+# resumes it under the straighthold heading/cross-track terms with the head
+# terms off (the Arena does not score the head). Commands stay at the
+# checkpoint's 1.65-2.20 m/s: with speed tracking off at the Arena's
+# 0.20-1.20 m/s the policy learned to stand still. For the Arena the exported
+# ONNX remaps 0.20-1.20 onto 1.65-2.20 (scripts/remap_onnx_command.py).
+defaults:
+  - /task/microduck_sprint_straighthold_flat/mujoco
+  - _self_
+
+algo:
+  max_iterations: 3000
+  save_interval: 250
+  experiment_name: microduck_sprint_race_straight
+  run_name: microduck_sprint_race_straight
+
+env:
+  commands:
+    twist:
+      rel_standing_envs: 0.0
+      rel_forward_envs: 0.0
+      ranges:
+        lin_vel_x: [1.65, 2.2]
+        lin_vel_y: [-0.02, 0.02]
+        ang_vel_z: [-0.05, 0.05]
+
+reward:
+  tracking_lin_vel:
+    weight: 2.0
+    params: {std: 0.3872983346207417, command_name: twist}
+  head_pose_tracking:
+    weight: 0.0
+  head_upright:
+    weight: 0.0
+  head_facing_abs:
+    weight: 0.0
+  head_pitch_band:
+    weight: 0.0
+  head_roll_band:
+    weight: 0.0
+  head_tilt_excess:
+    weight: 0.0

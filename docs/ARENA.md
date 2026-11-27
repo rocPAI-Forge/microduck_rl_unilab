@@ -10,19 +10,34 @@ loads there unchanged.
 
 | Event | Entry | Policy | Score |
 |---|---|---|---|
+| 2 m Sprint | [`sprint-race-straight-rocm`](https://huggingface.co/spaces/pollen-robotics/microduck-arena#/r/01M8EW74ZW0J4SBM9WW2CT) | [`examples/sprint_race_straight/`](../examples/sprint_race_straight/) | 1.411 s, 5/5 |
 | 2 m Sprint | [`sprint-head-upright-rocm`](https://huggingface.co/spaces/pollen-robotics/microduck-arena#/r/01M8EGZDY83CFT2H7WCN30) | `examples/sprint_head_upright/model_14500` | 1.587 s, 5/5 |
 | 2 m Sprint | [`sprint-stand-rocm`](https://huggingface.co/spaces/pollen-robotics/microduck-arena#/r/01M8EE2Y3DECSJM6B6K11D) | `examples/sprint_stand/deploy` | 1.997 s, 5/5 |
+| 1.5 m Hill Climb | [`hill-straight-rocm`](https://huggingface.co/spaces/pollen-robotics/microduck-arena#/r/01M8EKM08NK8R31764CB5J) | `examples/sprint_straight_cmd/model_32250` | 2.048 s, 5/5 |
+| 6 m Sock Heist | [`heist-stopgo-rocm`](https://huggingface.co/spaces/pollen-robotics/microduck-arena#/r/01M8F0CH7QB5B3H5F6PQBT) | [`examples/heist/`](../examples/heist/) | 13.516 s, 5/5 |
+| 6 m Sock Heist | [`heist-sprint-stand-rocm`](https://huggingface.co/spaces/pollen-robotics/microduck-arena#/r/01M8EKPPSCM4S3DXNPFP3Q) | `examples/sprint_stand/deploy` | 25.268 s, 5/5 |
 | Got a Talent | [`domino-ducks`](https://huggingface.co/spaces/pollen-robotics/microduck-arena#/r/01M8EE5YY1XQB82HACVNRX) | `examples/tumble/deploy` plus three borrowed ducks | voted |
 
 The Arena's times reproduce on x86_64 Linux, so a local `arena score` here gives
 the board's number (both sprint entries scored the same on the Space).
 
-The sprint sweeps forward commands 0.20-1.20 m/s and keeps the best. Our walks
-follow the command, so they race at about 1 m/s. `microduck_sprint_race_flat`
-resumed `sprint_head_upright` with the speed-tracking term off and forward
-progress rewarded to 3.0 m/s: it ran flat out at every command but no faster
-(best 1.646 s, then slower), so it was not entered. The gait terms (stride cap,
-leg alternation) are the likely limit.
+The sprint sweeps forward commands 0.20-1.20 m/s and keeps the best. Our
+command-following walks race at about 1 m/s there. Two race-specific runs:
+
+- `microduck_sprint_race_flat` resumed `sprint_head_upright` with the
+  speed-tracking term off: it ran flat out at every command but no faster
+  (best 1.646 s). Not entered.
+- `microduck_sprint_race_straight_flat` resumed `sprint_speed_1p68`, which
+  finishes in 1.42 s but turns into the 0.8 m lane's wall on 3 of 5 starts,
+  under heading and cross-track terms at its own 1.65-2.20 m/s commands
+  (with speed tracking off at the Arena's commands, it learned to stand
+  still). `scripts/remap_onnx_command.py` maps the Arena's 0.20-1.20 onto
+  1.65-2.20 inside the ONNX. 1.411 s, 5/5: the sprint entry.
+
+The Sock Heist is red light, green light (stop within 0.4 s of a zero command,
+then move less than 3 cm). `microduck_heist_flat` resumed `sprint_stand` with
+the command re-drawn every 0.6-3.0 s and stillness rewarded on a zero command:
+13.5 s against `sprint_stand`'s 25.3 s.
 
 ## Got a Talent: Domino ducks
 

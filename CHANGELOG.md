@@ -6,14 +6,15 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
 
 ## Unreleased
 
-- Microduck Arena entries and tools (`docs/ARENA.md`): two 2 m Sprint entries
-  (`sprint_head_upright` 1.587 s, `sprint_stand` 1.997 s, 5/5 each) and the
-  Got a Talent troupe "Domino ducks" (`arena_entries/talent/`).
+- Microduck Arena entries and tools (`docs/ARENA.md`): 2 m Sprint 1.411 s
+  (`examples/sprint_race_straight/`, a straight-line retrain of
+  `sprint_speed_1p68` with its command remapped in the ONNX by
+  `scripts/remap_onnx_command.py`), Hill Climb 2.048 s (`sprint_straight_cmd`),
+  Sock Heist 13.5 s (`examples/heist/`, stop-and-go on `microduck_heist_flat`),
+  all 5/5, and the Got a Talent troupe "Domino ducks" (`arena_entries/talent/`).
   `scripts/arena_publish.py` publishes an ONNX to the Hub and enters it;
   `scripts/arena_stage_preview.py` and `scripts/render_arena_trace.py` play and
-  render a stage with local policies. A race-specific sprint
-  (`microduck_sprint_race_flat`) ran flat out at every command but no faster
-  (best 1.646 s) and was not entered.
+  render a stage with local policies.
 - Foot friction for the walking tasks, measured (roadmap item 12,
   `docs/audits/friction_combination.md`): a priority-1 walking scene
   (`scripts/make_prio_walk_robot.py`) lets foot friction below 1.0 take

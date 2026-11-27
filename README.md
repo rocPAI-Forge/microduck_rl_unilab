@@ -155,8 +155,9 @@ simulated robot ([Switching policies](docs/DEPLOY.md#switching-policies)).
 
 The same exports race in Pollen's
 [Microduck Arena](https://huggingface.co/spaces/pollen-robotics/microduck-arena):
-two 2 m Sprint entries (1.587 s and 1.997 s, 5/5 finishes) and a Got a Talent
-troupe of tumble, roulade, sit/stand and walking ducks. Entries, scores and
+2 m Sprint 1.411 s, Hill Climb 2.048 s and Sock Heist 13.5 s (5/5 finishes
+each), and a Got a Talent troupe of tumble, roulade, sit/stand and walking
+ducks. Entries, scores and
 the publish/preview tools are in [`docs/ARENA.md`](docs/ARENA.md).
 
 ## Version

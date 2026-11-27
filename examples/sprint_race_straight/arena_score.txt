@@ -1,0 +1,31 @@
+sweep 21 commanded speeds 0.20–1.20 m/s
+   0.20 m/s  1.48s
+   0.25 m/s  1.55s
+   0.30 m/s  1.52s
+   0.35 m/s  1.51s
+   0.40 m/s  1.45s
+   0.45 m/s  1.50s
+   0.50 m/s  1.50s
+   0.55 m/s  1.48s
+   0.60 m/s  1.48s
+   0.65 m/s  1.49s
+   0.70 m/s  1.46s
+   0.75 m/s  1.47s
+   0.80 m/s  1.41s
+   0.85 m/s  1.44s
+   0.90 m/s  1.43s
+   0.95 m/s  1.46s
+   1.00 m/s  1.49s
+   1.05 m/s  1.45s
+   1.10 m/s  1.46s
+   1.15 m/s  1.49s
+   1.20 m/s  1.48s
+
+scored at 0.85 m/s
+seed 1: finish   1.44s
+seed 2: finish   1.40s
+seed 3: finish   1.40s
+seed 4: finish   1.39s
+seed 5: finish   1.44s
+
+score 1.411s · 5/5 finished · replay from seed 2

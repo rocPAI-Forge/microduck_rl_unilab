@@ -1,0 +1,36 @@
+# @package _global_
+# Microduck Arena `sock-heist-6m`: red light, green light over 6 m. On red the
+# Arena zeroes the command, gives 0.4 s to stop and then catches a duck whose
+# trunk strays more than 3 cm; greens last 1.6-3.0 s and reds 1.4-2.4 s.
+# sprint_stand finishes only at 0.30-0.45 m/s (25.3 s): from 0.5 m/s up it is
+# caught at the first red. This resumes it with the command re-drawn every
+# 0.6-3.0 s, 45% of draws a stand, walking at 0.5-1.2 m/s, and rewards
+# stillness while the command is zero.
+defaults:
+  - /task/microduck_sprint_stand_flat/mujoco
+  - _self_
+
+algo:
+  max_iterations: 2000
+  save_interval: 250
+  experiment_name: microduck_heist
+  run_name: microduck_heist
+
+env:
+  commands:
+    twist:
+      resampling_time_range: [0.6, 3.0]
+      rel_standing_envs: 0.45
+      rel_forward_envs: 0.0
+      high_speed_fraction: 0.0
+      ranges:
+        lin_vel_x: [0.5, 1.2]
+
+reward:
+  stillness:
+    func: microduck_rl_unilab.tasks.microduck.scoot_terms.stillness_at_zero_command
+    weight: 4.0
+    params:
+      command_name: twist
+      command_threshold: 0.01
+      vel_std: 0.05
