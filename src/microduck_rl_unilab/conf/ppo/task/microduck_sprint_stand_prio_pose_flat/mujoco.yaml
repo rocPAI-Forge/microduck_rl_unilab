@@ -1,0 +1,23 @@
+# @package _global_
+# Second stage of the low-friction sprint_stand run: the first stage
+# (microduck_sprint_stand_prio_flat) learned a crouched stand (trunk 0.080 m
+# vs 0.106 m for sprint_stand/model_59000) that fails the MotrixSim standing
+# gate. leg_pose saturates that far from the default pose, so the stand
+# height is held with an L1 term gated on stand commands.
+defaults:
+  - /task/microduck_sprint_stand_prio_flat/mujoco
+  - _self_
+
+algo:
+  max_iterations: 2000
+  experiment_name: microduck_sprint_stand_prio_pose
+  run_name: microduck_sprint_stand_prio_pose
+
+reward:
+  standing_height:
+    func: microduck_rl_unilab.tasks.microduck.standup_terms.standing_height_l1_penalty
+    weight: 30.0
+    params:
+      target_height: 0.106
+      command_name: twist
+      command_threshold: 0.01

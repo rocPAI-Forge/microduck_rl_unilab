@@ -168,6 +168,26 @@ def height_l1_penalty(
     return np.asarray(-np.abs(z - target_height), dtype=get_global_dtype())
 
 
+def standing_height_l1_penalty(
+    env: ManagerBasedRlEnv,
+    target_height: float,
+    command_name: str = "twist",
+    command_threshold: float = 0.01,
+    asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> np.ndarray:
+    """``height_l1_penalty`` only while the twist command is a stand.
+
+    Self-negating (returns <= 0): configure with a POSITIVE weight.
+    """
+    _real("standing_height_l1_penalty", "target_height", target_height)
+    threshold = _real("standing_height_l1_penalty", "command_threshold", command_threshold, minimum=0.0)
+    entity = _entity_simple(env, asset_cfg, "standing_height_l1_penalty")
+    command = np.asarray(env.command_manager.get_command(command_name), dtype=get_global_dtype())
+    standing = np.linalg.norm(command[:, :3], axis=1) <= threshold
+    z = _root_z(env, entity)
+    return np.asarray(np.where(standing, -np.abs(z - target_height), 0.0), dtype=get_global_dtype())
+
+
 def _entity_simple(env: ManagerBasedRlEnv, asset_cfg: SceneEntityCfg, term: str) -> Entity:
     if not isinstance(asset_cfg, SceneEntityCfg):
         raise TypeError(f"{term} asset_cfg must be SceneEntityCfg")
