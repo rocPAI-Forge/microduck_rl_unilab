@@ -19,3 +19,7 @@ assets/robots/microduck/generated/
 
 # TorchScript copies written by scripts/export_policy.py; not needed onboard
 examples/*/deploy*/policy.pt
+
+# Social video and its preview frame (arena_entries/); kept local
+arena_entries/microduck_arena_linkedin.mp4
+arena_entries/linkedin_preview.png

@@ -1,0 +1,36 @@
+# @package _global_
+# Microduck Arena `sprint-2m` entry: run flat out at every forward command the
+# Arena sweeps (0.20-1.20 m/s). Resumes sprint_head_upright/model_14500; the
+# speed-tracking term is off so a low command does not slow the gait, and
+# forward progress is rewarded up to 3.0 m/s.
+defaults:
+  - /task/microduck_sprint_rollfix_flat/mujoco
+  - _self_
+
+algo:
+  max_iterations: 3000
+  save_interval: 250
+  experiment_name: microduck_sprint_race
+  run_name: microduck_sprint_race
+
+env:
+  commands:
+    twist:
+      rel_standing_envs: 0.0
+      rel_forward_envs: 0.0
+      ranges:
+        lin_vel_x: [0.2, 1.2]
+  curriculum:
+    head_roll_band_weight: null
+
+reward:
+  tracking_lin_vel:
+    weight: 0.0
+  forward_progress:
+    params:
+      speed_cap: 3.0
+  spawn_progress:
+    params:
+      speed_cap: 3.0
+  head_roll_band:
+    weight: -4.0
