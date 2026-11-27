@@ -24,8 +24,10 @@ policy. This page and `scripts/hardware_bringup.py` catch them first.
   (`policy.onnx`, `deploy_manifest.json`). `bringup.py` is needed only for the
   checks.
 - **Floor.** A surface with grip. No walking policy has trained with foot
-  friction below 1.0 on MuJoCo ([`audits/friction_combination.md`](audits/friction_combination.md),
-  roadmap item 12), so a slippery floor is outside what it has seen.
+  friction below 1.0 on MuJoCo. Measured on a scene where lower friction takes
+  effect, `sprint_stand` holds at friction 0.5 and above and breaks near 0.3
+  ([`audits/friction_combination.md`](audits/friction_combination.md),
+  roadmap item 12).
 - **Running on `robotd` instead.** The checks still need the adapter below;
   for the policy itself set the `[policy]` values in
   [`DEPLOY.md`](DEPLOY.md#running-on-pollens-robotd). `robotd` does not clamp

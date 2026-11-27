@@ -6,6 +6,14 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
 
 ## Unreleased
 
+- Foot friction for the walking tasks, measured (roadmap item 12,
+  `docs/audits/friction_combination.md`): a priority-1 walking scene
+  (`scripts/make_prio_walk_robot.py`) lets foot friction below 1.0 take
+  effect. `sprint_stand/model_59000` holds 99.6–100% at friction 0.5 and
+  above. A retrain on 0.4–1.3 helped at 0.2–0.3 but learned a crouched stand
+  that fails the MotrixSim stand, so it was not published.
+  `scripts/eval_sprint_speed.py` now zeroes `high_speed_fraction` and
+  `straight_fraction` and reports `trunk_height_m`.
 - MotrixSim cross-check for the motion examples (`scripts/sim2sim_tricks.py`,
   `docs/audits/sim2sim_tricks.md`): each checkpoint runs on MuJoCo and Motrix
   with the same protocol. Roulade, tumble, ball kick, scoot and stilts pass

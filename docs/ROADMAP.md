@@ -33,7 +33,7 @@ results decide whether items 8, 10, and 11 are reopened.
 | 9. Motrix in the training loop (new) | Closed: train on MuJoCo only, Motrix is the held-out gate | #11 (closed, record), #13 (rule) |
 | 10. Top speed on Motrix (new) | Parked: wider randomization trades speed for Motrix margin | #18 |
 | 11. Gearbox backlash (new) | Parked: modeled; training on it fails the stiff-robot gate | #22 |
-| 12. Foot friction below 1.0 (new) | Open: found by scoot; fixed for scoot only, walking tasks need a retrain and the Motrix gate | #27 |
+| 12. Foot friction below 1.0 (new) | Measured: `model_59000` holds down to 0.5; a low-friction retrain crouches and fails the Motrix stand, so it was not published | #27 |
 
 **Simulator rule.** Sprint policies train on MuJoCo only. MotrixSim is held
 out for the sim2sim check (`scripts/sim2sim_check.py`), and a checkpoint is
@@ -92,12 +92,16 @@ published only after it passes. Failures are fixed on the MuJoCo side.
   1.0 m/s. Training on it recovers that but stands at 89.5% on MotrixSim,
   below the gate ([`audits/backlash.md`](audits/backlash.md)). Next: train
   across backlash amounts, then measure the real play on hardware.
-- [ ] **12. Foot friction randomization below 1.0 (new), open.** The floor's
-  1.0 friction wins MuJoCo's max-combination, so the walking tasks' 0.7–1.3
-  foot friction has only ever trained 1.0–1.3
+- [ ] **12. Foot friction randomization below 1.0 (new), measured.** The
+  floor's 1.0 friction wins MuJoCo's max-combination, so the walking tasks'
+  0.7–1.3 foot friction has only ever trained 1.0–1.3
   ([`audits/friction_combination.md`](audits/friction_combination.md)).
-  Contact priority fixes it; applying it to sprint needs a retrain and the
-  Motrix gate.
+  On a priority-1 walking scene `model_59000` keeps 99.6–100% at friction
+  0.5 and above and breaks near 0.3. Retraining on 0.4–1.3 lifted 0.3 friction
+  at 0.6 m/s from 38% to 84%, but the policy learned a crouched stand
+  (0.080 m against 0.106 m) that fails the MotrixSim stand (41%); holding the
+  stand height took the gains away again. `model_59000` stays the hardware
+  start. Next, for floors below about 0.4: a stand height command.
 - [x] **4. Position-target audit** (#6). Only the sprint lineage leans on the
   joint stops; the walk, stand-up, and get-up checkpoints finish their tasks
   with the goal-position clamp on. None needs retraining.
