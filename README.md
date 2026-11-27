@@ -153,6 +153,12 @@ tumble, sit/stand and kick policies are exported too, and
 `scripts/deploy_switch_sim.py` rehearses switching between them on one
 simulated robot ([Switching policies](docs/DEPLOY.md#switching-policies)).
 
+The same exports race in Pollen's
+[Microduck Arena](https://huggingface.co/spaces/pollen-robotics/microduck-arena):
+two 2 m Sprint entries (1.587 s and 1.997 s, 5/5 finishes) and a Got a Talent
+troupe of tumble, roulade, sit/stand and walking ducks. Entries, scores and
+the publish/preview tools are in [`docs/ARENA.md`](docs/ARENA.md).
+
 ## Version
 
 Current release: **0.5.1** (git tag `v0.5.1`). Release contents, checked

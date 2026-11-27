@@ -6,6 +6,14 @@ tag `v<version>` with a matching GitHub release. Checkpoints live in
 
 ## Unreleased
 
+- Microduck Arena entries and tools (`docs/ARENA.md`): two 2 m Sprint entries
+  (`sprint_head_upright` 1.587 s, `sprint_stand` 1.997 s, 5/5 each) and the
+  Got a Talent troupe "Domino ducks" (`arena_entries/talent/`).
+  `scripts/arena_publish.py` publishes an ONNX to the Hub and enters it;
+  `scripts/arena_stage_preview.py` and `scripts/render_arena_trace.py` play and
+  render a stage with local policies. A race-specific sprint
+  (`microduck_sprint_race_flat`) ran flat out at every command but no faster
+  (best 1.646 s) and was not entered.
 - MotrixSim cross-check for the motion examples (`scripts/sim2sim_tricks.py`,
   `docs/audits/sim2sim_tricks.md`): each checkpoint runs on MuJoCo and Motrix
   with the same protocol. Roulade, tumble, ball kick, scoot and stilts pass
